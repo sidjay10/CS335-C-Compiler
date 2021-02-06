@@ -18,10 +18,14 @@ int main();
 void parse();
 int check_type();
 int yylex();
+
+int column = 1;
+int line_num=1;
 %}
 
 %%
 "/*"			{ comment(); }
+"//"[^\n]*\n		{ line_num++;  }
 
 "auto"			{ count(); return(AUTO); }
 "break"			{ count(); return(BREAK); }
@@ -121,13 +125,10 @@ L?\"(\\.|[^\\"])*\"	{ count(); return(STRING_LITERAL); }
 
 %%
 
-int column = 1;
-int line_num=1;
 
 void comment()
 {
 	char c, c1;
-    extern int line_num;
 
 loop:
 	while ((c = input()) != '*' && c != 0)
