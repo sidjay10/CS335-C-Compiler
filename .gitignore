@@ -1,2 +1,14 @@
+build/*
 bin/*
 
+.*.vscode
+.*.swp
+
+src/*.vscode
+src/*.swp
+
+inc/*.vscode
+inc/*.swp
+
+tests/*.vscode
+tests/*.swp
