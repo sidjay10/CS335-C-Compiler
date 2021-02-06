@@ -20,14 +20,17 @@ int main(int argc, char *argv[]) {
   if (argc == 3 && (fo = fopen(argv[2], "w+")))
     yyout = fo;
 
-  printf("Line#     Column#   Token               Lexeme                        \n");
-  printf("======================================================================\n");
+  printf("Line#     Column#   Token               Lexeme                       "
+         " \n");
+  printf("====================================================================="
+         "=\n");
 
   while (1) {
     int token_type = yylex();
     char token_str[64];
     token_to_string(token_type, token_str);
-    printf("%-9d %-9d %-19s %s\n", token_data.line_num, token_data.column_num, token_str, token_data.lexeme);
+    printf("%-9d %-9d %-19s %s\n", token_data.line_num, token_data.column_num,
+           token_str, token_data.lexeme);
     free(token_data.lexeme);
   }
   return 0;
