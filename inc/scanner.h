@@ -6,5 +6,5 @@ typedef struct token_data_ {
   char *lexeme;
 } TOKEN_DATA;
 
-char *token_to_string(int);
+void token_to_string(int token_type, char * str);
 #endif

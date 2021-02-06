@@ -19,11 +19,16 @@ int main(int argc, char *argv[]) {
     yyin = fh;
   if (argc == 3 && (fo = fopen(argv[2], "w+")))
     yyout = fo;
+
+  printf("Token Lexeme Line# Column#\n");
+
   while (1) {
-	int token_type = yylex();
-    printf("yylex = %d %s %d %d\n", token_type,
-           token_data.lexeme, token_data.line_num, token_data.column_num);
-	free(token_data.lexeme);
+    int token_type = yylex();
+    char token_str[64];
+    token_to_string(token_type, token_str);
+    printf("%s %s %d %d\n", token_str, token_data.lexeme, token_data.line_num,
+           token_data.column_num);
+    free(token_data.lexeme);
   }
   return 0;
 }
@@ -31,253 +36,255 @@ int main(int argc, char *argv[]) {
 // Converts the token enum to a string
 // Param1: yytokentype
 // Param2 : pointer to string for output
-char *token_to_string(int t) {
-  switch (t) {
+void token_to_string(int token_type, char *str) {
+  switch (token_type) {
   case AUTO:
-    return strdup("AUTO");
+    sprintf(str, "AUTO");
     break;
   case BREAK:
-    return strdup("BREAK");
+    sprintf(str, "BREAK");
     break;
   case CASE:
-    return strdup("CASE");
+    sprintf(str, "CASE");
     break;
   case CHAR:
-    return strdup("CHAR");
+    sprintf(str, "CHAR");
     break;
   case CONST:
-    return strdup("CONST");
+    sprintf(str, "CONST");
     break;
   case CONTINUE:
-    return strdup("CONTINUE");
+    sprintf(str, "CONTINUE");
     break;
   case DEFAULT:
-    return strdup("DEFAULT");
+    sprintf(str, "DEFAULT");
     break;
   case DO:
-    return strdup("DO");
+    sprintf(str, "DO");
     break;
   case DOUBLE:
-    return strdup("DOUBLE");
+    sprintf(str, "DOUBLE");
     break;
   case ELSE:
-    return strdup("ELSE");
+    sprintf(str, "ELSE");
     break;
   case ENUM:
-    return strdup("ENUM");
+    sprintf(str, "ENUM");
     break;
   case EXTERN:
-    return strdup("EXTERN");
+    sprintf(str, "EXTERN");
     break;
   case FLOAT:
-    return strdup("FLOAT");
+    sprintf(str, "FLOAT");
     break;
   case FOR:
-    return strdup("FOR");
+    sprintf(str, "FOR");
     break;
   case GOTO:
-    return strdup("GOTO");
+    sprintf(str, "GOTO");
     break;
   case IF:
-    return strdup("IF");
+    sprintf(str, "IF");
     break;
   case INT:
-    return strdup("INT");
+    sprintf(str, "INT");
     break;
   case LONG:
-    return strdup("LONG");
+    sprintf(str, "LONG");
     break;
   case REGISTER:
-    return strdup("REGISTER");
+    sprintf(str, "REGISTER");
     break;
   case RETURN:
-    return strdup("RETURN");
+    sprintf(str, "RETURN");
     break;
   case SHORT:
-    return strdup("SHORT");
+    sprintf(str, "SHORT");
     break;
   case SIGNED:
-    return strdup("SIGNED");
+    sprintf(str, "SIGNED");
     break;
   case SIZEOF:
-    return strdup("SIZEOF");
+    sprintf(str, "SIZEOF");
     break;
   case STATIC:
-    return strdup("STATIC");
+    sprintf(str, "STATIC");
     break;
   case STRUCT:
-    return strdup("STRUCT");
+    sprintf(str, "STRUCT");
     break;
   case SWITCH:
-    return strdup("SWITCH");
+    sprintf(str, "SWITCH");
     break;
   case TYPEDEF:
-    return strdup("TYPEDEF");
+    sprintf(str, "TYPEDEF");
     break;
   case UNION:
-    return strdup("UNION");
+    sprintf(str, "UNION");
     break;
   case UNSIGNED:
-    return strdup("UNSIGNED");
+    sprintf(str, "UNSIGNED");
     break;
   case VOID:
-    return strdup("VOID");
+    sprintf(str, "VOID");
     break;
   case VOLATILE:
-    return strdup("VOLATILE");
+    sprintf(str, "VOLATILE");
     break;
   case WHILE:
-    return strdup("WHILE");
+    sprintf(str, "WHILE");
+    break;
+  case IDENTIFIER:
+    sprintf(str, "IDENTIFIER");
     break;
   case CONSTANT:
-    return strdup("CONSTANT");
+    sprintf(str, "CONSTANT");
     break;
   case STRING_LITERAL:
-    return strdup("STRING_LITERAL");
+    sprintf(str, "STRING_LITERAL");
     break;
   case ELLIPSIS:
-    return strdup("ELLIPSIS");
+    sprintf(str, "ELLIPSIS");
     break;
   case RIGHT_ASSIGN:
-    return strdup("RIGHT_ASSIGN");
+    sprintf(str, "RIGHT_ASSIGN");
     break;
   case LEFT_ASSIGN:
-    return strdup("LEFT_ASSIGN");
+    sprintf(str, "LEFT_ASSIGN");
     break;
   case ADD_ASSIGN:
-    return strdup("ADD_ASSIGN");
+    sprintf(str, "ADD_ASSIGN");
     break;
   case SUB_ASSIGN:
-    return strdup("SUB_ASSIGN");
+    sprintf(str, "SUB_ASSIGN");
     break;
   case MUL_ASSIGN:
-    return strdup("MUL_ASSIGN");
+    sprintf(str, "MUL_ASSIGN");
     break;
   case DIV_ASSIGN:
-    return strdup("DIV_ASSIGN");
+    sprintf(str, "DIV_ASSIGN");
     break;
   case MOD_ASSIGN:
-    return strdup("MOD_ASSIGN");
+    sprintf(str, "MOD_ASSIGN");
     break;
   case AND_ASSIGN:
-    return strdup("AND_ASSIGN");
+    sprintf(str, "AND_ASSIGN");
     break;
   case XOR_ASSIGN:
-    return strdup("XOR_ASSIGN");
+    sprintf(str, "XOR_ASSIGN");
     break;
   case OR_ASSIGN:
-    return strdup("OR_ASSIGN");
+    sprintf(str, "OR_ASSIGN");
     break;
   case RIGHT_OP:
-    return strdup("RIGHT_OP");
+    sprintf(str, "RIGHT_OP");
     break;
   case LEFT_OP:
-    return strdup("LEFT_OP");
+    sprintf(str, "LEFT_OP");
     break;
   case INC_OP:
-    return strdup("INC_OP");
+    sprintf(str, "INC_OP");
     break;
   case DEC_OP:
-    return strdup("DEC_OP");
+    sprintf(str, "DEC_OP");
     break;
   case PTR_OP:
-    return strdup("PTR_OP");
+    sprintf(str, "PTR_OP");
     break;
   case AND_OP:
-    return strdup("AND_OP");
+    sprintf(str, "AND_OP");
     break;
   case OR_OP:
-    return strdup("OR_OP");
+    sprintf(str, "OR_OP");
     break;
   case LE_OP:
-    return strdup("LE_OP");
+    sprintf(str, "LE_OP");
     break;
   case GE_OP:
-    return strdup("GE_OP");
+    sprintf(str, "GE_OP");
     break;
   case EQ_OP:
-    return strdup("EQ_OP");
+    sprintf(str, "EQ_OP");
     break;
   case NE_OP:
-    return strdup("NE_OP");
+    sprintf(str, "NE_OP");
     break;
   case ';':
-    return strdup(";");
+    sprintf(str, ";");
     break;
   case '{':
-    return strdup("{");
+    sprintf(str, "{");
     break;
   case '}':
-    return strdup("}");
+    sprintf(str, "}");
     break;
   case ',':
-    return strdup(",");
+    sprintf(str, ",");
     break;
   case ':':
-    return strdup(":");
+    sprintf(str, ":");
     break;
   case '=':
-    return strdup("=");
+    sprintf(str, "=");
     break;
   case '(':
-    return strdup("(");
+    sprintf(str, "(");
     break;
   case ')':
-    return strdup(")");
+    sprintf(str, ")");
     break;
   case '[':
-    return strdup("[");
+    sprintf(str, "[");
     break;
   case ']':
-    return strdup("]");
+    sprintf(str, "]");
     break;
   case '.':
-    return strdup(".");
+    sprintf(str, ".");
     break;
   case '&':
-    return strdup("&");
+    sprintf(str, "&");
     break;
   case '!':
-    return strdup("!");
+    sprintf(str, "!");
     break;
   case '~':
-    return strdup("~");
+    sprintf(str, "~");
     break;
   case '-':
-    return strdup("-");
+    sprintf(str, "-");
     break;
   case '+':
-    return strdup("+");
+    sprintf(str, "+");
     break;
   case '*':
-    return strdup("*");
+    sprintf(str, "*");
     break;
   case '/':
-    return strdup("/");
+    sprintf(str, "/");
     break;
   case '%':
-    return strdup("%%");
+    sprintf(str, "%%");
     break;
   case '<':
-    return strdup("<");
+    sprintf(str, "<");
     break;
   case '>':
-    return strdup(">");
+    sprintf(str, ">");
     break;
   case '^':
-    return strdup("^");
+    sprintf(str, "^");
     break;
   case '|':
-    return strdup("|");
+    sprintf(str, "|");
     break;
   case '?':
-    return strdup("?");
+    sprintf(str, "?");
     break;
   default:
+    printf("NO TOKEN %d\n", token_type);
     assert(0);
     break;
-    return NULL;
   }
-  assert(0);
-  return NULL;
+  return;
 }
