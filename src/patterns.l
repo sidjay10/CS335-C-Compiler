@@ -118,9 +118,48 @@ L?\"(\\.|[^\\"])*\"	{ count(); return(STRING_LITERAL); }
 
 %%
 
+int column = 0;
+int line_num=1;
 
+void comment()
+{
+	char c, c1;
+    extern int line_num;
 
+loop:
+	while ((c = input()) != '*' && c != 0)
+		putchar(c);
 
+	if ((c1 = input()) != '/' && c != 0)
+	{
+		unput(c1);
+		goto loop;
+	}
+	if (c1=='\n')
+		line_num++;
+		
+	if (c != 0)
+		putchar(c1);
+}
+
+void count()
+{
+	int i;
+
+	for (i = 0; yytext[i] != '\0'; i++)
+		if (yytext[i] == '\n')
+			{column = 0;
+			line_num++;}
+		else if (yytext[i] == '\t')
+			column += 8 - (column % 8);
+		else
+			column++;
+	//ECHO;
+	printf("yytext = %s\t",yytext);
+	printf("column = %d\t",column);
+	printf("line = %d\n",line_num);
+
+}
 
 int check_type()
 {
@@ -135,3 +174,10 @@ int check_type()
 */
 	return(IDENTIFIER);
 }
+
+
+int yywrap()
+{	exit(0);
+	return(1);
+}
+
