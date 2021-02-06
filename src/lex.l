@@ -10,6 +10,8 @@ IS			(u|U|l|L)*
 #include "y.tab.h"
 
 void count();
+int main();
+void parse();
 %}
 
 %%
@@ -139,21 +141,23 @@ loop:
 
 
 int column = 0;
-
+int line_num=1;
 void count()
 {
 	int i;
 
 	for (i = 0; yytext[i] != '\0'; i++)
 		if (yytext[i] == '\n')
-			column = 0;
+			{column = 0;
+			line_num++;}
 		else if (yytext[i] == '\t')
 			column += 8 - (column % 8);
 		else
 			column++;
 	//ECHO;
-	printf("\nyytext = %s\n",yytext);
-	printf("\ncolumn = %d\n",column);
+	printf("yytext = %s\t",yytext);
+	printf("column = %d\t",column);
+	printf("line = %d\n",line_num);
 
 }
 
@@ -175,3 +179,16 @@ int check_type()
 
 	return(IDENTIFIER);
 }
+ 
+int main(int argc, char* argv[]) {
+    FILE *fh;
+	FILE *fo;
+    if (argc == 2 && (fh = fopen(argv[1], "r")))
+        yyin = fh;
+	if (argc == 3 && (fo= fopen(argv[2], "w+")))
+        yyout = fo;
+	while(1)
+	{yylex();
+	}
+    return 0;
+}  
