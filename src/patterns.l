@@ -8,10 +8,16 @@ IS			(u|U|l|L)*
 %{
 #include <stdio.h>
 #include "y.tab.h"
+#include "scanner.h"
+
+extern TOKEN_DATA token_data;
 
 void count();
+void comment();
 int main();
 void parse();
+int check_type();
+int yylex();
 %}
 
 %%
@@ -115,15 +121,13 @@ L?\"(\\.|[^\\"])*\"	{ count(); return(STRING_LITERAL); }
 
 %%
 
-yywrap()
-{	exit(0);
-	return(1);
-}
+int column = 1;
+int line_num=1;
 
-
-comment()
+void comment()
 {
 	char c, c1;
+    extern int line_num;
 
 loop:
 	while ((c = input()) != '*' && c != 0)
@@ -134,48 +138,48 @@ loop:
 		unput(c1);
 		goto loop;
 	}
-
+	if (c1=='\n')
+		line_num++;
+		
 	if (c != 0)
 		putchar(c1);
 }
 
-
-int column = 0;
-int line_num=1;
 void count()
 {
 	int i;
+	token_data.column_num = column;
+	token_data.line_num = line_num;
+	token_data.lexeme = strdup(yytext);
 
-	for (i = 0; yytext[i] != '\0'; i++)
+	for (i = 0; yytext[i] != '\0'; i++) {
 		if (yytext[i] == '\n')
-			{column = 0;
+			{column = 1;
 			line_num++;}
 		else if (yytext[i] == '\t')
 			column += 8 - (column % 8);
 		else
 			column++;
-	//ECHO;
-	printf("yytext = %s\t",yytext);
-	printf("column = %d\t",column);
-	printf("line = %d\n",line_num);
-
+	}
 }
-
 
 int check_type()
 {
 /*
-* pseudo code --- this is what it should check
-*
-*	if (yytext == type_name)
-*		return(TYPE_NAME);
-*
-*	return(IDENTIFIER);
-*/
+ pseudo code --- this is what it should check
 
-/*
-*	it actually will only return IDENTIFIER
-*/
+	if (yytext == type_name)
+		return(TYPE_NAME);
 
 	return(IDENTIFIER);
+	it actually will only return IDENTIFIER
+*/
+	return(IDENTIFIER);
 }
+
+
+int yywrap()
+{	exit(0);
+	return(1);
+}
+
