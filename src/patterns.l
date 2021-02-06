@@ -116,7 +116,7 @@ L?\"(\\.|[^\\"])*\"	{ count(); return(STRING_LITERAL); }
 %%
 
 yywrap()
-{
+{	exit(0);
 	return(1);
 }
 
@@ -179,16 +179,3 @@ int check_type()
 
 	return(IDENTIFIER);
 }
- 
-int main(int argc, char* argv[]) {
-    FILE *fh;
-	FILE *fo;
-    if (argc == 2 && (fh = fopen(argv[1], "r")))
-        yyin = fh;
-	if (argc == 3 && (fo= fopen(argv[2], "w+")))
-        yyout = fo;
-	while(1)
-	{yylex();
-	}
-    return 0;
-}  
