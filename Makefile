@@ -9,9 +9,9 @@ TARGET = scanner
 #DIRECTORIES
 ##Source code
 SRCDIR = src
-INCDIR = inc
 ##Compiled source files
 BUILDDIR = build
+INCDIR = inc
 ##Contain final executable
 TARGETDIR = bin
 
