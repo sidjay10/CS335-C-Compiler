@@ -1,37 +1,14 @@
-SRCDIR=src
-BINDIR=out/bin
-INCDIR=inc
-OUTDIR=out
-
-CFLAGS = -Wall
 CC = gcc
 
-FLEX=flex
-YACC=bison
+#This target can keep changing based on final binary required
+TARGET = scanner
 
-.PHONY: all
-all : 	yacc_files lex_files c_files
+SRCDIR = src
+TARGETDIR = bin
 
-yacc_files : $(SRCDIR)/yacc.yy
-	mkdir -p $(INCDIR)
-	$(YACC) -d $(SRCDIR)/yacc.yy -o $(INCDIR)/y.tab.c
-	rm $(INCDIR)/y.tab.c
+all: $(TARGET)
 
-lex_files : $(SRCDIR)/lex.l
-	mkdir -p $(OUTDIR)
-	$(FLEX) -o $(OUTDIR)/lex.yy.c $(SRCDIR)/lex.l 
+.PHONY: clean
 
-c_files : $(INCDIR)/y.tab.h $(OUTDIR)/lex.yy.c
-	mkdir -p $(BINDIR)
-	$(CC) $(CFLAGS) -lfl $(OUTDIR)/lex.yy.c -o $(BINDIR)/lexer -I $(INCDIR)
-
-clean : 
-	rm -r $(OUTDIR);
-	rm -r $(INCDIR);
-
-
-
-
-	
-
-
+clean:
+	rm -rf $(TARGETDIR)
