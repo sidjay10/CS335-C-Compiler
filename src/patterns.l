@@ -131,19 +131,21 @@ void comment()
 	char c, c1;
 
 loop:
-	while ((c = input()) != '*' && c != 0)
-		putchar(c);
-
+	while ((c = input()) != '*' && c != 0){
+		if(c=='\n')
+			line_num++; 
+		continue;
+	}
 	if ((c1 = input()) != '/' && c != 0)
 	{
 		unput(c1);
 		goto loop;
 	}
-	if (c1=='\n')
-		line_num++;
+	
+	if (c != 0){
+		// do nothing
+	}
 		
-	if (c != 0)
-		putchar(c1);
 }
 
 void count()
