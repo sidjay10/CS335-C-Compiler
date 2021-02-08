@@ -9,3 +9,6 @@ make
 
 In general, to build any specific target binary :
 make <target>
+
+To clear the binaries and compiled source :
+make clean
