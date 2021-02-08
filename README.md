@@ -12,3 +12,6 @@ make <target>
 
 To clear the binaries and compiled source :
 make clean
+
+Usage:
+./bin/scanner <path_to_file>
