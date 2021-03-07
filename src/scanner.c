@@ -1,9 +1,12 @@
 #include <assert.h>
-#include <scanner.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include <scanner.h>
+#include <ast.h>
 #include <y.tab.h>
+
 
 int yylex();
 
@@ -24,6 +27,7 @@ int main(int argc, char *argv[]) {
          " \n");
   printf("====================================================================="
          "=\n");
+
 
   while (1) {
     int token_type = yylex();

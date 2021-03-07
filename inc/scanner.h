@@ -7,4 +7,5 @@ typedef struct token_data_ {
 } TOKEN_DATA;
 
 void token_to_string(int token_type, char * str);
+
 #endif

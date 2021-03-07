@@ -1,5 +1,5 @@
-#include <stdio.h>
-
+//#include <stdio.h>
+//
 void quick_sort (long long int *data, long long int n) 
     {
         long long int i, j, p, t;

@@ -1,10 +1,12 @@
 # TOOLS
 CC = gcc
+CXX = g++
 LEX = flex
 YACC = bison -y
 
 #This target can keep changing based on final binary required
-TARGET = scanner
+#TARGET = scanner
+TARGET = parser
 
 #DIRECTORIES
 ##Source code
@@ -28,9 +30,15 @@ INCFLAGS = $(addprefix -I, $(INCDIR))
 
 all: $(TARGET)
 
-scanner: grammar patterns
+
+#scanner: grammar patterns
+#	@mkdir -p $(TARGETDIR)
+#	$(CC) $(CFLAGS) $(LDFLAGS) $(INCFLAGS) $(BUILDDIR)/lex.yy.c $(BUILDDIR)/y.tab.c $(SRCDIR)/scanner.c -o $(TARGETDIR)/scanner  
+
+parser: grammar patterns
 	@mkdir -p $(TARGETDIR)
-	$(CC) $(CFLAGS) $(LDFLAGS) $(INCFLAGS) $(BUILDDIR)/lex.yy.c $(BUILDDIR)/y.tab.c $(SRCDIR)/scanner.c -o $(TARGETDIR)/scanner  
+	$(CXX) $(CFLAGS) $(LDFLAGS) $(INCFLAGS) $(BUILDDIR)/lex.yy.c $(BUILDDIR)/y.tab.c $(SRCDIR)/parser.cpp $(SRCDIR)/ast.cpp -o $(TARGETDIR)/parser 
+
 
 grammar:
 	$(YACC) $(YFLAGS) $(GRAMMAR)

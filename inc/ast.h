@@ -7,8 +7,15 @@
 class Node {
 	public:
 		unsigned long long int id;
+
+		virtual void dotify() = 0;
+		virtual void add_child(Node * node);
+		virtual void add_children (Node * node1, Node * node2);
+		virtual void add_children (Node * node1, Node * node2, Node * node3);
+		virtual void add_children (Node * node1, Node * node2, Node * node3, Node * node4);
 	protected:
 		Node ();
+		virtual ~Node() {}
 };
 
 
@@ -28,10 +35,14 @@ class Non_Terminal : public Node {
 
 		Non_Terminal(const char * name_);
 		void add_child(Node * node);
+		void add_children (Node * node1, Node * node2);
+		void add_children (Node * node1, Node * node2, Node * node3);
+		void add_children (Node * node1, Node * node2, Node * node3, Node * node4);
 		void dotify();
 
 };
 
 unsigned long long int get_next_node_id();
 Node * create_terminal(const char * name, const char * value);
+Node * create_non_term(const char * name);
 #endif

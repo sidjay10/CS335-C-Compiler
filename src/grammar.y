@@ -1,5 +1,23 @@
-%token IDENTIFIER CONSTANT STRING_LITERAL SIZEOF
-%token PTR_OP INC_OP DEC_OP LEFT_OP RIGHT_OP LE_OP GE_OP EQ_OP NE_OP
+
+%{
+	#include <stdio.h>
+	#include <ast.h>
+	void yyerror(const char *s);	
+	extern "C" int yylex();
+	
+
+%}
+
+%union{
+	Node * node;
+}
+
+
+%token <node> '(' ')' '[' ']' '.' ','
+
+
+%token <node> IDENTIFIER CONSTANT STRING_LITERAL SIZEOF
+%token <node> PTR_OP INC_OP DEC_OP LEFT_OP RIGHT_OP LE_OP GE_OP EQ_OP NE_OP
 %token AND_OP OR_OP MUL_ASSIGN DIV_ASSIGN MOD_ASSIGN ADD_ASSIGN
 %token SUB_ASSIGN LEFT_ASSIGN RIGHT_ASSIGN AND_ASSIGN
 %token XOR_ASSIGN OR_ASSIGN TYPE_NAME
@@ -10,30 +28,34 @@
 
 %token CASE DEFAULT IF ELSE SWITCH WHILE DO FOR GOTO CONTINUE BREAK RETURN
 
+
+%type <node> primary_expression postfix_expression expression argument_expression_list assignment_expression
+
+
 %start translation_unit
 %%
 
 primary_expression
-	: IDENTIFIER
-	| CONSTANT
-	| STRING_LITERAL
-	| '(' expression ')'
+	: IDENTIFIER  { Node * node = create_non_term("primary_expression"); node->add_child($1); node->dotify(); $$ = node; }
+	| CONSTANT   { Node * node = create_non_term("primary_expression"); node->add_child($1); node->dotify(); $$ = node; }
+	| STRING_LITERAL  { Node * node = create_non_term("primary_expression"); node->add_child($1); node->dotify(); $$ = node; }
+	| '(' expression ')'  { Node * node = create_non_term("primary_expression"); node->add_children($1,$2,$3); node->dotify(); $$ = node; }
 	;
 
 postfix_expression
-	: primary_expression
-	| postfix_expression '[' expression ']'
-	| postfix_expression '(' ')'
-	| postfix_expression '(' argument_expression_list ')'
-	| postfix_expression '.' IDENTIFIER
-	| postfix_expression PTR_OP IDENTIFIER
-	| postfix_expression INC_OP
-	| postfix_expression DEC_OP
+	: primary_expression  { Node * node = create_non_term("postfix_expression"); node->add_child($1); node->dotify(); $$ = node; }
+	| postfix_expression '[' expression ']'  { Node * node = create_non_term("postfix_expression"); node->add_children($1,$2,$3,$4); node->dotify(); $$ = node; }
+	| postfix_expression '(' ')'  { Node * node = create_non_term("postfix_expression"); node->add_children($1,$2,$3); node->dotify(); $$ = node; }
+	| postfix_expression '(' argument_expression_list ')'  { Node * node = create_non_term("postfix_expression"); node->add_children($1,$2,$3,$4); node->dotify(); $$ = node; }
+	| postfix_expression '.' IDENTIFIER  { Node * node = create_non_term("postfix_expression"); node->add_children($1,$2,$3); node->dotify(); $$ = node; }
+	| postfix_expression PTR_OP IDENTIFIER  { Node * node = create_non_term("postfix_expression"); node->add_children($1,$2,$3); node->dotify(); $$ = node; }
+	| postfix_expression INC_OP  { Node * node = create_non_term("postfix_expression"); node->add_children($1,$2); node->dotify(); $$ = node; }
+	| postfix_expression DEC_OP  { Node * node = create_non_term("postfix_expression"); node->add_children($1,$2); node->dotify(); $$ = node; }
 	;
 
 argument_expression_list
-	: assignment_expression
-	| argument_expression_list ',' assignment_expression
+	: assignment_expression  { Node * node = create_non_term("argument_expression_list"); node->add_child($1); node->dotify(); $$ = node; }
+	| argument_expression_list ',' assignment_expression  { Node * node = create_non_term("argument_expression_list"); node->add_children($1,$2,$3); node->dotify(); $$ = node; }
 	;
 
 unary_expression
@@ -420,8 +442,8 @@ function_definition
 extern char yytext[];
 extern int column;
 
-yyerror(s)
-char *s;
+void yyerror(const char *s)
+//char *s;
 {
 	fflush(stdout);
 	printf("\n%*s\n%*s\n", column, "^", column, s);
