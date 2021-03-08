@@ -12,3 +12,6 @@ inc/*.swp
 
 tests/*.vscode
 tests/*.swp
+
+etc/*
+scripts/*
