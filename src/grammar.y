@@ -50,14 +50,14 @@
 %%
 
 primary_expression
-	: IDENTIFIER	{ $$ = create_non_term("primary_expression", $1); } 
-	| CONSTANT	{ $$ = create_non_term("primary_expression", $1); } 
-	| STRING_LITERAL	{ $$ = create_non_term("primary_expression", $1); } 
+	: IDENTIFIER	{ $$ = $1; } 
+	| CONSTANT	{ $$ = $1; } 
+	| STRING_LITERAL	{ $$ = $1; } 
 	| '(' expression ')'	{ $$ = create_non_term("primary_expression", $1, $2, $3); } 
 	;
 
 postfix_expression
-	: primary_expression	{ $$ = create_non_term("postfix_expression", $1); } 
+	: primary_expression	{ $$ = $1; } 
 	| postfix_expression '[' expression ']'	{ $$ = create_non_term("postfix_expression", $1, $2, $3, $4); } 
 	| postfix_expression '(' ')'	{ $$ = create_non_term("postfix_expression", $1, $2, $3); } 
 	| postfix_expression '(' argument_expression_list ')'	{ $$ = create_non_term("postfix_expression", $1, $2, $3, $4); } 
@@ -73,7 +73,7 @@ argument_expression_list
 	;
 
 unary_expression
-	: postfix_expression	{ $$ = create_non_term("unary_expression", $1); } 
+	: postfix_expression	{ $$ = $1; } 
 	| INC_OP unary_expression	{ $$ = create_non_term("unary_expression", $1, $2); } 
 	| DEC_OP unary_expression	{ $$ = create_non_term("unary_expression", $1, $2); } 
 	| unary_operator cast_expression	{ $$ = create_non_term("unary_expression", $1, $2); } 
@@ -91,31 +91,31 @@ unary_operator
 	;
 
 cast_expression
-	: unary_expression	{ $$ = create_non_term("cast_expression", $1); }
+	: unary_expression	{ $$ = $1; }
 	| '(' type_name ')' cast_expression	{ $$ = create_non_term("cast_expression", $1, $2, $3); }
 	;
 
 multiplicative_expression
-	: cast_expression	{ $$ = create_non_term("multiplicative_expression", $1); }
+	: cast_expression	{ $$ = $1; }
 	| multiplicative_expression '*' cast_expression	{ $$ = create_non_term("multiplicative_expression", $1, $2, $3); }
 	| multiplicative_expression '/' cast_expression	{ $$ = create_non_term("multiplicative_expression", $1, $2, $3); }
 	| multiplicative_expression '%' cast_expression	{ $$ = create_non_term("multiplicative_expression", $1, $2, $3); }
 	;
 
 additive_expression
-	: multiplicative_expression	{ $$ = create_non_term("additive_expression", $1); }
+	: multiplicative_expression	{ $$ = $1; }
 	| additive_expression '+' multiplicative_expression	{ $$ = create_non_term("additive_expression", $1, $2, $3); }
 	| additive_expression '-' multiplicative_expression	{ $$ = create_non_term("additive_expression", $1, $2, $3); }
 	;
 
 shift_expression
-	: additive_expression	{ $$ = create_non_term("shift_expression", $1); }
+	: additive_expression	{ $$ = $1; }
 	| shift_expression LEFT_OP additive_expression	{ $$ = create_non_term("shift_expression", $1, $2, $3); }
 	| shift_expression RIGHT_OP additive_expression	{ $$ = create_non_term("shift_expression", $1, $2, $3); }
 	;
 
 relational_expression
-	: shift_expression	{ $$ = create_non_term("relational_expression", $1); }
+	: shift_expression	{ $$ = $1; }
 	| relational_expression '<' shift_expression	{ $$ = create_non_term("relational_expression", $1, $2, $3); }
 	| relational_expression '>' shift_expression	{ $$ = create_non_term("relational_expression", $1, $2, $3); }
 	| relational_expression LE_OP shift_expression	{ $$ = create_non_term("relational_expression", $1, $2, $3); }
@@ -123,43 +123,43 @@ relational_expression
 	;
 
 equality_expression
-	: relational_expression	{ $$ = create_non_term("equality_expression", $1); }
+	: relational_expression	{ $$ = $1; }
 	| equality_expression EQ_OP relational_expression	{ $$ = create_non_term("equality_expression", $1, $2, $3); }
 	| equality_expression NE_OP relational_expression	{ $$ = create_non_term("equality_expression", $1, $2, $3); }
 	;
 
 and_expression
-	: equality_expression	{ $$ = create_non_term("and_expression", $1); }
+	: equality_expression	{ $$ = $1; }
 	| and_expression '&' equality_expression	{ $$ = create_non_term("and_expression", $1, $2, $3); }
 	;
 
 exclusive_or_expression
-	: and_expression	{ $$ = create_non_term("exclusive_or_expression", $1); }
+	: and_expression	{ $$ = $1; }
 	| exclusive_or_expression '^' and_expression	{ $$ = create_non_term("exclusive_or_expression", $1, $2, $3); }
 	;
 
 inclusive_or_expression
-	: exclusive_or_expression	{ $$ = create_non_term("inclusive_or_expression", $1); }
+	: exclusive_or_expression	{ $$ = $1; }
 	| inclusive_or_expression '|' exclusive_or_expression	{ $$ = create_non_term("inclusive_or_expression", $1, $2, $3); }
 	;
 
 logical_and_expression
-	: inclusive_or_expression	{ $$ = create_non_term("logical_and_expression", $1); }
+	: inclusive_or_expression	{ $$ = $1; }
 	| logical_and_expression AND_OP inclusive_or_expression	{ $$ = create_non_term("logical_and_expression", $1, $2, $3); }
 	;
 
 logical_or_expression
-	: logical_and_expression	{ $$ = create_non_term("logical_or_expression", $1); }
+	: logical_and_expression	{ $$ = $1; }
 	| logical_or_expression OR_OP logical_and_expression	{ $$ = create_non_term("logical_or_expression", $1, $2, $3); }
 	;
 
 conditional_expression
-	: logical_or_expression	 { $$ = create_non_term("conditional_expression", $1); }
+	: logical_or_expression	 { $$ = $1; }
 	| logical_or_expression '?' expression ':' conditional_expression	{ $$ = create_non_term("conditional_expression", $1, $2, $3, $4, $5); }
 	;
 
 assignment_expression
-	: conditional_expression					 { $$ = create_non_term("assignment_expression", $1); }
+	: conditional_expression					 { $$ = $1; }
 	| unary_expression assignment_operator assignment_expression	 { $$ = create_non_term("assignment_expression", $1, $2, $3); }
 	;
 
@@ -183,7 +183,7 @@ expression
 	;
 
 constant_expression
-	: conditional_expression	 { $$ = create_non_term("constant_expression", $1); }
+	: conditional_expression	 { $$ = $1; }
 	;
 
 declaration
