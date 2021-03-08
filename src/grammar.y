@@ -13,12 +13,13 @@
 }
 
 
-%token <node> '(' ')' '[' ']' '.' ','
 
+%token <node> '(' ')' '[' ']' '.' ',' '+' '-' '!' '&' '*' '~' '/' '%'
+%token <node> '<' '>' '^' '|' ':' '?'
 
 %token <node> IDENTIFIER CONSTANT STRING_LITERAL SIZEOF
 %token <node> PTR_OP INC_OP DEC_OP LEFT_OP RIGHT_OP LE_OP GE_OP EQ_OP NE_OP
-%token AND_OP OR_OP MUL_ASSIGN DIV_ASSIGN MOD_ASSIGN ADD_ASSIGN
+%token <node> AND_OP OR_OP MUL_ASSIGN DIV_ASSIGN MOD_ASSIGN ADD_ASSIGN
 %token SUB_ASSIGN LEFT_ASSIGN RIGHT_ASSIGN AND_ASSIGN
 %token XOR_ASSIGN OR_ASSIGN TYPE_NAME
 
@@ -29,119 +30,123 @@
 %token CASE DEFAULT IF ELSE SWITCH WHILE DO FOR GOTO CONTINUE BREAK RETURN
 
 
-%type <node> primary_expression postfix_expression expression argument_expression_list assignment_expression
+%type <node> primary_expression postfix_expression expression argument_expression_list assignment_expression unary_expression cast_expression
+%type <node> conditional_expression multiplicative_expression additive_expression shift_expression relational_expression
+%type <node> equality_expression and_expression exclusive_or_expression inclusive_or_expression logical_or_expression logical_and_expression
+%type <node> unary_operator
+%type <node> type_name
 
 
 %start translation_unit
 %%
 
 primary_expression
-	: IDENTIFIER  { Node * node = create_non_term("primary_expression"); node->add_child($1); node->dotify(); $$ = node; }
-	| CONSTANT   { Node * node = create_non_term("primary_expression"); node->add_child($1); node->dotify(); $$ = node; }
-	| STRING_LITERAL  { Node * node = create_non_term("primary_expression"); node->add_child($1); node->dotify(); $$ = node; }
-	| '(' expression ')'  { Node * node = create_non_term("primary_expression"); node->add_children($1,$2,$3); node->dotify(); $$ = node; }
+	: IDENTIFIER	{ $$ = create_non_term("primary_expression", $1); } 
+	| CONSTANT	{ $$ = create_non_term("primary_expression", $1); } 
+	| STRING_LITERAL	{ $$ = create_non_term("primary_expression", $1); } 
+	| '(' expression ')'	{ $$ = create_non_term("primary_expression", $1, $2, $3); } 
 	;
 
 postfix_expression
-	: primary_expression  { Node * node = create_non_term("postfix_expression"); node->add_child($1); node->dotify(); $$ = node; }
-	| postfix_expression '[' expression ']'  { Node * node = create_non_term("postfix_expression"); node->add_children($1,$2,$3,$4); node->dotify(); $$ = node; }
-	| postfix_expression '(' ')'  { Node * node = create_non_term("postfix_expression"); node->add_children($1,$2,$3); node->dotify(); $$ = node; }
-	| postfix_expression '(' argument_expression_list ')'  { Node * node = create_non_term("postfix_expression"); node->add_children($1,$2,$3,$4); node->dotify(); $$ = node; }
-	| postfix_expression '.' IDENTIFIER  { Node * node = create_non_term("postfix_expression"); node->add_children($1,$2,$3); node->dotify(); $$ = node; }
-	| postfix_expression PTR_OP IDENTIFIER  { Node * node = create_non_term("postfix_expression"); node->add_children($1,$2,$3); node->dotify(); $$ = node; }
-	| postfix_expression INC_OP  { Node * node = create_non_term("postfix_expression"); node->add_children($1,$2); node->dotify(); $$ = node; }
-	| postfix_expression DEC_OP  { Node * node = create_non_term("postfix_expression"); node->add_children($1,$2); node->dotify(); $$ = node; }
+	: primary_expression	{ $$ = create_non_term("postfix_expression", $1); } 
+	| postfix_expression '[' expression ']'	{ $$ = create_non_term("postfix_expression", $1, $2, $3, $4); } 
+	| postfix_expression '(' ')'	{ $$ = create_non_term("postfix_expression", $1, $2, $3); } 
+	| postfix_expression '(' argument_expression_list ')'	{ $$ = create_non_term("postfix_expression", $1, $2, $3, $4); } 
+	| postfix_expression '.' IDENTIFIER	{ $$ = create_non_term("postfix_expression", $1, $2, $3); } 
+	| postfix_expression PTR_OP IDENTIFIER	{ $$ = create_non_term("postfix_expression", $1, $2, $3); } 
+	| postfix_expression INC_OP	{ $$ = create_non_term("postfix_expression", $1, $2); } 
+	| postfix_expression DEC_OP	{ $$ = create_non_term("postfix_expression", $1, $2); } 
 	;
 
 argument_expression_list
-	: assignment_expression  { Node * node = create_non_term("argument_expression_list"); node->add_child($1); node->dotify(); $$ = node; }
-	| argument_expression_list ',' assignment_expression  { Node * node = create_non_term("argument_expression_list"); node->add_children($1,$2,$3); node->dotify(); $$ = node; }
+	: assignment_expression	{ $$ = create_non_term("assignment_expression_list", $1); } 
+	| argument_expression_list ',' assignment_expression	{ $$ = create_non_term("assignment_expression_list", $1, $2, $3); } 
 	;
 
 unary_expression
-	: postfix_expression
-	| INC_OP unary_expression
-	| DEC_OP unary_expression
-	| unary_operator cast_expression
-	| SIZEOF unary_expression
-	| SIZEOF '(' type_name ')'
+	: postfix_expression	{ $$ = create_non_term("unary_expression", $1); } 
+	| INC_OP unary_expression	{ $$ = create_non_term("unary_expression", $1, $2); } 
+	| DEC_OP unary_expression	{ $$ = create_non_term("unary_expression", $1, $2); } 
+	| unary_operator cast_expression	{ $$ = create_non_term("unary_expression", $1, $2); } 
+	| SIZEOF unary_expression	{ $$ = create_non_term("unary_expression", $1, $2); } 
+	| SIZEOF '(' type_name ')'	{ $$ = create_non_term("unary_expression", $1, $2, $3, $4); } 
 	;
 
 unary_operator
-	: '&'
-	| '*'
-	| '+'
-	| '-'
-	| '~'
-	| '!'
+	: '&'	{ $$ = create_non_term("unary_operator", $1); }
+	| '*'	{ $$ = create_non_term("unary_operator", $1); }
+	| '+'	{ $$ = create_non_term("unary_operator", $1); }
+	| '-'	{ $$ = create_non_term("unary_operator", $1); }
+	| '~'	{ $$ = create_non_term("unary_operator", $1); }
+	| '!'	{ $$ = create_non_term("unary_operator", $1); }
 	;
 
 cast_expression
-	: unary_expression
-	| '(' type_name ')' cast_expression
+	: unary_expression	{ $$ = create_non_term("cast_expression", $1); }
+	| '(' type_name ')' cast_expression	{ $$ = create_non_term("cast_expression", $1, $2, $3); }
 	;
 
 multiplicative_expression
-	: cast_expression
-	| multiplicative_expression '*' cast_expression
-	| multiplicative_expression '/' cast_expression
-	| multiplicative_expression '%' cast_expression
+	: cast_expression	{ $$ = create_non_term("multiplicative_expression", $1); }
+	| multiplicative_expression '*' cast_expression	{ $$ = create_non_term("multiplicative_expression", $1, $2, $3); }
+	| multiplicative_expression '/' cast_expression	{ $$ = create_non_term("multiplicative_expression", $1, $2, $3); }
+	| multiplicative_expression '%' cast_expression	{ $$ = create_non_term("multiplicative_expression", $1, $2, $3); }
 	;
 
 additive_expression
-	: multiplicative_expression
-	| additive_expression '+' multiplicative_expression
-	| additive_expression '-' multiplicative_expression
+	: multiplicative_expression	{ $$ = create_non_term("additive_expression", $1); }
+	| additive_expression '+' multiplicative_expression	{ $$ = create_non_term("additive_expression", $1, $2, $3); }
+	| additive_expression '-' multiplicative_expression	{ $$ = create_non_term("additive_expression", $1, $2, $3); }
 	;
 
 shift_expression
-	: additive_expression
-	| shift_expression LEFT_OP additive_expression
-	| shift_expression RIGHT_OP additive_expression
+	: additive_expression	{ $$ = create_non_term("shift_expression", $1); }
+	| shift_expression LEFT_OP additive_expression	{ $$ = create_non_term("shift_expression", $1, $2, $3); }
+	| shift_expression RIGHT_OP additive_expression	{ $$ = create_non_term("shift_expression", $1, $2, $3); }
 	;
 
 relational_expression
-	: shift_expression
-	| relational_expression '<' shift_expression
-	| relational_expression '>' shift_expression
-	| relational_expression LE_OP shift_expression
-	| relational_expression GE_OP shift_expression
+	: shift_expression	{ $$ = create_non_term("relational_expression", $1); }
+	| relational_expression '<' shift_expression	{ $$ = create_non_term("relational_expression", $1, $2, $3); }
+	| relational_expression '>' shift_expression	{ $$ = create_non_term("relational_expression", $1, $2, $3); }
+	| relational_expression LE_OP shift_expression	{ $$ = create_non_term("relational_expression", $1, $2, $3); }
+	| relational_expression GE_OP shift_expression	{ $$ = create_non_term("relational_expression", $1, $2, $3); }
 	;
 
 equality_expression
-	: relational_expression
-	| equality_expression EQ_OP relational_expression
-	| equality_expression NE_OP relational_expression
+	: relational_expression	{ $$ = create_non_term("equality_expression", $1); }
+	| equality_expression EQ_OP relational_expression	{ $$ = create_non_term("equality_expression", $1, $2, $3); }
+	| equality_expression NE_OP relational_expression	{ $$ = create_non_term("equality_expression", $1, $2, $3); }
 	;
 
 and_expression
-	: equality_expression
-	| and_expression '&' equality_expression
+	: equality_expression	{ $$ = create_non_term("and_expression", $1); }
+	| and_expression '&' equality_expression	{ $$ = create_non_term("and_expression", $1, $2, $3); }
 	;
 
 exclusive_or_expression
-	: and_expression
-	| exclusive_or_expression '^' and_expression
+	: and_expression	{ $$ = create_non_term("exclusive_or_expression", $1); }
+	| exclusive_or_expression '^' and_expression	{ $$ = create_non_term("exclusive_or_expression", $1, $2, $3); }
 	;
 
 inclusive_or_expression
-	: exclusive_or_expression
-	| inclusive_or_expression '|' exclusive_or_expression
+	: exclusive_or_expression	{ $$ = create_non_term("inclusive_or_expression", $1); }
+	| inclusive_or_expression '|' exclusive_or_expression	{ $$ = create_non_term("inclusive_or_expression", $1, $2, $3); }
 	;
 
 logical_and_expression
-	: inclusive_or_expression
-	| logical_and_expression AND_OP inclusive_or_expression
+	: inclusive_or_expression	{ $$ = create_non_term("logical_and_expression", $1); }
+	| logical_and_expression AND_OP inclusive_or_expression	{ $$ = create_non_term("logical_and_expression", $1, $2, $3); }
 	;
 
 logical_or_expression
-	: logical_and_expression
-	| logical_or_expression OR_OP logical_and_expression
+	: logical_and_expression	{ $$ = create_non_term("logical_or_expression", $1); }
+	| logical_or_expression OR_OP logical_and_expression	{ $$ = create_non_term("logical_or_expression", $1, $2, $3); }
 	;
 
 conditional_expression
-	: logical_or_expression
-	| logical_or_expression '?' expression ':' conditional_expression
+	: logical_or_expression	 { $$ = create_non_term("conditional_expression", $1); }
+	| logical_or_expression '?' expression ':' conditional_expression	{ $$ = create_non_term("conditional_expression", $1, $2, $3, $4, $5); }
 	;
 
 assignment_expression

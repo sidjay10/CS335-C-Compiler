@@ -94,3 +94,57 @@ Node * create_non_term(const char* name) {
 	return node;
 }
 
+Node * create_non_term(const char* name, Node* node1, Node* node2, Node* node3, Node* node4, Node* node5, Node* node6, Node* node7) {
+	Non_Terminal * node = new Non_Terminal(name);
+	node->add_children(node1, node2, node3, node4);
+	node->add_children(node5, node6, node7);
+	node->dotify();
+	return node;
+}
+
+Node * create_non_term(const char* name, Node* node1, Node* node2, Node* node3, Node* node4, Node* node5, Node* node6) {
+	Non_Terminal * node = new Non_Terminal(name);
+	node->add_children(node1, node2, node3, node4);
+	node->add_children(node5, node6);
+	node->dotify();
+	return node;
+}
+
+Node * create_non_term(const char* name, Node* node1, Node* node2, Node* node3, Node* node4, Node* node5) {
+	Non_Terminal * node = new Non_Terminal(name);
+	node->add_children(node1, node2, node3);
+	node->add_children(node4, node5);
+	node->dotify();
+	return node;
+}
+
+
+
+
+Node * create_non_term(const char* name, Node* node1, Node* node2, Node* node3, Node* node4) {
+	Non_Terminal * node = new Non_Terminal(name);
+	node->add_children(node1, node2, node3, node4);
+	node->dotify();
+	return node;
+}
+
+Node * create_non_term(const char* name, Node* node1, Node* node2, Node* node3) {
+	Non_Terminal * node = new Non_Terminal(name);
+	node->add_children(node1, node2, node3);
+	node->dotify();
+	return node;
+}
+
+Node * create_non_term(const char* name, Node* node1, Node* node2) {
+	Non_Terminal * node = new Non_Terminal(name);
+	node->add_children(node1, node2);
+	node->dotify();
+	return node;
+}
+
+Node * create_non_term(const char* name, Node* node1) {
+	Non_Terminal * node = new Non_Terminal(name);
+	node->add_child(node1);
+	node->dotify();
+	return node;
+}

@@ -45,4 +45,11 @@ class Non_Terminal : public Node {
 unsigned long long int get_next_node_id();
 Node * create_terminal(const char * name, const char * value);
 Node * create_non_term(const char * name);
+Node * create_non_term(const char* name, Node* node1, Node* node2, Node* node3, Node* node4, Node* node5, Node* node6, Node* node7);
+Node * create_non_term(const char* name, Node* node1, Node* node2, Node* node3, Node* node4, Node* node5, Node* node6);
+Node * create_non_term(const char* name, Node* node1, Node* node2, Node* node3, Node* node4, Node* node5);
+Node * create_non_term(const char* name, Node* node1, Node* node2, Node* node3, Node* node4);
+Node * create_non_term(const char* name, Node* node1, Node* node2, Node* node3);
+Node * create_non_term(const char* name, Node* node1, Node* node2);
+Node * create_non_term(const char* name, Node* node1);
 #endif
