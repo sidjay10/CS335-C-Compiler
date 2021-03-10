@@ -9,7 +9,7 @@ Use "make" in the code repository:
 make
 
 In general, to build any specific target binary : 
-make <target>
+make <target_command>
 
 To clear the binaries and compiled source : 
 make clean
