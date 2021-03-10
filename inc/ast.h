@@ -13,6 +13,7 @@ inline bool instanceof(const T*) {
 class Node {
 	public:
 		unsigned long long int id;
+		int is_printed = 1;
 
 		virtual void dotify() = 0;
 		virtual void add_child(Node * node);
