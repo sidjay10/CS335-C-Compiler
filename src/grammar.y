@@ -77,7 +77,7 @@ unary_expression
 	: postfix_expression	{ $$ = $1; } 
 	| INC_OP unary_expression	{ $$ = create_non_term("PRE INCREMENT", $2); } 
 	| DEC_OP unary_expression	{ $$ = create_non_term("PRE DECREMENT", $2); } 
-	| unary_operator cast_expression	{ $1->add_child($2); $1->dotify(); $$ = $1; } 
+	| unary_operator cast_expression	{ $1->add_child($2); $$ = $1; } 
 	| SIZEOF unary_expression	{ $$ = create_non_term("SIZEOF unary_expr", $2); } 
 	| SIZEOF '(' type_name ')'	{ $$ = create_non_term("SIZEOF type_name", $3); } 
 	;
@@ -161,7 +161,7 @@ conditional_expression
 
 assignment_expression
 	: conditional_expression					 { $$ = $1; }
-	| unary_expression assignment_operator assignment_expression	 { $2->add_children($1,$3); $2->dotify(); $$ = $2;}
+	| unary_expression assignment_operator assignment_expression	 { $2->add_children($1,$3); $$ = $2;}
 	;
 
 assignment_operator
@@ -235,9 +235,9 @@ type_specifier
 	;
 
 struct_or_union_specifier
-	:  struct_or_union IDENTIFIER '{' struct_declaration_list '}'	 { $1->add_children(create_terminal("IDENTIFIER",NULL), $4); $1->dotify(); $$ = $1; }
-	|  struct_or_union '{' struct_declaration_list '}'	 { $1->add_child($3); $1->dotify(); $$ = $1; }
-	|  struct_or_union IDENTIFIER	 { $1->add_child(create_terminal("IDENTIFIER",NULL)); $1->dotify(); $$ = $1; }
+	:  struct_or_union IDENTIFIER '{' struct_declaration_list '}'	 { $1->add_children(create_terminal("IDENTIFIER",NULL), $4); $$ = $1; }
+	|  struct_or_union '{' struct_declaration_list '}'	 { $1->add_child($3); $$ = $1; }
+	|  struct_or_union IDENTIFIER	 { $1->add_child(create_terminal("IDENTIFIER",NULL)); $$ = $1; }
 	;
 
 struct_or_union
