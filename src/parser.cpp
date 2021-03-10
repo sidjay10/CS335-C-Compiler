@@ -50,6 +50,15 @@ int main(int argc, char *argv[]) {
 
   return 0;
 }
+void dump_ast(Node *root){
+	root->dotify();
+	if(instanceof<Non_Terminal>(root)){
+		Non_Terminal *n = static_cast<Non_Terminal *>(root);
+		for(auto i : n->children){
+			dump_ast(i);
+		}
+	}
+}
 
 void file_writer(std::string s){
 	dot_file << s;
