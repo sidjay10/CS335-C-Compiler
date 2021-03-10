@@ -3,6 +3,7 @@
 
 #include <string>
 #include <vector>
+#include <fstream>
 
 class Node {
 	public:
@@ -52,4 +53,7 @@ Node * create_non_term(const char* name, Node* node1, Node* node2, Node* node3, 
 Node * create_non_term(const char* name, Node* node1, Node* node2, Node* node3);
 Node * create_non_term(const char* name, Node* node1, Node* node2);
 Node * create_non_term(const char* name, Node* node1);
+
+void file_writer(std::string s);
+
 #endif

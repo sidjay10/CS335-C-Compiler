@@ -1,8 +1,8 @@
 build/*
 bin/*
 
-.*.vscode
-.*.swp
+.vscode
+*.swp
 
 src/*.vscode
 src/*.swp

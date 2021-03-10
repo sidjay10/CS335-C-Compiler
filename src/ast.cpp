@@ -47,7 +47,7 @@ void Node::add_children (Node * node1, Node * node2, Node * node3, Node * node4)
 void Terminal:: dotify () {
 	std::stringstream ss;
 	ss << "\t" << id << " [label=\"" << name << "\"];\n";
-	std::cout << ss.str();
+	file_writer(ss.str());
 }
 void Non_Terminal:: dotify () {
 	std::stringstream ss;
@@ -56,7 +56,7 @@ void Non_Terminal:: dotify () {
 		ss << "\t" << id << " -> " << (*it)->id << ";\n";
 	}
 
-	std::cout << ss.str();
+	file_writer(ss.str());
 }
 
 void Non_Terminal::add_child (Node * node) {

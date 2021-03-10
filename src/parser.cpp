@@ -13,19 +13,30 @@ extern FILE *yyout;
 
 TOKEN_DATA token_data;
 
+static std::ofstream dot_file;
+
 int main(int argc, char *argv[]) {
   FILE *fh;
   FILE *fo;
-  if (argc == 2 && (fh = fopen(argv[1], "r")))
-    yyin = fh;
-  if (argc == 3 && (fo = fopen(argv[2], "w+")))
-    yyout = fo;
 
+  if (argc != 4){
+	  std::cout << "Incorrect usage. Usage : ./bin/parser <file>.c -o <file>.dot";
+  }
+  if ((fh = fopen(argv[1], "r"))){
+  	yyin = fh;
+  }
+  else{
+	  std::cout << "Input file does not exist!";
+	  exit(0);
+  }
+
+  	// std::ofstream outfile(argv[3]);
+  	dot_file.open(argv[3]); // = outfile;
 
 	std::stringstream ss;
 	ss << "digraph G {\n";
 	ss << "\tordering=out\n";
-	std::cout << ss.str();
+	dot_file << ss.str();
 
 	int abc = yyparse();
 	
@@ -33,8 +44,13 @@ int main(int argc, char *argv[]) {
 	
 	ss.str("");
 	ss << "}\n";
-	std::cout << ss.str();
+	dot_file << ss.str();
+
+	dot_file.close();
 
   return 0;
 }
 
+void file_writer(std::string s){
+	dot_file << s;
+}

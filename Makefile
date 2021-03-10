@@ -22,7 +22,8 @@ PATTERNS=$(SRCDIR)/patterns.l
 GRAMMAR=$(SRCDIR)/grammar.y
 
 # FLAGS
-CFLAGS = -g -Wall
+CFLAGS = -g -Wall -D_CC
+CXXFLAGS = -g -Wall -D_CXX
 ##LFLAGS
 YFLAGS = -d
 LDFLAGS = -lfl
@@ -31,13 +32,13 @@ INCFLAGS = $(addprefix -I, $(INCDIR))
 all: $(TARGET)
 
 
-#scanner: grammar patterns
-#	@mkdir -p $(TARGETDIR)
-#	$(CC) $(CFLAGS) $(LDFLAGS) $(INCFLAGS) $(BUILDDIR)/lex.yy.c $(BUILDDIR)/y.tab.c $(SRCDIR)/scanner.c -o $(TARGETDIR)/scanner  
+# scanner: grammar patterns
+# 	@mkdir -p $(TARGETDIR)
+# 	$(CC) $(CFLAGS) $(LDFLAGS) $(INCFLAGS) $(BUILDDIR)/lex.yy.c $(BUILDDIR)/y.tab.c $(SRCDIR)/scanner.c -o $(TARGETDIR)/scanner  
 
 parser: grammar patterns
 	@mkdir -p $(TARGETDIR)
-	$(CXX) $(CFLAGS) $(LDFLAGS) $(INCFLAGS) $(BUILDDIR)/lex.yy.c $(BUILDDIR)/y.tab.c $(SRCDIR)/parser.cpp $(SRCDIR)/ast.cpp -o $(TARGETDIR)/parser 
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) $(INCFLAGS) $(BUILDDIR)/lex.yy.c $(BUILDDIR)/y.tab.c $(SRCDIR)/parser.cpp $(SRCDIR)/ast.cpp -o $(TARGETDIR)/parser 
 
 
 grammar:
