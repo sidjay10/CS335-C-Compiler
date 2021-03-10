@@ -13,15 +13,9 @@ make <target>
 To clear the binaries and compiled source :
 make clean
 
-## Milestone 1
+Usage for Milestone 1:
+./bin/scanner <path_to_file>
 
-Usage:
-./bin/scanner <path_to_c_file>
+Usage for Milestone 2:
+./bin/parser <path_to_file> -o <file_name>.dot
 
-## Milestone 2
-
-Usage:
-./bin/parser <path_to_c_file> -o <file_name>.dot
-
-AST 
-dot -Tps <file_name>.dot -o <file_name>.ps
