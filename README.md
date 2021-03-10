@@ -2,7 +2,7 @@
 
 This repository contains our project for CS335, the course on Compiler Design at IIT Kanpur for the Spring semester 2021.
 
-We build the compiler in stages.
+We build the compiler in stages. Currently two stages have been completed.
 
 ## Building the Project 
 
