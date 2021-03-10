@@ -50,136 +50,136 @@
 %%
 
 primary_expression
-	: IDENTIFIER	{ $$ = $1; } 
-	| CONSTANT	{ $$ = $1; } 
-	| STRING_LITERAL	{ $$ = $1; } 
-	| '(' expression ')'	{ $$ = create_non_term("primary_expression", $1, $2, $3); } 
+	: IDENTIFIER	{ $$ = create_terminal("IDENTIFIER", NULL); } 
+	| CONSTANT	{ $$ = create_terminal("CONSTANT", NULL); } 
+	| STRING_LITERAL	{ $$ = create_terminal("STRING_LITERAL", NULL); } 
+	| '(' expression ')'	{ $$ = $2; } 
 	;
 
 postfix_expression
 	: primary_expression	{ $$ = $1; } 
-	| postfix_expression '[' expression ']'	{ $$ = create_non_term("postfix_expression", $1, $2, $3, $4); } 
-	| postfix_expression '(' ')'	{ $$ = create_non_term("postfix_expression", $1, $2, $3); } 
-	| postfix_expression '(' argument_expression_list ')'	{ $$ = create_non_term("postfix_expression", $1, $2, $3, $4); } 
-	| postfix_expression '.' IDENTIFIER	{ $$ = create_non_term("postfix_expression", $1, $2, $3); } 
-	| postfix_expression PTR_OP IDENTIFIER	{ $$ = create_non_term("postfix_expression", $1, $2, $3); } 
-	| postfix_expression INC_OP	{ $$ = create_non_term("postfix_expression", $1, $2); } 
-	| postfix_expression DEC_OP	{ $$ = create_non_term("postfix_expression", $1, $2); } 
+	| postfix_expression '[' expression ']'	{ $$ = create_non_term("[]", $1, $3); } 
+	| postfix_expression '(' ')'	{ $$ = create_non_term("FUNCTION_CALL", $1); } 
+	| postfix_expression '(' argument_expression_list ')'	{ $$ = create_non_term("FUNCTION_CALL_ARGS", $1, $3); } 
+	| postfix_expression '.' IDENTIFIER	{ $$ = create_non_term(".", $1, create_terminal("IDENTIFIER",NULL)); } 
+	| postfix_expression PTR_OP IDENTIFIER	{ $$ = create_non_term("->", $1, create_terminal("IDENTIFIER",NULL)); } 
+	| postfix_expression INC_OP	{ $$ = create_non_term("POST INCREMENT", $1); } 
+	| postfix_expression DEC_OP	{ $$ = create_non_term("POST DECREMENT", $1); } 
 	;
 
 argument_expression_list
-	: assignment_expression	{ $$ = create_non_term("assignment_expression_list", $1); } 
-	| argument_expression_list ',' assignment_expression	{ $$ = create_non_term("assignment_expression_list", $1, $2, $3); } 
+	: assignment_expression	{ $$ = create_non_term("assignment_expression", $1); } 
+	| argument_expression_list ',' assignment_expression	{ $$ = create_non_term("assignment_expression_list", $1, $3); } 
 	;
 
 unary_expression
 	: postfix_expression	{ $$ = $1; } 
-	| INC_OP unary_expression	{ $$ = create_non_term("unary_expression", $1, $2); } 
-	| DEC_OP unary_expression	{ $$ = create_non_term("unary_expression", $1, $2); } 
-	| unary_operator cast_expression	{ $$ = create_non_term("unary_expression", $1, $2); } 
-	| SIZEOF unary_expression	{ $$ = create_non_term("unary_expression", $1, $2); } 
-	| SIZEOF '(' type_name ')'	{ $$ = create_non_term("unary_expression", $1, $2, $3, $4); } 
+	| INC_OP unary_expression	{ $$ = create_non_term("PRE INCREMENT", $2); } 
+	| DEC_OP unary_expression	{ $$ = create_non_term("PRE DECREMENT", $2); } 
+	| unary_operator cast_expression	{ $1->add_child($2); $1->dotify(); $$ = $1; } 
+	| SIZEOF unary_expression	{ $$ = create_non_term("SIZEOF unary_expr", $2); } 
+	| SIZEOF '(' type_name ')'	{ $$ = create_non_term("SIZEOF type_name", $3); } 
 	;
 
 unary_operator
-	: '&'	{ $$ = create_non_term("unary_operator", $1); }
-	| '*'	{ $$ = create_non_term("unary_operator", $1); }
-	| '+'	{ $$ = create_non_term("unary_operator", $1); }
-	| '-'	{ $$ = create_non_term("unary_operator", $1); }
-	| '~'	{ $$ = create_non_term("unary_operator", $1); }
-	| '!'	{ $$ = create_non_term("unary_operator", $1); }
+	: '&'	{ $$ = create_non_term("UNARY &"); }
+	| '*'	{ $$ = create_non_term("UNARY *"); }
+	| '+'	{ $$ = create_non_term("UNARY +"); }
+	| '-'	{ $$ = create_non_term("UNARY -"); }
+	| '~'	{ $$ = create_non_term("UNARY ~"); }
+	| '!'	{ $$ = create_non_term("UNARY !"); }
 	;
 
 cast_expression
 	: unary_expression	{ $$ = $1; }
-	| '(' type_name ')' cast_expression	{ $$ = create_non_term("cast_expression", $1, $2, $3); }
+	| '(' type_name ')' cast_expression	{ $$ = create_non_term("cast_expression", $2, $4); }
 	;
 
 multiplicative_expression
 	: cast_expression	{ $$ = $1; }
-	| multiplicative_expression '*' cast_expression	{ $$ = create_non_term("multiplicative_expression", $1, $2, $3); }
-	| multiplicative_expression '/' cast_expression	{ $$ = create_non_term("multiplicative_expression", $1, $2, $3); }
-	| multiplicative_expression '%' cast_expression	{ $$ = create_non_term("multiplicative_expression", $1, $2, $3); }
+	| multiplicative_expression '*' cast_expression	{ $$ = create_non_term("*", $1, $3); }
+	| multiplicative_expression '/' cast_expression	{ $$ = create_non_term("/", $1, $3); }
+	| multiplicative_expression '%' cast_expression	{ $$ = create_non_term("%", $1, $3); }
 	;
 
 additive_expression
 	: multiplicative_expression	{ $$ = $1; }
-	| additive_expression '+' multiplicative_expression	{ $$ = create_non_term("additive_expression", $1, $2, $3); }
-	| additive_expression '-' multiplicative_expression	{ $$ = create_non_term("additive_expression", $1, $2, $3); }
+	| additive_expression '+' multiplicative_expression	{ $$ = create_non_term("+", $1, $3); }
+	| additive_expression '-' multiplicative_expression	{ $$ = create_non_term("-", $1, $3); }
 	;
 
 shift_expression
 	: additive_expression	{ $$ = $1; }
-	| shift_expression LEFT_OP additive_expression	{ $$ = create_non_term("shift_expression", $1, $2, $3); }
-	| shift_expression RIGHT_OP additive_expression	{ $$ = create_non_term("shift_expression", $1, $2, $3); }
+	| shift_expression LEFT_OP additive_expression	{ $$ = create_non_term(">>", $1, $3); }
+	| shift_expression RIGHT_OP additive_expression	{ $$ = create_non_term("<<", $1, $3); }
 	;
 
 relational_expression
 	: shift_expression	{ $$ = $1; }
-	| relational_expression '<' shift_expression	{ $$ = create_non_term("relational_expression", $1, $2, $3); }
-	| relational_expression '>' shift_expression	{ $$ = create_non_term("relational_expression", $1, $2, $3); }
-	| relational_expression LE_OP shift_expression	{ $$ = create_non_term("relational_expression", $1, $2, $3); }
-	| relational_expression GE_OP shift_expression	{ $$ = create_non_term("relational_expression", $1, $2, $3); }
+	| relational_expression '<' shift_expression	{ $$ = create_non_term("<", $1, $3); }
+	| relational_expression '>' shift_expression	{ $$ = create_non_term(">", $1, $3); }
+	| relational_expression LE_OP shift_expression	{ $$ = create_non_term("<=", $1, $3); }
+	| relational_expression GE_OP shift_expression	{ $$ = create_non_term(">=", $1, $3); }
 	;
 
 equality_expression
 	: relational_expression	{ $$ = $1; }
-	| equality_expression EQ_OP relational_expression	{ $$ = create_non_term("equality_expression", $1, $2, $3); }
-	| equality_expression NE_OP relational_expression	{ $$ = create_non_term("equality_expression", $1, $2, $3); }
+	| equality_expression EQ_OP relational_expression	{ $$ = create_non_term("==", $1, $3); }
+	| equality_expression NE_OP relational_expression	{ $$ = create_non_term("!=", $1, $3); }
 	;
 
 and_expression
 	: equality_expression	{ $$ = $1; }
-	| and_expression '&' equality_expression	{ $$ = create_non_term("and_expression", $1, $2, $3); }
+	| and_expression '&' equality_expression	{ $$ = create_non_term("&", $1, $3); }
 	;
 
 exclusive_or_expression
 	: and_expression	{ $$ = $1; }
-	| exclusive_or_expression '^' and_expression	{ $$ = create_non_term("exclusive_or_expression", $1, $2, $3); }
+	| exclusive_or_expression '^' and_expression	{ $$ = create_non_term("^", $1, $3); }
 	;
 
 inclusive_or_expression
 	: exclusive_or_expression	{ $$ = $1; }
-	| inclusive_or_expression '|' exclusive_or_expression	{ $$ = create_non_term("inclusive_or_expression", $1, $2, $3); }
+	| inclusive_or_expression '|' exclusive_or_expression	{ $$ = create_non_term("|", $1, $3); }
 	;
 
 logical_and_expression
 	: inclusive_or_expression	{ $$ = $1; }
-	| logical_and_expression AND_OP inclusive_or_expression	{ $$ = create_non_term("logical_and_expression", $1, $2, $3); }
+	| logical_and_expression AND_OP inclusive_or_expression	{ $$ = create_non_term("&&", $1, $3); }
 	;
 
 logical_or_expression
 	: logical_and_expression	{ $$ = $1; }
-	| logical_or_expression OR_OP logical_and_expression	{ $$ = create_non_term("logical_or_expression", $1, $2, $3); }
+	| logical_or_expression OR_OP logical_and_expression	{ $$ = create_non_term("||", $1, $3); }
 	;
 
 conditional_expression
 	: logical_or_expression	 { $$ = $1; }
-	| logical_or_expression '?' expression ':' conditional_expression	{ $$ = create_non_term("conditional_expression", $1, $2, $3, $4, $5); }
+	| logical_or_expression '?' expression ':' conditional_expression	{ $$ = create_non_term("?:", $1, $3, $5); }
 	;
 
 assignment_expression
 	: conditional_expression					 { $$ = $1; }
-	| unary_expression assignment_operator assignment_expression	 { $$ = create_non_term("assignment_expression", $1, $2, $3); }
+	| unary_expression assignment_operator assignment_expression	 { $2->add_children($1,$3); $2->dotify(); $$ = $2;}
 	;
 
 assignment_operator
-	: '='		 { $$ = create_non_term("assignment_operator", $1); }
-	| MUL_ASSIGN	 { $$ = create_non_term("assignment_operator", $1); }
-	| DIV_ASSIGN	 { $$ = create_non_term("assignment_operator", $1); }
-	| MOD_ASSIGN	 { $$ = create_non_term("assignment_operator", $1); }
-	| ADD_ASSIGN	 { $$ = create_non_term("assignment_operator", $1); }
-	| SUB_ASSIGN	 { $$ = create_non_term("assignment_operator", $1); }
-	| LEFT_ASSIGN	 { $$ = create_non_term("assignment_operator", $1); }
-	| RIGHT_ASSIGN	 { $$ = create_non_term("assignment_operator", $1); }
-	| AND_ASSIGN	 { $$ = create_non_term("assignment_operator", $1); }
-	| XOR_ASSIGN	 { $$ = create_non_term("assignment_operator", $1); }
-	| OR_ASSIGN	 { $$ = create_non_term("assignment_operator", $1); }
+	: '='		 { $$ = create_non_term("="); }
+	| MUL_ASSIGN	 { $$ = create_non_term("*="); }
+	| DIV_ASSIGN	 { $$ = create_non_term("/="); }
+	| MOD_ASSIGN	 { $$ = create_non_term("%="); }
+	| ADD_ASSIGN	 { $$ = create_non_term("+="); }
+	| SUB_ASSIGN	 { $$ = create_non_term("-="); }
+	| LEFT_ASSIGN	 { $$ = create_non_term("<<="); }
+	| RIGHT_ASSIGN	 { $$ = create_non_term(">>="); }
+	| AND_ASSIGN	 { $$ = create_non_term("&="); }
+	| XOR_ASSIGN	 { $$ = create_non_term("^="); }
+	| OR_ASSIGN	 { $$ = create_non_term("|="); }
 	;
 
 expression
 	: assignment_expression	 { $$ = create_non_term("expression", $1); }
-	| expression ',' assignment_expression	 { $$ = create_non_term("expression", $1, $2, $3); }
+	| expression ',' assignment_expression	 { $$ = create_non_term("expression", $1, $3); }
 	;
 
 constant_expression
@@ -187,8 +187,8 @@ constant_expression
 	;
 
 declaration
-	: declaration_specifiers ';'	 { $$ = create_non_term("declaration", $1, $2); }
-	| declaration_specifiers init_declarator_list ';' { $$ = create_non_term("declaration", $1, $2, $3); }
+	: declaration_specifiers ';'	 { $$ = NULL; }
+	| declaration_specifiers init_declarator_list ';' { $$ = create_non_term("initialized values", $2); }
 	;
 
 declaration_specifiers
@@ -201,131 +201,131 @@ declaration_specifiers
 	;
 
 init_declarator_list
-	: init_declarator	 { $$ = create_non_term("init_declarator_list", $1); }
-	| init_declarator_list ',' init_declarator	 { $$ = create_non_term("init_declarator_list", $1, $2, $3); }
+	: init_declarator	 { $$ = $1; }
+	| init_declarator_list ',' init_declarator	 { if( $1 == NULL ) $$ = $3; else if ( $3 == NULL ) $$ = $1; else $$ = create_non_term("init_declarator_list", $1, $3); }
 	;
 
 init_declarator
-	: declarator	 { $$ = create_non_term("init_declarator", $1); }
-	| declarator '=' initializer	 { $$ = create_non_term("init_declarator", $1, $2, $3); }
+	: declarator	 { $$ = NULL; }
+	| declarator '=' initializer	 { $$ = create_non_term("=", $1, $3); }
 	;
 
 storage_class_specifier
-	:  TYPEDEF	 { $$ = create_non_term("storage_class_specifier", $1); }
-	|  EXTERN	 { $$ = create_non_term("storage_class_specifier", $1); }
-	|  STATIC	 { $$ = create_non_term("storage_class_specifier", $1); }
-	|  AUTO	 { $$ = create_non_term("storage_class_specifier", $1); }
-	|  REGISTER	 { $$ = create_non_term("storage_class_specifier", $1); }
+	:  TYPEDEF	 { $$ = create_terminal("TYPEDEF", NULL ); }
+	|  EXTERN	 { $$ = create_terminal("EXTERN", NULL); }
+	|  STATIC	 { $$ = create_terminal("STATIC", NULL); }
+	|  AUTO	 { $$ = create_terminal("AUTO", NULL); }
+	|  REGISTER	 { $$ = create_terminal("REGISTER", NULL); }
 	;
 
 type_specifier
-	:  VOID	 { $$ = create_non_term("type_specifier", $1); }
-	|  CHAR	 { $$ = create_non_term("type_specifier", $1); }
-	|  SHORT	 { $$ = create_non_term("type_specifier", $1); }
-	|  INT	 { $$ = create_non_term("type_specifier", $1); }
-	|  LONG	 { $$ = create_non_term("type_specifier", $1); }
-	|  FLOAT	 { $$ = create_non_term("type_specifier", $1); }
-	|  DOUBLE	 { $$ = create_non_term("type_specifier", $1); }
-	|  SIGNED	 { $$ = create_non_term("type_specifier", $1); }
-	|  UNSIGNED	 { $$ = create_non_term("type_specifier", $1); }
-	|  struct_or_union_specifier	 { $$ = create_non_term("type_specifier", $1); }
-	|  enum_specifier	 { $$ = create_non_term("type_specifier", $1); }
-	|  TYPE_NAME	 { $$ = create_non_term("type_specifier", $1); }
+	:  VOID	 	{ $$ = create_terminal("VOID", NULL); }
+	|  CHAR	 	{ $$ = create_terminal("CHAR", NULL); }
+	|  SHORT	{ $$ = create_terminal("SHORT", NULL); }
+	|  INT	 	{ $$ = create_terminal("INT", NULL); }
+	|  LONG	 	{ $$ = create_terminal("LONG", NULL); }
+	|  FLOAT	{ $$ = create_terminal("FLOAT", NULL); }
+	|  DOUBLE	{ $$ = create_terminal("DOUBLE", NULL); }
+	|  SIGNED	{ $$ = create_terminal("SIGNED", NULL); }
+	|  UNSIGNED	{ $$ = create_terminal("UNSIGNED", NULL); }
+	|  struct_or_union_specifier	 { $$ = $1; }
+	|  enum_specifier		{ $$ = $1; }
+	|  TYPE_NAME	{ $$ = create_terminal("TYPE_NAME", NULL); }
 	;
 
 struct_or_union_specifier
-	:  struct_or_union IDENTIFIER '{' struct_declaration_list '}'	 { $$ = create_non_term("struct_or_union_specifier", $1, $2, $3, $4, $5); }
-	|  struct_or_union '{' struct_declaration_list '}'	 { $$ = create_non_term("struct_or_union_specifier", $1, $2, $3, $4); }
-	|  struct_or_union IDENTIFIER	 { $$ = create_non_term("struct_or_union_specifier", $1, $2); }
+	:  struct_or_union IDENTIFIER '{' struct_declaration_list '}'	 { $1->add_children(create_terminal("IDENTIFIER",NULL), $4); $1->dotify(); $$ = $1; }
+	|  struct_or_union '{' struct_declaration_list '}'	 { $1->add_child($3); $1->dotify(); $$ = $1; }
+	|  struct_or_union IDENTIFIER	 { $1->add_child(create_terminal("IDENTIFIER",NULL)); $1->dotify(); $$ = $1; }
 	;
 
 struct_or_union
-	:  STRUCT	 { $$ = create_non_term("struct_or_union", $1); }
-	|  UNION	 { $$ = create_non_term("struct_or_union", $1); }
+	:  STRUCT	 { $$ = create_non_term("STRUCT"); }
+	|  UNION	 { $$ = create_non_term("UNION"); }
 	;
 
 struct_declaration_list
-	:  struct_declaration	 { $$ = create_non_term("struct_declaration_list", $1); }
+	:  struct_declaration	 { $$ = create_non_term("struct_declaration", $1); }
 	|  struct_declaration_list struct_declaration	 { $$ = create_non_term("struct_declaration_list", $1, $2); }
 	;
 
 struct_declaration
-	:  specifier_qualifier_list struct_declarator_list ';'	 { $$ = create_non_term("struct_declaration", $1, $2, $3); }
+	:  specifier_qualifier_list struct_declarator_list ';'	 { $$ = create_non_term("struct_declaration", $1, $2); }
 	;
 
 specifier_qualifier_list
 	:  type_specifier specifier_qualifier_list	 { $$ = create_non_term("specifier_qualifier_list", $1, $2); }
-	|  type_specifier	 { $$ = create_non_term("specifier_qualifier_list", $1); }
+	|  type_specifier	 { $$ = create_non_term("type_specifier", $1); }
 	|  type_qualifier specifier_qualifier_list	 { $$ = create_non_term("specifier_qualifier_list", $1, $2); }
-	|  type_qualifier	 { $$ = create_non_term("specifier_qualifier_list", $1); }
+	|  type_qualifier	 { $$ = create_non_term("type_qualifier", $1); }
 	;
 
 struct_declarator_list
-	:  struct_declarator	 { $$ = create_non_term("struct_declarator_list", $1); }
-	|  struct_declarator_list ',' struct_declarator	 { $$ = create_non_term("struct_declarator_list", $1, $2, $3); }
+	:  struct_declarator	 { $$ = create_non_term("struct_declarator", $1); }
+	|  struct_declarator_list ',' struct_declarator	 { $$ = create_non_term("struct_declarator_list", $1, $3); }
 	;
 
 struct_declarator
-	:  declarator	 { $$ = create_non_term("struct_declarator", $1); }
-	|  ':' constant_expression	 { $$ = create_non_term("struct_declarator", $1, $2); }
-	|  declarator ':' constant_expression	 { $$ = create_non_term("struct_declarator", $1, $2, $3); }
+	:  declarator	 { $$ = $1; }
+	|  ':' constant_expression	 { $$ = create_non_term(":", $2); }
+	|  declarator ':' constant_expression	 { $$ = create_non_term(":", $1, $3); }
 	;
 
 enum_specifier
-	:  ENUM '{' enumerator_list '}'	 { $$ = create_non_term("enum_specifier", $1, $2, $3, $4); }
-	|  ENUM IDENTIFIER '{' enumerator_list '}'	 { $$ = create_non_term("enum_specifier", $1, $2, $3, $4, $5); }
-	|  ENUM IDENTIFIER	 { $$ = create_non_term("enum_specifier", $1, $2); }
+	:  ENUM '{' enumerator_list '}'	 { $$ = create_non_term("ENUM", $3); }
+	|  ENUM IDENTIFIER '{' enumerator_list '}'	 { $$ = create_non_term("ENUM",create_terminal("IDENTIFIER",NULL),  $4); }
+	|  ENUM IDENTIFIER	 { $$ = create_non_term("ENUM", create_terminal("IDENTIFIER",NULL)); }
 	;
 
 enumerator_list
-	:  enumerator	 { $$ = create_non_term("enumerator_list", $1); }
-	|  enumerator_list ',' enumerator	 { $$ = create_non_term("enumerator_list", $1, $2, $3); }
+	:  enumerator	 { $$ = create_non_term("enumerator", $1); }
+	|  enumerator_list ',' enumerator	 { $$ = create_non_term("enumerator_list", $1, $3); }
 	;
 
 enumerator
-	:  IDENTIFIER	 { $$ = create_non_term("enumerator", $1); }
-	|  IDENTIFIER '=' constant_expression	 { $$ = create_non_term("enumerator", $1, $2, $3); }
+	:  IDENTIFIER	 { $$ = create_terminal("IDENTIFIER",NULL); }
+	|  IDENTIFIER '=' constant_expression	 { $$ = create_non_term("=",  create_terminal("IDENTIFIER",NULL), $3); }
 	;
 
 type_qualifier
-	:  CONST	 { $$ = create_non_term("type_qualifier", $1); }
-	|  VOLATILE	 { $$ = create_non_term("type_qualifier", $1); }
+	:  CONST	 { $$ = create_terminal("CONST", NULL); }
+	|  VOLATILE	 { $$ = create_terminal("VOLATILE", NULL); }
 	;
 
 declarator
 	:  pointer direct_declarator	 { $$ = create_non_term("declarator", $1, $2); }
-	|  direct_declarator	 { $$ = create_non_term("declarator", $1); }
+	|  direct_declarator	 { $$ = $1; }
 	;
 
 direct_declarator
-	:  IDENTIFIER	 { $$ = create_non_term("direct_declarator", $1); }
-	|  '(' declarator ')'	 { $$ = create_non_term("direct_declarator", $1, $2, $3); }
-	|  direct_declarator '[' constant_expression ']'	 { $$ = create_non_term("direct_declarator", $1, $2, $3, $4); }
-	|  direct_declarator '[' ']'	 { $$ = create_non_term("direct_declarator", $1, $2, $3); }
-	|  direct_declarator '(' parameter_type_list ')'	 { $$ = create_non_term("direct_declarator", $1, $2, $3, $4); }
-	|  direct_declarator '(' identifier_list ')'	 { $$ = create_non_term("direct_declarator", $1, $2, $3, $4); }
-	|  direct_declarator '(' ')'	 { $$ = create_non_term("direct_declarator", $1, $2, $3); }
+	:  IDENTIFIER	 { $$ = create_terminal("IDENTIFIER", NULL); }
+	|  '(' declarator ')'	 { $$ = create_non_term("direct_declarator", $2 ); }
+	|  direct_declarator '[' constant_expression ']'	 { $$ = create_non_term("direct_declarator", $1, $3); }
+	|  direct_declarator '[' ']'	 { $$ = create_non_term("direct_declarator", $1 ); }
+	|  direct_declarator '(' parameter_type_list ')'	 { $$ = create_non_term("direct_declarator", $1, $3); }
+	|  direct_declarator '(' identifier_list ')'	 { $$ = create_non_term("direct_declarator", $1, $3); }
+	|  direct_declarator '(' ')'	 { $$ = create_non_term("direct_declarator_blah", $1); }
 	;
 
 pointer
-	:  '*'	 { $$ = create_non_term("pointer", $1); }
-	|  '*' type_qualifier_list	 { $$ = create_non_term("pointer", $1, $2); }
-	|  '*' pointer	 { $$ = create_non_term("pointer", $1, $2); }
-	|  '*' type_qualifier_list pointer	 { $$ = create_non_term("pointer", $1, $2, $3); }
+	:  '*'	 { $$ = create_non_term("pointer"); }
+	|  '*' type_qualifier_list	 { $$ = create_non_term("pointer", $2); }
+	|  '*' pointer	 { $$ = create_non_term("pointer", $2); }
+	|  '*' type_qualifier_list pointer	 { $$ = create_non_term("pointer", $2, $3); }
 	;
 
 type_qualifier_list
-	:  type_qualifier	 { $$ = create_non_term("type_qualifier_list", $1); }
+	:  type_qualifier	 { $$ = create_non_term("type_qualifier", $1); }
 	|  type_qualifier_list type_qualifier	 { $$ = create_non_term("type_qualifier_list", $1, $2); }
 	;
 
 parameter_type_list
-	:  parameter_list	 { $$ = create_non_term("parameter_type_list", $1); }
+	:  parameter_list	 { $$ = create_non_term("parameter_type", $1); }
 	|  parameter_list ',' ELLIPSIS	 { $$ = create_non_term("parameter_type_list", $1, $2, $3); }
 	;
 
 parameter_list
-	:  parameter_declaration	 { $$ = create_non_term("parameter_list", $1); }
+	:  parameter_declaration	 { $$ = create_non_term("parameter_declaration", $1); }
 	|  parameter_list ',' parameter_declaration	 { $$ = create_non_term("parameter_list", $1, $2, $3); }
 	;
 
@@ -336,8 +336,8 @@ parameter_declaration
 	;
 
 identifier_list
-	:  IDENTIFIER	 { $$ = create_non_term("identifier_list", $1); }
-	|  identifier_list ',' IDENTIFIER	 { $$ = create_non_term("identifier_list", $1, $2, $3); }
+	:  IDENTIFIER	 { $$ = create_terminal("IDENTIFIER",NULL); }
+	|  identifier_list ',' IDENTIFIER	 { $$ = create_non_term("identifier_list", $1, create_terminal("IDENTIFIER",NULL)); }
 	;
 
 type_name
@@ -364,89 +364,87 @@ direct_abstract_declarator
 	;
 
 initializer
-	:  assignment_expression	 { $$ = create_non_term("initializer", $1); }
-	|  '{' initializer_list '}'	 { $$ = create_non_term("initializer", $1, $2, $3); }
-	|  '{' initializer_list ',' '}'	 { $$ = create_non_term("initializer", $1, $2, $3, $4); }
+	:  assignment_expression	 { $$ = $1; }
+	|  '{' initializer_list '}'	 { $$ = create_non_term("initializer_list", $2); }
+	|  '{' initializer_list ',' '}'	 { $$ = create_non_term("initializer_list", $2); }
 	;
 
 initializer_list
-	:  initializer	 { $$ = create_non_term("initializer_list", $1); }
-	|  initializer_list ',' initializer	 { $$ = create_non_term("initializer_list", $1, $2, $3); }
+	:  initializer	 { $$ = create_non_term("initializer", $1); }
+	|  initializer_list ',' initializer	 { $$ = create_non_term("initializer_list", $1, $3); }
 	;
 
 statement
-	:  labeled_statement	 { $$ = create_non_term("statement", $1); }
-	|  compound_statement	 { $$ = create_non_term("statement", $1); }
-	|  expression_statement	 { $$ = create_non_term("statement", $1); }
-	|  selection_statement	 { $$ = create_non_term("statement", $1); }
-	|  iteration_statement	 { $$ = create_non_term("statement", $1); }
-	|  jump_statement	 { $$ = create_non_term("statement", $1); }
+	:  labeled_statement	 { $$ = $1; }
+	|  compound_statement	 { $$ = $1; }
+	|  expression_statement	 { $$ = create_non_term("expression_statement", $1); }
+	|  selection_statement	 { $$ = create_non_term("selection_statement", $1); }
+	|  iteration_statement	 { $$ = create_non_term("iteration_statement", $1); }
+	|  jump_statement	 { $$ = create_non_term("jump_statement", $1); }
 	;
 
 labeled_statement
-	:  IDENTIFIER ':' statement	 { $$ = create_non_term("labeled_statement", $1, $2); }
-	|  CASE constant_expression ':' statement	 { $$ = create_non_term("labeled_statement", $1, $2, $3); }
-	|  DEFAULT ':' statement	 { $$ = create_non_term("labeled_statement", $1, $2); }
+	:  IDENTIFIER ':' statement	 { $$ = create_non_term("labeled_statement", create_terminal("IDENTIFIER",NULL), $3); }
+	|  CASE constant_expression ':' statement	 { $$ = create_non_term("CASE", $2, $4); }
+	|  DEFAULT ':' statement	 { $$ = create_non_term("DEFAULT", $2); }
 	;
 
 compound_statement
-	:  '{' '}'	 { $$ = create_non_term("compound_statement", $1, $2); }
-	|  '{' statement_list '}'	 { $$ = create_non_term("compound_statement", $1, $2, $3); }
-	|  '{' declaration_list '}'	 { $$ = create_non_term("compound_statement", $1, $2, $3); }
-	|  '{' declaration_list statement_list '}'	 { $$ = create_non_term("compound_statement", $1, $2, $3, $4); }
+	:  '{' '}'	 { $$ = NULL; }
+	|  '{' statement_list '}'	 { $$ = create_non_term("compound_statement", $2); }
+	|  '{' declaration_list '}'	 { $$ = create_non_term("compound_statement", $2); }
+	|  '{' declaration_list statement_list '}'	 {  $$ = create_non_term("compound_statement", $2, $3); }
 	;
 
 declaration_list
-	:  declaration	 { $$ = create_non_term("declaration_list", $1); }
-	|  declaration_list declaration	 { $$ = create_non_term("declaration_list", $1, $2); }
+	:  declaration	 { $$ = $1; }
+	|  declaration_list declaration	 { $$ = create_non_term("declaration_list", $1, $2);}
 	;
 
 statement_list
-	:  statement	 { $$ = create_non_term("statement_list", $1); }
+	:  statement	 { $$ = $1; }
 	|  statement_list statement	 { $$ = create_non_term("statement_list", $1, $2); }
 	;
 
 expression_statement
-	:  ';'	 { $$ = create_non_term("expression_statement", $1); }
-	|  expression ';'	 { $$ = create_non_term("expression_statement", $1, $2); }
+	:  ';'	 { $$ = create_terminal("EMPTY_STMT",NULL); }
+	|  expression ';'	 { $$ = $1; }
 	;
 
 selection_statement
-	:  IF '(' expression ')' statement	 { $$ = create_non_term("selection_statement", $1, $2, $3, $4, $5); }
-	|  IF '(' expression ')' statement ELSE statement	 { $$ = create_non_term("selection_statement", $1, $2, $3, $4, $5, $6, $7); }
-	|  SWITCH '(' expression ')' statement	 { $$ = create_non_term("selection_statement", $1, $2, $3, $4, $5); }
+	:  IF '(' expression ')' statement	 { $$ = create_non_term("IF", $3, $5); }
+	|  IF '(' expression ')' statement ELSE statement	 { $$ = create_non_term("IF ELSE", $3, $5, $7); }
+	|  SWITCH '(' expression ')' statement	 { $$ = create_non_term("SWITCH", $3, $5); }
 	;
 
 iteration_statement
-	:  WHILE '(' expression ')' statement	 { $$ = create_non_term("iteration_statement", $1, $2, $3, $4, $5); }
-	|  DO statement WHILE '(' expression ')' ';'	 { $$ = create_non_term("iteration_statement", $1, $2, $3, $4, $5, $6, $7); }
-	|  FOR '(' expression_statement expression_statement ')' statement	 { $$ = create_non_term("iteration_statement", $1, $2, $3, $4, $5, $6); }
-	|  FOR '(' expression_statement expression_statement expression ')' statement	 { $$ = create_non_term("iteration_statement", $1, $2, $3, $4, $5, $6, $7); }
+	:  WHILE '(' expression ')' statement	 { $$ = create_non_term("WHILE", $3, $5); }
+	|  DO statement WHILE '(' expression ')' ';'	 { $$ = create_non_term("DO WHILE", $5, $2); }
+	|  FOR '(' expression_statement expression_statement ')' statement	 { $$ = create_non_term("FOR", $3, $4, NULL, $6); }
+	|  FOR '(' expression_statement expression_statement expression ')' statement	 { $$ = create_non_term("FOR", $3, $4, $5, $7); }
 	;
 
 jump_statement
-	:  GOTO IDENTIFIER ';'	 { $$ = create_non_term("jump_statement", $1, $2, $3); }
-	|  CONTINUE ';'	 { $$ = create_non_term("jump_statement", $1, $2); }
-	|  BREAK ';'	 { $$ = create_non_term("jump_statement", $1, $2); }
-	|  RETURN ';'	 { $$ = create_non_term("jump_statement", $1, $2); }
-	|  RETURN expression ';'	 { $$ = create_non_term("jump_statement", $1, $2, $3); }
+	:  GOTO IDENTIFIER ';'	 { $$ = create_non_term("GOTO", create_terminal("IDENTIFIER",NULL)); }
+	|  CONTINUE ';'	 { $$ = create_non_term("CONTINUE"); }
+	|  BREAK ';'	 { $$ = create_non_term("BREAK"); }
+	|  RETURN ';'	 { $$ = create_non_term("RETURN"); }
+	|  RETURN expression ';'	 { $$ = create_non_term("RETURN", $2); }
 	;
 
 translation_unit
-	:  external_declaration	 { $$ = create_non_term("translation_unit", $1); }
+	:  external_declaration	 { $$ = create_non_term("external_declaration", $1); }
 	|  translation_unit external_declaration	 { $$ = create_non_term("translation_unit", $1, $2); }
 	;
 
 external_declaration
-	:  function_definition	 { $$ = create_non_term("external_declaration", $1); }
-	|  declaration	 { $$ = create_non_term("external_declaration", $1); }
+	:  function_definition	 { $$ = $1; }
+	|  declaration	 { $$ = $1; }
 	;
 
 function_definition
-	:  declaration_specifiers declarator declaration_list compound_statement	 { $$ = create_non_term("function_definition", $1, $2, $3, $4); }
-	|  declaration_specifiers declarator compound_statement	 { $$ = create_non_term("function_definition", $1, $2, $3); }
-	|  declarator declaration_list compound_statement	 { $$ = create_non_term("function_definition", $1, $2, $3); }
-	|  declarator compound_statement	 { $$ = create_non_term("function_definition", $1, $2); }
+	:  declaration_specifiers declarator compound_statement	 { $$ = create_non_term("function_definition", $3); }
+	|  declarator compound_statement	 { $$ = create_non_term("function_definition", $2); }
 	;
 
 
