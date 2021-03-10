@@ -55,8 +55,11 @@ void Non_Terminal:: dotify () {
 	for (auto it = children.begin(); it != children.end(); it++) {
 		ss << "\t" << id << " -> " << (*it)->id << ";\n";
 	}
-
 	file_writer(ss.str());
+
+	for(auto it = children.begin(); it != children.end(); it++){
+		(*it)->dotify();
+	}
 }
 
 void Non_Terminal::add_child (Node * node) {

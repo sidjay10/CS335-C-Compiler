@@ -60,6 +60,5 @@ Node * create_non_term(const char* name, Node* node1, Node* node2);
 Node * create_non_term(const char* name, Node* node1);
 
 void file_writer(std::string s);
-void dump_ast(Node * root);
 
 #endif
