@@ -4,15 +4,17 @@ This repository contains our project for CS335, the course on Compiler Design at
 
 We build the compiler in stages, with support for building any of the intermediate binaries.
 
-## To build the project :
-Use "make" in the code repository: 
-make
+All commands are to used in the project repository.
+## To build the project : make
 
-In general, to build any specific target binary : 
-make <target_command>
 
 To clear the binaries and compiled source : 
 make clean
+
+## Milestone 1(Lexer)
+
+Usage: 
+./bin/scanner <path_to_c_file>
 
 ## Milestone 2 (Parser)
 
