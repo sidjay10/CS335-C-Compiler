@@ -11,6 +11,7 @@
 extern FILE *yyin;
 extern FILE *yyout;
 
+Node * root = NULL;
 TOKEN_DATA token_data;
 
 static std::ofstream dot_file;
@@ -38,7 +39,9 @@ int main(int argc, char *argv[]) {
 	ss << "\tordering=out\n";
 	dot_file << ss.str();
 
+	root = create_non_term("translation_unit");
 	int abc = yyparse();
+	dump_ast(root);
 	
 	assert(abc == 0);
 	

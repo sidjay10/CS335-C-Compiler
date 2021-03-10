@@ -4,6 +4,7 @@
 	#include <ast.h>
 	void yyerror(const char *s);	
 	extern "C" int yylex();
+	extern Node * root; 
 	
 
 %}
@@ -433,8 +434,8 @@ jump_statement
 	;
 
 translation_unit
-	:  external_declaration	 { $$ = create_non_term("external_declaration", $1); }
-	|  translation_unit external_declaration	 { $$ = create_non_term("translation_unit", $1, $2); }
+	:  external_declaration	 { root->add_child(create_non_term("external_declaration", $1)); }
+	|  translation_unit external_declaration	 { root->add_child(create_non_term("translation_unit", $1, $2)); }
 	;
 
 external_declaration

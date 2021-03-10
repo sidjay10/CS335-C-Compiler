@@ -104,14 +104,14 @@ void Non_Terminal::add_children (Node * node1, Node * node2, Node * node3, Node 
 
 Node * create_terminal(const char* name, const char * value) {
 	Terminal * terminal_node = new Terminal(name,value);
-	terminal_node->dotify();
+	//terminal_node->dotify();
 	return terminal_node;
 }
 
 
 Node * create_non_term(const char* name) {
 	Non_Terminal * node = new Non_Terminal(name);
-	node->dotify();
+	//node->dotify();
 	return node;
 }
 
@@ -123,7 +123,7 @@ Node * create_non_term(const char* name, Node* node1, Node* node2, Node* node3, 
 		delete node;
 		return NULL;
 	}
-	node->dotify();
+	//node->dotify();
 	return node;
 }
 
@@ -135,7 +135,7 @@ Node * create_non_term(const char* name, Node* node1, Node* node2, Node* node3, 
 		delete node;
 		return NULL;
 	}
-	node->dotify();
+	//node->dotify();
 	return node;
 }
 
@@ -147,7 +147,7 @@ Node * create_non_term(const char* name, Node* node1, Node* node2, Node* node3, 
 		delete node;
 		return NULL;
 	}
-	node->dotify();
+	//node->dotify();
 	return node;
 }
 
@@ -161,7 +161,7 @@ Node * create_non_term(const char* name, Node* node1, Node* node2, Node* node3, 
 		delete node;
 		return NULL;
 	}
-	node->dotify();
+	//node->dotify();
 	return node;
 }
 
@@ -172,7 +172,7 @@ Node * create_non_term(const char* name, Node* node1, Node* node2, Node* node3) 
 		delete node;
 		return NULL;
 	}
-	node->dotify();
+	//node->dotify();
 	return node;
 }
 
@@ -183,7 +183,7 @@ Node * create_non_term(const char* name, Node* node1, Node* node2) {
 		delete node;
 		return NULL;
 	}
-	node->dotify();
+	//node->dotify();
 	return node;
 }
 
@@ -194,6 +194,6 @@ Node * create_non_term(const char* name, Node* node1) {
 		delete node;
 		return NULL;
 	}
-	node->dotify();
+	//node->dotify();
 	return node;
 }
