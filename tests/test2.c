@@ -1,14 +1,18 @@
-#include<stdio.h>
-main()
+int main()
 {
-	int t;scanf("%d",&t);
+	int t; 
+	scanf("%d",&t);
 	while(t--)
 	{
-    	int a,b; scanf("%d %d",&a,&b);
-    	int i; long int s=0;
-    	for(i=a;i<=b;i++)
+    	int a,b;
+    	int i; 
+	long int s=0,za=a;
+    	scanf("%d %d",&a,&b);
+	for(i=a;i<=b;i++)
     	{
-        	int reverse=0, rem,temp=i;
+        	int reverse=0;
+		int rem;
+		int temp=i;
         	while(temp!=0)
             {
                 rem=temp%10;

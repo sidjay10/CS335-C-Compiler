@@ -1,4 +1,3 @@
-#include <stdio.h>
 int u,v;
 int flag=0;
 struct node{
@@ -11,8 +10,8 @@ struct graph{
     struct node* G;
 };
 int DFS_Visit(struct graph*Gp,int a){
-    Gp->G[a-1].color = 1;
     struct node* x = Gp->G[a-1].next;
+    Gp->G[a-1].color = 1;
     while(x!=NULL){
         
         if(!Gp->G[x->key-1].color){
@@ -30,23 +29,25 @@ int DFS_Visit(struct graph*Gp,int a){
 int main(){
     int t;
     scanf("%d",&t);
-    for(int i=0;i<t;i++){
+    for( i=0;i<t;i++){
+	int b;
         int V;
         int E;
-        scanf("%d\n%d\n",&V,&E);
         struct graph Gp;
+	struct node * x;
+        scanf("%d\n%d\n",&V,&E);
         Gp.V = V;
-        Gp.G = (struct node*)malloc(V*sizeof(struct node));
-        for(int i=0;i<V;i++){
+        //Gp.G = (struct node*)malloc(V*sizeof(struct node));
+        for( i=0;i<V;i++){
             Gp.G[i].key = i+1;
             Gp.G[i].color = 0;
         }
-        for(int i=0;i<E;i++){
+        for( i=0;i<E;i++){
             int a,b;
-            scanf("%d %d\n",&a,&b);
             struct node* A;
-            A = (struct node*)malloc(sizeof(struct node));
             struct node* B;
+            scanf("%d %d\n",&a,&b);
+            A = (struct node*)malloc(sizeof(struct node));
             B = (struct node*)malloc(sizeof(struct node));
             A->key = b;
             B->key = a;
@@ -69,20 +70,20 @@ int main(){
             }
             
         }
-        scanf("%d %d\n",&u,&v);
-        int a = DFS_Visit(&Gp,u);
-        struct node* x = Gp.G[u-1].next;
+        //scanf("%d %d\n",&u,&v);
+        a = DFS_Visit(&Gp,u);
+        x = Gp.G[u-1].next;
         if(x->key==v){
-            //printf("%d\n",x->key);
+            printf("%d\n",x->key);
             Gp.G[u-1].next = x->next;
             x->next = NULL;
         }
         else{
+            struct node* y;
             while(x->next->key!=v){
                 x = x->next;
             }
             //printf("%d\n",x->next->key);
-            struct node* y;
             y = x->next;
             x->next = y->next;
             y->next = NULL;
@@ -94,22 +95,22 @@ int main(){
             x->next = NULL;
         }
         else{
+            struct node *y;
             while(x->next->key!=u){
                 x = x->next;
             }
             //printf("%d\n",x->next->key);
             
-            struct node *y;
             y = x->next;
             x->next = y->next;
             y->next = NULL;
         }
-        for(int i=0;i<V;i++){
+        for( i=0;i<V;i++){
             //Gp.G[i].key = i+1;
             Gp.G[i].color = 0;
         }
         flag = 0;
-        int b = DFS_Visit(&Gp,u);
+        b = DFS_Visit(&Gp,u);
         if(b){
             printf("Not Bridge\n");
         }

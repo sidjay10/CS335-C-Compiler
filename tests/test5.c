@@ -1,5 +1,3 @@
-#include <stdio.h>
-
 int max(int num1, int num2) {
    /* Foo Bar**/
    int result;

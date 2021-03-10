@@ -1,8 +1,3 @@
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <stdbool.h>
-
 struct node {
    int data;
    int key;
@@ -55,9 +50,9 @@ struct node* deleteFirst() {
 }
 
 //is list empty
-bool isEmpty() {
-   return head == NULL;
-}
+//bool isEmpty() {
+//  return head == NULL;
+//}
 
 int length() {
    int length = 0;
@@ -182,6 +177,7 @@ void reverse(struct node** head_ref) {
 }
 
 void main() {
+   struct node *foundLink;
    insertFirst(1,10);
    insertFirst(2,20);
    insertFirst(3,30);
@@ -213,7 +209,7 @@ void main() {
    printList();
    printf("\n");  
 
-   struct node *foundLink = find(4);
+   foundLink = find(4);
 	
    if(foundLink != NULL) {
       printf("Element found: ");

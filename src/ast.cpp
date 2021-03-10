@@ -60,26 +60,46 @@ void Non_Terminal:: dotify () {
 }
 
 void Non_Terminal::add_child (Node * node) {
-	children.push_back(node);
+	if( node != NULL) {
+		children.push_back(node);
+	}
 }
 
 
 void Non_Terminal::add_children (Node * node1, Node * node2) {
-	children.push_back(node1);
-	children.push_back(node2);
+	if( node1 != NULL) {
+		children.push_back(node1);
+	}
+	if( node2 != NULL) {
+		children.push_back(node2);
+	}
 }
 
 void Non_Terminal::add_children (Node * node1, Node * node2, Node * node3) {
-	children.push_back(node1);
-	children.push_back(node2);
-	children.push_back(node3);
+	if( node1 != NULL) {
+		children.push_back(node1);
+	}
+	if( node2 != NULL) {
+		children.push_back(node2);
+	}
+	if( node3 != NULL) {
+		children.push_back(node3);
+	}
 }
 
 void Non_Terminal::add_children (Node * node1, Node * node2, Node * node3, Node * node4) {
-	children.push_back(node1);
-	children.push_back(node2);
-	children.push_back(node3);
-	children.push_back(node4);
+	if( node1 != NULL) {
+		children.push_back(node1);
+	}
+	if( node2 != NULL) {
+		children.push_back(node2);
+	}
+	if( node3 != NULL) {
+		children.push_back(node3);
+	}
+	if( node4 != NULL) {
+		children.push_back(node4);
+	}
 }
 
 Node * create_terminal(const char* name, const char * value) {
@@ -91,6 +111,7 @@ Node * create_terminal(const char* name, const char * value) {
 
 Node * create_non_term(const char* name) {
 	Non_Terminal * node = new Non_Terminal(name);
+	node->dotify();
 	return node;
 }
 
@@ -98,6 +119,10 @@ Node * create_non_term(const char* name, Node* node1, Node* node2, Node* node3, 
 	Non_Terminal * node = new Non_Terminal(name);
 	node->add_children(node1, node2, node3, node4);
 	node->add_children(node5, node6, node7);
+	if( node->children.empty() ) {
+		delete node;
+		return NULL;
+	}
 	node->dotify();
 	return node;
 }
@@ -106,6 +131,10 @@ Node * create_non_term(const char* name, Node* node1, Node* node2, Node* node3, 
 	Non_Terminal * node = new Non_Terminal(name);
 	node->add_children(node1, node2, node3, node4);
 	node->add_children(node5, node6);
+	if( node->children.empty() ) {
+		delete node;
+		return NULL;
+	}
 	node->dotify();
 	return node;
 }
@@ -114,6 +143,10 @@ Node * create_non_term(const char* name, Node* node1, Node* node2, Node* node3, 
 	Non_Terminal * node = new Non_Terminal(name);
 	node->add_children(node1, node2, node3);
 	node->add_children(node4, node5);
+	if( node->children.empty() ) {
+		delete node;
+		return NULL;
+	}
 	node->dotify();
 	return node;
 }
@@ -124,6 +157,10 @@ Node * create_non_term(const char* name, Node* node1, Node* node2, Node* node3, 
 Node * create_non_term(const char* name, Node* node1, Node* node2, Node* node3, Node* node4) {
 	Non_Terminal * node = new Non_Terminal(name);
 	node->add_children(node1, node2, node3, node4);
+	if( node->children.empty() ) {
+		delete node;
+		return NULL;
+	}
 	node->dotify();
 	return node;
 }
@@ -131,6 +168,10 @@ Node * create_non_term(const char* name, Node* node1, Node* node2, Node* node3, 
 Node * create_non_term(const char* name, Node* node1, Node* node2, Node* node3) {
 	Non_Terminal * node = new Non_Terminal(name);
 	node->add_children(node1, node2, node3);
+	if( node->children.empty() ) {
+		delete node;
+		return NULL;
+	}
 	node->dotify();
 	return node;
 }
@@ -138,6 +179,10 @@ Node * create_non_term(const char* name, Node* node1, Node* node2, Node* node3) 
 Node * create_non_term(const char* name, Node* node1, Node* node2) {
 	Non_Terminal * node = new Non_Terminal(name);
 	node->add_children(node1, node2);
+	if( node->children.empty() ) {
+		delete node;
+		return NULL;
+	}
 	node->dotify();
 	return node;
 }
@@ -145,6 +190,10 @@ Node * create_non_term(const char* name, Node* node1, Node* node2) {
 Node * create_non_term(const char* name, Node* node1) {
 	Non_Terminal * node = new Non_Terminal(name);
 	node->add_child(node1);
+	if( node->children.empty() ) {
+		delete node;
+		return NULL;
+	}
 	node->dotify();
 	return node;
 }
