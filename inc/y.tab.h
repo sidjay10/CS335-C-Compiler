@@ -170,7 +170,7 @@ extern int yydebug;
 
 union YYSTYPE
 {
-#line 11 "src/grammar.y" /* yacc.c:1909  */
+#line 12 "src/grammar.y" /* yacc.c:1909  */
 
 	Node * node;
 

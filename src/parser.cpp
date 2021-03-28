@@ -41,7 +41,8 @@ int main(int argc, char *argv[]) {
 
 	root = create_non_term("translation_unit");
 	int abc = yyparse();
-	dump_ast(root);
+	root->dotify();
+	//dump_ast(root);
 	
 	assert(abc == 0);
 	
