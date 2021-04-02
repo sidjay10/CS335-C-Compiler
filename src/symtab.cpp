@@ -3,8 +3,10 @@
 #include <assert.h>
 #include <ast.h>
 #include <iostream>
+#include <list>
 #include <sstream>
 #include <symtab.h>
+#include <vector>
 #include <y.tab.h>
 
 LocalSymbolTable local_symbol_table;
@@ -84,6 +86,8 @@ void Declaration::add_to_symbol_table( LocalSymbolTable &sym_tab ) {
         for ( int i = 0; i < sym_tab.current_level; i++ ) {
             std::cout << "  ";
         }
+        SymTabEntry *e = new SymTabEntry( ( *i )->id->value );
+        sym_tab.add_to_table( e );
         std::cout << ( *i )->id->value << " " << sym_tab.current_level << "\n";
     }
 };
@@ -95,7 +99,7 @@ void Declaration::add_to_symbol_table( GlobalSymbolTable &sym_tab ) {
     std::vector<Declarator *> &dec = init_declarator_list->declarator_list;
 
     for ( auto i = dec.begin(); i != dec.end(); i++ ) {
-        std::cout << ( *i )->id->value << "\n";
+        std::cout << "G: " << ( *i )->id->value << "\n";
     }
 };
 
@@ -265,7 +269,8 @@ create_dir_declarator_arr( DIRECT_DECLARATOR_TYPE type,
 
 DirectDeclarator *
 create_dir_declarator_fun( DIRECT_DECLARATOR_TYPE type,
-                           DirectDeclarator *direct_declarator, Node *params ) {
+                           DirectDeclarator *direct_declarator,
+                           ParameterTypeList *params ) {
     assert( type == FUNCTION );
     DirectDeclarator *dd = new DirectDeclarator();
     dd->name = "direct_declarator_function";
@@ -277,6 +282,127 @@ create_dir_declarator_fun( DIRECT_DECLARATOR_TYPE type,
     assert( direct_declarator->id != nullptr );
     dd->add_children( direct_declarator, params );
     return dd;
+}
+
+//##############################################################################
+//######################## DIRECT ABSTRACT DECLARATOR ##########################
+//##############################################################################
+
+DirectAbstractDeclarator::DirectAbstractDeclarator()
+    : Non_Terminal( "direct_abstract_declarator" ), type( ABSTRACT ),
+      abstract_declarator( nullptr ), const_expr( nullptr ),
+      direct_abstract_declarator( nullptr ), parameter_type_list( nullptr ){};
+
+DirectAbstractDeclarator *
+create_direct_abstract_declarator( DIRECT_ABSTRACT_DECLARATOR_TYPE typ ) {
+    DirectAbstractDeclarator *dad = new DirectAbstractDeclarator();
+    dad->type = typ;
+    return dad;
+}
+
+DirectAbstractDeclarator *
+create_direct_abstract_declarator( DIRECT_ABSTRACT_DECLARATOR_TYPE typ,
+                                   AbstractDeclarator *abs ) {
+    assert( typ == ABSTRACT );
+    DirectAbstractDeclarator *dad = new DirectAbstractDeclarator();
+    dad->type = typ;
+    dad->abstract_declarator = abs;
+    dad->add_child( abs );
+    return dad;
+}
+
+DirectAbstractDeclarator *
+create_direct_abstract_declarator( DIRECT_ABSTRACT_DECLARATOR_TYPE typ,
+                                   DirectAbstractDeclarator *dabs ) {
+    assert( typ == ROUND || typ == SQUARE );
+    DirectAbstractDeclarator *dad = new DirectAbstractDeclarator();
+    dad->type = typ;
+    dad->direct_abstract_declarator = dabs;
+    dad->add_child( dabs );
+    return dad;
+}
+
+DirectAbstractDeclarator *
+create_direct_abstract_declarator( DIRECT_ABSTRACT_DECLARATOR_TYPE typ,
+                                   DirectAbstractDeclarator *dabs, Node *ce ) {
+    assert( typ == SQUARE );
+    DirectAbstractDeclarator *dad = new DirectAbstractDeclarator();
+    dad->type = typ;
+    dad->direct_abstract_declarator = dabs;
+    dad->const_expr = ce;
+    dad->add_children( dabs, ce );
+    return dad;
+}
+DirectAbstractDeclarator *
+create_direct_abstract_declarator( DIRECT_ABSTRACT_DECLARATOR_TYPE typ,
+                                   DirectAbstractDeclarator *dabs,
+                                   ParameterTypeList *param_list ) {
+
+    assert( typ == ROUND );
+    DirectAbstractDeclarator *dad = new DirectAbstractDeclarator();
+    dad->type = typ;
+    dad->direct_abstract_declarator = dabs;
+    dad->parameter_type_list = param_list;
+    dad->add_children( dabs, param_list );
+    return dad;
+}
+
+//##############################################################################
+//########################### ABSTRACT DECLARATOR ##############################
+//##############################################################################
+
+AbstractDeclarator::AbstractDeclarator( Pointer *ptr,
+                                        DirectAbstractDeclarator *dabs )
+    : Non_Terminal( "abstract_declarator" ), pointer( ptr ),
+      direct_abstract_declarator( dabs ){};
+
+AbstractDeclarator *
+create_abstract_declarator( Pointer *ptr, DirectAbstractDeclarator *dabs ) {
+    AbstractDeclarator *abs = new AbstractDeclarator( ptr, dabs );
+    abs->add_children( ptr, dabs );
+    return abs;
+}
+//##############################################################################
+//########################### PARAMETER DECLARATION ############################
+//##############################################################################
+ParameterDeclaration::ParameterDeclaration()
+    : Non_Terminal( "parameter_declaration" ){};
+
+ParameterDeclaration *create_parameter_declaration( DeclarationSpecifiers *ds,
+                                                    Declarator *d,
+                                                    AbstractDeclarator *ad ) {
+    ParameterDeclaration *pd = new ParameterDeclaration();
+    pd->declaration_specifiers = ds;
+    pd->declarator = d;
+    pd->abstract_declarator = ad;
+    pd->add_children( ds, d, ad );
+    return pd;
+}
+//##############################################################################
+//############################ PARAMETER TYPE LIST #############################
+//##############################################################################
+
+ParameterTypeList::ParameterTypeList()
+    : Non_Terminal( "parameter_type_list" ){};
+
+ParameterTypeList *create_parameter_list( ParameterDeclaration *pd ) {
+    ParameterTypeList *ptl = new ParameterTypeList();
+    ptl->param_list.push_back( pd );
+    ptl->add_child( pd );
+    return ptl;
+}
+
+ParameterTypeList *add_to_parameter_list( ParameterTypeList *ptl,
+                                          ParameterDeclaration *pd ) {
+    ptl->param_list.push_back( pd );
+    ptl->add_child( pd );
+    return ptl;
+}
+
+ParameterTypeList *add_ellipsis_to_list( ParameterTypeList *ptl ) {
+    ptl->has_ellipsis = true;
+    ptl->add_child( create_terminal( "...", NULL ) );
+    return ptl;
 }
 
 //##############################################################################
@@ -303,6 +429,7 @@ create_function_defintion( DeclarationSpecifiers *declaration_specifiers,
         declaration_specifiers, declarator, compound_statement );
     fd->add_children( declaration_specifiers, declarator, compound_statement );
     global_symbol_table.add_symbol( declaration_specifiers, declarator );
+    local_symbol_table.add_function( declaration_specifiers, declarator );
     return fd;
 }
 
@@ -531,6 +658,12 @@ EnumeratorList *add_to_enumerator_list( EnumeratorList *enumerator_list,
 
 SymbolTable::SymbolTable(){};
 
+void SymbolTable::add_to_table( SymTabEntry * ) {}
+
+SymTabEntry *SymbolTable::get_symbol_from_table( std::string name ) {
+    return nullptr;
+}
+
 LocalSymbolTable::LocalSymbolTable() : current_level( 0 ){};
 
 void LocalSymbolTable::increase_level() {
@@ -542,11 +675,101 @@ void LocalSymbolTable::increase_level() {
 }
 
 void LocalSymbolTable::clear_current_level() {
+
+    for ( auto it = sym_table.begin(); it != sym_table.end(); it++ ) {
+        SymTabEntry *entry = ( it->second ).front();
+        if ( !entry ) {
+            continue;
+        } else if ( entry->level == current_level ) {
+            it->second.pop_front();
+        }
+    }
     current_level--;
     for ( int i = 0; i < current_level; i++ ) {
         std::cout << "  ";
     }
     std::cout << "}\n";
+}
+
+void LocalSymbolTable::add_to_table( SymTabEntry *symbol ) {
+
+    auto it = sym_table.find( symbol->name );
+    if ( it == sym_table.end() ) {
+        std::deque<SymTabEntry *> &q = *new std::deque<SymTabEntry *>;
+        symbol->level = current_level;
+        q.push_front( symbol );
+        sym_table.insert( {symbol->name, q} );
+    } else {
+        std::deque<SymTabEntry *> &q = it->second;
+        if ( q.front() && ( q.front() )->level == current_level ) {
+            // Can't insert two symbols with same name at the same level
+            std::cerr << "ERROR: " << it->first << " " << symbol->name << "\n";
+            assert( 0 );
+        } else {
+            symbol->level = current_level;
+            q.push_front( symbol );
+        }
+    }
+}
+
+SymTabEntry *LocalSymbolTable::get_symbol_from_table( std::string name ) {
+    auto it = sym_table.find( name );
+    if ( it == sym_table.end() ) {
+        return nullptr;
+    } else {
+        return it->second.front();
+    }
+}
+
+void LocalSymbolTable::add_function(
+    DeclarationSpecifiers *declaration_specifiers, Declarator *declarator ) {
+
+    sym_table.clear();
+
+    assert( declarator->direct_declarator->type == FUNCTION );
+    function_name = declarator->id->value;
+    std::cout << "L: " << function_name ;
+
+    // Check whether the arguements are of the form ( )
+    if ( declarator->direct_declarator->params == nullptr ) {
+	std:: cout << "( )\n";
+        return;
+    }
+    std::vector<ParameterDeclaration *> &param_list =
+        declarator->direct_declarator->params->param_list;
+
+    // Check whether the arguements are of the form ( void )
+    if ( param_list.size() == 1 ) {
+        auto it = param_list.begin();
+        if ( ( *it )->declarator == nullptr &&
+             ( *it )->abstract_declarator == nullptr ) {
+            std::vector<TypeSpecifier *> &v =
+                ( *it )->declaration_specifiers->type_specifier;
+            if ( v.size() == 1 && ( *v.begin() )->type == VOID ) {
+		std:: cout << "( void )\n";
+                return;
+            }
+        }
+    }
+    // Parameters need to be added at level one, we avoid calling
+    // increase_level and clear_from_level to avoid thier side effects
+
+    current_level = 1;
+	std::cout << "( ";
+    for ( auto it = param_list.begin(); it != param_list.end(); it++ ) {
+
+        if ( ( *it )->declarator == nullptr ||
+             ( *it )->declarator->id == nullptr ) {
+            std::cerr << "Declarator requires identifier\n";
+            assert( 0 );
+        }
+
+        std::cout << ( *it )->declarator->id->value << ", ";
+        SymTabEntry *symbol = new SymTabEntry( ( *it )->declarator->id->value );
+        add_to_table( symbol );
+    }
+    current_level = 0;
+	std::cout << " )\n";
 }
 
 //##############################################################################
@@ -556,7 +779,7 @@ void LocalSymbolTable::clear_current_level() {
 void GlobalSymbolTable::add_symbol(
     DeclarationSpecifiers *declaration_specifiers, Declarator *declarator ) {
 
-    std::cout << declarator->id->value << "\n";
+    std::cout << "G: " << declarator->id->value << "\n";
 }
 
 Node *add_to_global_symbol_table( Declaration *declaration ) {
@@ -568,7 +791,6 @@ Node *add_to_global_symbol_table( Declaration *declaration ) {
 //########################### SYMBOL TABLE ENTRY  ##############################
 //##############################################################################
 
-// SymTabEntry::SymTabEntry ( std::string name, int level ) : name(name),
-// level(level) {};
+SymTabEntry::SymTabEntry( std::string name ) : name( name ){};
 
 //##############################################################################

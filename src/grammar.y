@@ -29,6 +29,10 @@
 	StructDeclarationList * struct_declaration_list;
 	StructDeclaration * struct_declaration;
 	SpecifierQualifierList * specifier_qualifier_list;
+	ParameterTypeList * parameter_type_list;
+	ParameterDeclaration * parameter_declaration;
+	DirectAbstractDeclarator * direct_abstract_declarator;
+	AbstractDeclarator * abstract_declarator;
 }
 
 
@@ -72,7 +76,7 @@
 
 %type <declaration_list> declaration_list 
 
-%type <function_definition> function_definition 
+%type <function_definition> function_definition function_declaration
 
 %type <enumerator> enumerator
 
@@ -90,8 +94,14 @@
 
 %type <declarator> struct_declarator
 
-%type <node> parameter_type_list parameter_list parameter_declaration identifier_list type_name abstract_declarator direct_abstract_declarator initializer initializer_list
+%type <node> type_name initializer initializer_list
+%type <parameter_type_list> parameter_type_list parameter_list
+%type <parameter_declaration> parameter_declaration 
+%type <abstract_declarator> abstract_declarator
+%type <direct_abstract_declarator>  direct_abstract_declarator 
 
+
+/*%type <node> identifier_list */
 %type <node> statement labeled_statement compound_statement statement_list expression_statement selection_statement iteration_statement jump_statement
 
 %type <node> translation_unit external_declaration 
@@ -370,47 +380,47 @@ type_qualifier_list
 	;
 
 parameter_type_list
-	:  parameter_list	 	 { $$ = create_non_term("parameter_type", $1); }
-	|  parameter_list ',' ELLIPSIS	 { $$ = create_non_term("parameter_type_list", $1, $2); }
+	:  parameter_list	 	 { $$ = $1 ; }
+	|  parameter_list ',' ELLIPSIS	 { $$ = add_ellipsis_to_list( $1 ); }
 	;
 
 parameter_list
-	:  parameter_declaration	 		 { $$ = create_non_term("parameter_declaration", $1); }
-	|  parameter_list ',' parameter_declaration	 { $$ = create_non_term("parameter_list", $1, $3); }
+	:  parameter_declaration	 		 { $$ = create_parameter_list( $1 ); }
+	|  parameter_list ',' parameter_declaration	 { $$ = add_to_parameter_list( $1, $3 ); }
 	;
 
 parameter_declaration
-	:  declaration_specifiers declarator	 { $$ = create_non_term("parameter_declaration", $1, $2); }
-	|  declaration_specifiers abstract_declarator	 { $$ = create_non_term("parameter_declaration", $1, $2); }
-	|  declaration_specifiers	 { $$ = create_non_term("parameter_declaration", $1); }
+	:  declaration_specifiers declarator	 	{ $$ = create_parameter_declaration( $1, $2, NULL ); } 
+	|  declaration_specifiers abstract_declarator	{ $$ = create_parameter_declaration( $1, NULL, $2 ); } 
+	|  declaration_specifiers	 		{ $$ = create_parameter_declaration( $1, NULL, NULL ); } 
 	;
-
+/*
 identifier_list
 	:  IDENTIFIER	 { $$ = $1; }
 	|  identifier_list ',' IDENTIFIER	 { $$ = create_non_term("identifier_list", $1, $3); }
 	;
-
+*/
 type_name
 	:  specifier_qualifier_list	 { $$ = create_non_term("type_name", $1); }
 	|  specifier_qualifier_list abstract_declarator	 { $$ = create_non_term("type_name", $1, $2); }
 	;
 
 abstract_declarator
-	:  pointer	 { $$ = create_non_term("abstract_declarator", $1); }
-	|  direct_abstract_declarator	 { $$ = create_non_term("abstract_declarator", $1); }
-	|  pointer direct_abstract_declarator	 { $$ = create_non_term("abstract_declarator", $1, $2); }
+	:  pointer	 			{ $$ = create_abstract_declarator( $1, NULL ); } 
+	|  direct_abstract_declarator	 	{ $$ = create_abstract_declarator( NULL, $1 ); } 
+	|  pointer direct_abstract_declarator	{ $$ = create_abstract_declarator( $1, $2 ); } 
 	;
 
 direct_abstract_declarator
-	:  '(' abstract_declarator ')'	 { $$ = create_non_term("direct_abstract_declarator", $1, $2, $3); }
-	|  '[' ']'	 { $$ = create_non_term("direct_abstract_declarator", $1, $2); }
-	|  '[' constant_expression ']'	 { $$ = create_non_term("direct_abstract_declarator", $1, $2, $3); }
-	|  direct_abstract_declarator '[' ']'	 { $$ = create_non_term("direct_abstract_declarator", $1, $2, $3); }
-	|  direct_abstract_declarator '[' constant_expression ']'	 { $$ = create_non_term("direct_abstract_declarator", $1, $2, $3, $4); }
-	|  '(' ')'	 { $$ = create_non_term("direct_abstract_declarator", $1, $2); }
-	|  '(' parameter_type_list ')'	 { $$ = create_non_term("direct_abstract_declarator", $1, $2, $3); }
-	|  direct_abstract_declarator '(' ')'	 { $$ = create_non_term("direct_abstract_declarator", $1, $2, $3); }
-	|  direct_abstract_declarator '(' parameter_type_list ')'	 { $$ = create_non_term("direct_abstract_declarator", $1, $2, $3, $4); }
+	:  '(' abstract_declarator ')'					{ $$ = create_direct_abstract_declarator( ABSTRACT, $2 ); }
+	|  '[' ']'							{ $$ = create_direct_abstract_declarator( SQUARE ); } 
+	|  '[' constant_expression ']'	 				{ $$ = create_direct_abstract_declarator( SQUARE, NULL, $2 ); } 
+	|  direct_abstract_declarator '[' ']'				{ $$ = create_direct_abstract_declarator( SQUARE, $1 ); } 
+	|  direct_abstract_declarator '[' constant_expression ']'	{ $$ = create_direct_abstract_declarator( SQUARE, $1, $3 ); } 
+	|  '(' ')'	 						{ $$ = create_direct_abstract_declarator( ROUND ); } 
+	|  '(' parameter_type_list ')'	 				{ $$ = create_direct_abstract_declarator( ROUND, NULL, $2 ); } 
+	|  direct_abstract_declarator '(' ')'	 			{ $$ = create_direct_abstract_declarator( ROUND, $1 ); } 
+	|  direct_abstract_declarator '(' parameter_type_list ')'	{ $$ = create_direct_abstract_declarator( ROUND, $1, $3 ); } 
 	;
 
 initializer
@@ -492,10 +502,15 @@ external_declaration
 	|  declaration	 { $$ = add_to_global_symbol_table( $1 ); }
 	;
 
-function_definition
-	:  declaration_specifiers declarator compound_statement	 { $$ = create_function_defintion($1, $2, $3); }
-/*	|  declarator compound_statement	 { $$ = create_non_term("function_definition", $2); }*/
+function_declaration
+	: declaration_specifiers declarator { $$ = create_function_defintion($1, $2, NULL); }
 	;
+
+function_definition
+	:  function_declaration compound_statement	 { $$ = $1; }
+	;
+/*	:  declaration_specifiers declarator compound_statement	 { $$ = create_function_defintion($1, $2, $3); }*/
+/*	|  declarator compound_statement	 { $$ = create_non_term("function_definition", $2); }*/
 
 
 %%

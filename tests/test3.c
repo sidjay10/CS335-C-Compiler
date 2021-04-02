@@ -37,7 +37,7 @@ void insertFirst(int key, int data) {
 }
 
 //delete first item
-struct node* deleteFirst() {
+struct node* deleteFirst( void ) {
 
    //save reference to first link
    struct node *tempLink = head;

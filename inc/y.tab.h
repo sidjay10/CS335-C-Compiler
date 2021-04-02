@@ -190,8 +190,12 @@ union YYSTYPE
 	StructDeclarationList * struct_declaration_list;
 	StructDeclaration * struct_declaration;
 	SpecifierQualifierList * specifier_qualifier_list;
+	ParameterTypeList * parameter_type_list;
+	ParameterDeclaration * parameter_declaration;
+	DirectAbstractDeclarator * direct_abstract_declarator;
+	AbstractDeclarator * abstract_declarator;
 
-#line 195 "y.tab.h" /* yacc.c:1909  */
+#line 199 "y.tab.h" /* yacc.c:1909  */
 };
 
 typedef union YYSTYPE YYSTYPE;

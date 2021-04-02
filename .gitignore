@@ -15,3 +15,7 @@ tests/*.swp
 
 etc/*
 scripts/*
+
+.clang-format
+*.dot
+*.png
