@@ -4,6 +4,7 @@
 #include <iostream>
 
 #include <ast.h>
+#include <symtab.h>
 #include <scanner.h>
 #include <y.tab.h>
 

@@ -48,7 +48,7 @@ void Node::add_children (Node * node1, Node * node2, Node * node3, Node * node4)
 /* Print in the appropriate format for the dot script */
 void Terminal:: dotify () {
 	std::stringstream ss;
-	ss << "\t" << id << " [label=\"" << name << "\"];\n";
+	ss << "\t" << id << " [label=\"" << name << " : " << value << "\"];\n";
 	file_writer(ss.str());
 }
 

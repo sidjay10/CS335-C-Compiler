@@ -5,6 +5,7 @@
 
 #include <scanner.h>
 #include <ast.h>
+#include <symtab.h>
 #include <y.tab.h>
 //#define LEX
 

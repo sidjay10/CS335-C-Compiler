@@ -7,9 +7,9 @@ IS			(u|U|l|L)*
 
 %{
 #include <stdio.h>
-
 #include "scanner.h"
 #include "ast.h"
+#include "symtab.h"
 #include "y.tab.h"
 
 extern "C" int yylex();
@@ -66,10 +66,10 @@ int line_num=1;
 
 {L}({L}|{D})*		{ count(); return(check_type()); }
 
-0[xX]{H}+{IS}?		{ count(); return(CONSTANT); }
-0{D}+{IS}?		{ count(); return(CONSTANT); }
-{D}+{IS}?		{ count(); return(CONSTANT); }
-L?'(\\.|[^\\'])+'	{ count(); return(CONSTANT); }
+0[xX]{H}+{IS}?		{ count(); yylval.node = create_terminal("CONSTANT", yytext); return(CONSTANT); }
+0{D}+{IS}?		{ count(); yylval.node = create_terminal("CONSTANT", yytext); return(CONSTANT); }
+{D}+{IS}?		{ count(); yylval.node = create_terminal("CONSTANT", yytext); return(CONSTANT); }
+L?'(\\.|[^\\'])+'	{ count(); yylval.node = create_terminal("CONSTANT", yytext); return(CONSTANT); }
 
 {D}+{E}{FS}?		{ count(); yylval.node = create_terminal("CONSTANT", yytext); return(CONSTANT); }
 {D}*"."{D}+({E})?{FS}?	{ count(); yylval.node = create_terminal("CONSTANT", yytext); return(CONSTANT); }
@@ -183,6 +183,9 @@ int check_type()
 	return(IDENTIFIER);
 	it actually will only return IDENTIFIER
 */
+
+	Identifier * id = new Identifier(yytext);
+	yylval.identifier = id;
 	return(IDENTIFIER);
 }
 

@@ -45,10 +45,10 @@ extern int yydebug;
 # define YYTOKENTYPE
   enum yytokentype
   {
-    IDENTIFIER = 258,
-    CONSTANT = 259,
-    STRING_LITERAL = 260,
-    SIZEOF = 261,
+    CONSTANT = 258,
+    STRING_LITERAL = 259,
+    SIZEOF = 260,
+    IDENTIFIER = 261,
     PTR_OP = 262,
     INC_OP = 263,
     DEC_OP = 264,
@@ -84,9 +84,9 @@ extern int yydebug;
     UNSIGNED = 294,
     FLOAT = 295,
     DOUBLE = 296,
-    CONST = 297,
-    VOLATILE = 298,
-    VOID = 299,
+    VOID = 297,
+    CONST = 298,
+    VOLATILE = 299,
     STRUCT = 300,
     UNION = 301,
     ENUM = 302,
@@ -106,10 +106,10 @@ extern int yydebug;
   };
 #endif
 /* Tokens.  */
-#define IDENTIFIER 258
-#define CONSTANT 259
-#define STRING_LITERAL 260
-#define SIZEOF 261
+#define CONSTANT 258
+#define STRING_LITERAL 259
+#define SIZEOF 260
+#define IDENTIFIER 261
 #define PTR_OP 262
 #define INC_OP 263
 #define DEC_OP 264
@@ -145,9 +145,9 @@ extern int yydebug;
 #define UNSIGNED 294
 #define FLOAT 295
 #define DOUBLE 296
-#define CONST 297
-#define VOLATILE 298
-#define VOID 299
+#define VOID 297
+#define CONST 298
+#define VOLATILE 299
 #define STRUCT 300
 #define UNION 301
 #define ENUM 302
@@ -170,11 +170,28 @@ extern int yydebug;
 
 union YYSTYPE
 {
-#line 12 "src/grammar.y" /* yacc.c:1909  */
+#line 13 "src/grammar.y" /* yacc.c:1909  */
 
 	Node * node;
+	int value;
+	DeclarationSpecifiers * declaration_specifiers;
+	Declaration * declaration;
+	DeclarationList * declaration_list;
+	Declarator * declarator;
+	DeclaratorList * init_declarator_list;
+	Pointer * pointer;
+	DirectDeclarator * direct_declarator;
+	Identifier * identifier;
+	TypeQualifierList * type_qualifier_list;
+	FunctionDefinition * function_definition;
+	TypeSpecifier * type_specifier;
+	Enumerator * enumerator;
+	EnumeratorList * enumerator_list;
+	StructDeclarationList * struct_declaration_list;
+	StructDeclaration * struct_declaration;
+	SpecifierQualifierList * specifier_qualifier_list;
 
-#line 178 "y.tab.h" /* yacc.c:1909  */
+#line 195 "y.tab.h" /* yacc.c:1909  */
 };
 
 typedef union YYSTYPE YYSTYPE;
