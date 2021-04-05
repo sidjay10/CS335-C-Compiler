@@ -251,6 +251,7 @@ declaration
 	| declaration_specifiers init_declarator_list ';' { $$ = new_declaration( $1, $2 ); }
 	;
 
+/* These are types */
 declaration_specifiers
 	: storage_class_specifier				 { $$ = new_storage_class( $1 ); }
 	| storage_class_specifier declaration_specifiers	 { $$ = add_storage_class( $2, $1 ); }
@@ -272,10 +273,10 @@ init_declarator
 
 storage_class_specifier
 	:  TYPEDEF	{ $$ = TYPEDEF;  }  
-	|  EXTERN	{ $$ = EXTERN;   } 
-	|  STATIC	{ $$ = STATIC;   } 
-	|  AUTO	 	{ $$ = AUTO; 	 } 
-	|  REGISTER	{ $$ = REGISTER; } 
+/*	|  EXTERN	{ $$ = EXTERN;   } */ 
+/*	|  STATIC	{ $$ = STATIC;   } */
+/*	|  AUTO	 	{ $$ = AUTO; 	 } */
+/*	|  REGISTER	{ $$ = REGISTER; } */
 	;
 
 type_specifier
@@ -363,7 +364,6 @@ direct_declarator
 	|  direct_declarator '[' constant_expression ']'	 { $$ = create_dir_declarator_arr( ARRAY, $1, $3 ); }
 	|  direct_declarator '[' ']'	 			 { $$ = create_dir_declarator_arr( ARRAY, $1, NULL ); }
 	|  direct_declarator '(' parameter_type_list ')'	 { $$ = create_dir_declarator_fun( FUNCTION, $1, $3 ); }
-/*	|  direct_declarator '(' identifier_list ')'	 	 { $$ = create_non_term("direct_declarator", $1, $3); }*/
 	|  direct_declarator '(' ')'				 { $$ = create_dir_declarator_fun( FUNCTION, $1, NULL ); }
 	;
 
