@@ -6,6 +6,8 @@
 #include <map>
 #include <string>
 
+enum PrimitiveTypes = {CHAR, U_CHAR, SHORT, U_SHORT, INT, U_INT, L_INT, UL_INT, FLOAT, DOUBLE};
+
 class ParameterTypeList;
 
 class SymTabEntry {
@@ -178,6 +180,8 @@ class DeclarationSpecifiers : public Non_Terminal {
     std::vector<STORAGE_CLASS> storage_class;
     std::vector<TypeSpecifier *> type_specifier;
     std::vector<TYPE_QUALIFIER> type_qualifier;
+
+    isValid(); // Type Checking
 
     DeclarationSpecifiers();
 };
