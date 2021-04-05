@@ -52,6 +52,7 @@ void Terminal:: dotify () {
 		std::stringstream ss;
 		ss << "\t" << id << " [label=\"" << name << " : " << value << "\"];\n";
 		file_writer(ss.str());
+	}
 }
 
 void Non_Terminal:: dotify () {
