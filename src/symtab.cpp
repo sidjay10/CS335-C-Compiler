@@ -677,6 +677,9 @@ void LocalSymbolTable::increase_level() {
 void LocalSymbolTable::clear_current_level() {
 
     for ( auto it = sym_table.begin(); it != sym_table.end(); it++ ) {
+        if (it->second.empty()){
+            continue;
+        }
         SymTabEntry *entry = ( it->second ).front();
         if ( !entry ) {
             continue;
