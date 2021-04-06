@@ -118,9 +118,9 @@ primary_expression
 
 postfix_expression
 	: primary_expression	{ $$ = $1; } 
-	| postfix_expression '[' expression ']'	{ $$ = create_non_term("[]", $1, $3); } 
-	| postfix_expression '(' ')'	{ $$ = create_non_term("FUNCTION_CALL", $1); } 
-	| postfix_expression '(' argument_expression_list ')'	{ $$ = create_non_term("FUNCTION_CALL_ARGS", $1, $3); } 
+	| postfix_expression '[' expression ']'	{ $$ = create_postfix_expr_arr( ARRAY, $1, $3 ); } 
+	| postfix_expression '(' ')'	{ $$ = create_postfix_expr_fun( FUNCTION, $1 ); } 
+	| postfix_expression '(' argument_expression_list ')'	{ } 
 	| postfix_expression '.' IDENTIFIER	{ $$ = create_non_term(".", $1, $3); } 
 	| postfix_expression PTR_OP IDENTIFIER	{ $$ = create_non_term("->", $1, $3); } 
 	| postfix_expression INC_OP	{ $$ = create_non_term("POST INCREMENT", $1); } 

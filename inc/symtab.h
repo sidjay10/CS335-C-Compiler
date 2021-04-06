@@ -8,7 +8,47 @@
 
 enum PrimitiveTypes = {CHAR, U_CHAR, SHORT, U_SHORT, INT, U_INT, L_INT, UL_INT, FLOAT, DOUBLE};
 
+class StructDefinition;
+
+class Types {
+	int index;
+	std::string name;
+	size_t size;
+	bool is_user_defined;
+	StructDefinition * struct_definition;
+};
+
 class ParameterTypeList;
+
+
+class Expression : public Non_Terminal {
+	Types * type;
+	/* Change this late */
+	int num_opearands;
+	Expression( Types * type, int num_op );
+};
+
+class PrimaryExpressin : public Expression {
+	Expression * op1;
+};
+
+
+enum PostfixExpressionTypes {ARRAY,FUNCTION, STRUCT, INC, DEC };
+
+class PostfixExpression : public Expression {
+	PostfixExpressionTypes pe_type;
+	PostfixExpression * pe;
+	Expression * exp;
+	Identifier * id;
+	ArgumentExprList * ae_list;
+	PostfixExpression();
+};
+
+PostfixExpression * create_postfix_expr_arr( PostfixExpressionTypes * type, PostfixExpression * pe,  Expression * exp);
+PostfixExpression * create_postfix_expr_fun( PostfixExpressionTypes * type, PostfixExpression * pe,  ArgumentExprList * ae_list);
+PostfixExpression * create_postfix_expr_str( PostfixExpressionTypes * type, PostfixExpression * pe,  Identifier * id, bool is_pointer);
+PostfixExpression * create_postfix_expr_ido( PostfixExpressionTypes * type, PostfixExpression * pe,  bool is_inc );
+
 
 class SymTabEntry {
   public:
