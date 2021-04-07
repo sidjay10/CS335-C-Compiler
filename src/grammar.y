@@ -111,16 +111,20 @@
 
 primary_expression
 	: IDENTIFIER		{ $$ = $1; } 
-	| CONSTANT		{ $$ = $1; }
-	| STRING_LITERAL	{ $$ = create_terminal("STRING_LITERAL", NULL); } 
-	| '(' expression ')'	{ $$ = $2; } 
+	| CONSTANT		{ $$ = $1; } 
+
+
+	| STRING_LITERAL	{ $$ = create_terminal("STRING LITERAL",NULL); }
+
+	| '(' expression ')'	{ $$ = create_non_term("primary_expression", $2 ); } 
+
 	;
 
 postfix_expression
 	: primary_expression	{ $$ = $1; } 
-	| postfix_expression '[' expression ']'	{ $$ = create_postfix_expr_arr( ARRAY, $1, $3 ); } 
-	| postfix_expression '(' ')'	{ $$ = create_postfix_expr_fun( FUNCTION, $1 ); } 
-	| postfix_expression '(' argument_expression_list ')'	{ } 
+	| postfix_expression '[' expression ']'	{ $$ = create_non_term("[]", $1, $3); }
+	| postfix_expression '(' ')'	{ $$ = create_non_term("FUNCTION CALL", $1 ); } 
+	| postfix_expression '(' argument_expression_list ')'	{ create_non_term("FUNCTION CALL ARGS", $1, $3 ); } 
 	| postfix_expression '.' IDENTIFIER	{ $$ = create_non_term(".", $1, $3); } 
 	| postfix_expression PTR_OP IDENTIFIER	{ $$ = create_non_term("->", $1, $3); } 
 	| postfix_expression INC_OP	{ $$ = create_non_term("POST INCREMENT", $1); } 
@@ -361,7 +365,8 @@ declarator
 direct_declarator
 	:  IDENTIFIER	 					 { $$ = create_dir_declarator_id( ID , $1 ); }
 	|  '(' declarator ')'	 				 { $$ = create_dir_declarator_dec( DECLARATOR, $2 ); }
-	|  direct_declarator '[' constant_expression ']'	 { $$ = create_dir_declarator_arr( ARRAY, $1, $3 ); }
+	/*|  direct_declarator '[' constant_expression ']'	 { $$ = create_dir_declarator_arr( ARRAY, $1, $3 ); }*/
+	|  direct_declarator '[' CONSTANT ']'	 { $$ = create_dir_declarator_arr( ARRAY, $1, $3 ); }
 	|  direct_declarator '[' ']'	 			 { $$ = create_dir_declarator_arr( ARRAY, $1, NULL ); }
 	|  direct_declarator '(' parameter_type_list ')'	 { $$ = create_dir_declarator_fun( FUNCTION, $1, $3 ); }
 	|  direct_declarator '(' ')'				 { $$ = create_dir_declarator_fun( FUNCTION, $1, NULL ); }
@@ -414,7 +419,8 @@ abstract_declarator
 direct_abstract_declarator
 	:  '(' abstract_declarator ')'					{ $$ = create_direct_abstract_declarator( ABSTRACT, $2 ); }
 	|  '[' ']'							{ $$ = create_direct_abstract_declarator( SQUARE ); } 
-	|  '[' constant_expression ']'	 				{ $$ = create_direct_abstract_declarator( SQUARE, NULL, $2 ); } 
+	/*|  '[' constant_expression ']'	 				{ $$ = create_direct_abstract_declarator( SQUARE, NULL, $2 ); } */
+	|  '[' CONSTANT ']'	 				{ $$ = create_direct_abstract_declarator( SQUARE, NULL, $2 ); } 
 	|  direct_abstract_declarator '[' ']'				{ $$ = create_direct_abstract_declarator( SQUARE, $1 ); } 
 	|  direct_abstract_declarator '[' constant_expression ']'	{ $$ = create_direct_abstract_declarator( SQUARE, $1, $3 ); } 
 	|  '(' ')'	 						{ $$ = create_direct_abstract_declarator( ROUND ); } 

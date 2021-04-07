@@ -12,6 +12,46 @@
 LocalSymbolTable local_symbol_table;
 GlobalSymbolTable global_symbol_table;
 
+std::vector < Types * > defined_types;
+
+unsigned int anon_count = 0;
+//##############################################################################
+//############################ STRUCT DEFINITION ###############################
+//##############################################################################
+StructDefinition::StructDefinition() {};
+
+size_t StructDefinition::get_size() {
+	size_t size = 0;
+	for ( auto it = members.begin(); it != members.end(); it++ ) {
+		// TODO: Implement This
+		size += 8;
+	}
+	return size;
+}
+
+StructDefinition * create_struct_definition( int un_or_st, StructDeclarationList * sdl ) {
+	StructDefinition * sd = new StructDefinition();
+	sd->un_or_st = un_or_st;
+		std::cout<<"struct {\n";
+	for ( auto it = sdl->struct_declaration_list.begin(); it != sdl->struct_declaration_list.end(); it ++ )
+	{
+		//TODO: Complete this
+
+
+		std::vector <Declarator * > & dl = (*it)->declarator_list->declarator_list ;
+
+		for ( auto jt = dl.begin(); jt != dl.end(); jt++ ) { 
+			
+			sd->members.insert({ (*jt)->id->value , nullptr });
+			std::cout<< "  " << (*jt)->id->value << "\n";
+		}
+
+	}
+		std::cout << "}\n";
+	return sd;
+}
+
+
 //##############################################################################
 //################################ POINTER #####################################
 //##############################################################################
@@ -73,6 +113,12 @@ Declaration *new_declaration( DeclarationSpecifiers *declaration_specifiers,
     Declaration *d =
         new Declaration( declaration_specifiers, init_declarator_list );
     d->add_children( declaration_specifiers, init_declarator_list );
+
+
+	
+
+	if ( declaration_specifiers->type_specifier.size() == 1 &&  ( declaration_specifiers->type_specifier[0]->type == UNION || declaration_specifiers->type_specifier[0]->type == STRUCT ) ) {; }
+	
     return d;
 }
 
@@ -514,6 +560,40 @@ create_type_specifier( TYPE_SPECIFIER type, Identifier *id,
     }
     ts->name = ss.str();
     ts->add_children( id, struct_declaration_list );
+	if( struct_declaration_list != nullptr ) {
+	std::string struct_name;
+	
+	if ( id == nullptr ) {
+		struct_name = "anon" + std::to_string(anon_count);
+		anon_count++;
+	}
+	else {
+		struct_name = id->value;
+	}
+
+	Types * struct_type = new Types;
+	struct_type->name=struct_name;
+	struct_type->is_primitive = false;
+	struct_type->pointer_level = 0;
+
+	switch ( type ) {
+    case UNION:
+	struct_type->is_union = true;
+        break;
+    case STRUCT:
+	struct_type->is_union = false;
+        break;
+    default:
+        assert( 0 );
+
+}
+	struct_type->struct_definition = create_struct_definition( type, struct_declaration_list );
+
+	struct_type->size = struct_type->struct_definition->get_size();
+
+struct_type->pointer_level = 0;
+}
+	 
     return ts;
 }
 
@@ -568,6 +648,7 @@ StructDeclaration::StructDeclaration( SpecifierQualifierList *sq_list_,
     : Non_Terminal( "struct_declaration" ), sq_list( sq_list_ ),
       declarator_list( declarator_list_ ){};
 
+
 StructDeclaration *
 create_struct_declaration( SpecifierQualifierList *sq_list,
                            DeclaratorList *struct_declarator_list ) {
@@ -581,6 +662,7 @@ Declarator *verify_struct_declarator( Declarator *declarator ) {
     // TODO: Fill this in
     return declarator;
 }
+
 
 //##############################################################################
 //######################### SPECIFIER QUALIFIER LIST ###########################
@@ -783,6 +865,15 @@ void GlobalSymbolTable::add_symbol(
     DeclarationSpecifiers *declaration_specifiers, Declarator *declarator ) {
 
     std::cout << "G: " << declarator->id->value << "\n";
+}
+
+SymTabEntry *GlobalSymbolTable::get_symbol_from_table( std::string name ) {
+    auto it = sym_table.find( name );
+    if ( it == sym_table.end() ) {
+        return nullptr;
+    } else {
+        return it->second;
+    }
 }
 
 Node *add_to_global_symbol_table( Declaration *declaration ) {

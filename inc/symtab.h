@@ -6,20 +6,39 @@
 #include <map>
 #include <string>
 
-enum PrimitiveTypes = {CHAR, U_CHAR, SHORT, U_SHORT, INT, U_INT, L_INT, UL_INT, FLOAT, DOUBLE};
+enum PrimitiveTypes {char_t, uchar_t, short_t, ushort_t, int_t, uint_t, lint_t, ulint_t, float_t, double_t};
 
-class StructDefinition;
+class Types;
+
+class Identifier;
+
+class StructDeclarationList;
+class StructDefinition {
+	public:
+	std::map <std::string, Types *> members;
+	int un_or_st;
+	StructDefinition();
+	size_t get_size();
+};
+
+
+StructDefinition * create_struct_definition( int un_or_st, StructDeclarationList * sdl );
 
 class Types {
+public:
 	int index;
 	std::string name;
 	size_t size;
-	bool is_user_defined;
+	bool is_primitive;
+	bool is_struct;
+	bool is_union;
+	int pointer_level;
 	StructDefinition * struct_definition;
 };
 
-class ParameterTypeList;
+extern std::vector < Types * >  type_specifiers;
 
+class ParameterTypeList;
 
 class Expression : public Non_Terminal {
 	Types * type;
@@ -28,32 +47,39 @@ class Expression : public Non_Terminal {
 	Expression( Types * type, int num_op );
 };
 
-class PrimaryExpressin : public Expression {
+/*
+class PrimaryExpression : public Expression {
 	Expression * op1;
 };
 
 
-enum PostfixExpressionTypes {ARRAY,FUNCTION, STRUCT, INC, DEC };
+PrimaryExpression * create_primary_expression( Identifier * );
+PrimaryExpression * create_primary_expression( Constant *
+PrimaryExpression * create_primary_expression( StringLiteral * );
+PrimaryExpression * create_primary_expression( Expression * );
+
+
+enum PostfixExpressionTypes { ARR,FUN, STR_UN, INC, DEC };
 
 class PostfixExpression : public Expression {
 	PostfixExpressionTypes pe_type;
 	PostfixExpression * pe;
 	Expression * exp;
 	Identifier * id;
-	ArgumentExprList * ae_list;
+	//ArgumentExprList * ae_list;
 	PostfixExpression();
 };
 
 PostfixExpression * create_postfix_expr_arr( PostfixExpressionTypes * type, PostfixExpression * pe,  Expression * exp);
 PostfixExpression * create_postfix_expr_fun( PostfixExpressionTypes * type, PostfixExpression * pe,  ArgumentExprList * ae_list);
 PostfixExpression * create_postfix_expr_str( PostfixExpressionTypes * type, PostfixExpression * pe,  Identifier * id, bool is_pointer);
-PostfixExpression * create_postfix_expr_ido( PostfixExpressionTypes * type, PostfixExpression * pe,  bool is_inc );
+PostfixExpression * create_postfix_expr_ido( PostfixExpressionTypes * type, PostfixExpression * pe );
 
-
+*/
 class SymTabEntry {
   public:
     std::string name;
-    std::string type;
+    int type_index;
     int level;
 
     // TODO: This needs to be expanded
@@ -86,6 +112,9 @@ class GlobalSymbolTable : public SymbolTable {
     std::map<std::string, SymTabEntry *> sym_table;
     void add_symbol( DeclarationSpecifiers *declaration_specifiers,
                      Declarator *declarator );
+    SymTabEntry *get_symbol_from_table( std::string name );
+
+	
 };
 
 class LocalSymbolTable : public SymbolTable {
@@ -221,7 +250,7 @@ class DeclarationSpecifiers : public Non_Terminal {
     std::vector<TypeSpecifier *> type_specifier;
     std::vector<TYPE_QUALIFIER> type_qualifier;
 
-    isValid(); // Type Checking
+    bool isValid(); // Type Checking
 
     DeclarationSpecifiers();
 };
@@ -370,7 +399,8 @@ class StructDeclaration : public Non_Terminal {
     DeclaratorList *declarator_list;
 
     StructDeclaration( SpecifierQualifierList *sq_list_,
-                       DeclaratorList *declarator_list_ );
+                                      DeclaratorList *declarator_list_ ); 
+	void add_to_struct_definition( StructDefinition * );
 };
 
 StructDeclaration *
@@ -405,8 +435,7 @@ class EnumeratorList : public Non_Terminal {
 };
 
 EnumeratorList *create_enumerator_list( Enumerator *enumerator );
-EnumeratorList *add_to_enumerator_list( EnumeratorList *enumerator_list,
-                                        Enumerator *enumerator );
+EnumeratorList *add_to_enumerator_list( EnumeratorList *enumerator_list, Enumerator *enumerator );
 
 typedef int TYPE_SPECIFIER;
 
