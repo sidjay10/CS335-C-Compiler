@@ -165,7 +165,7 @@ multiplicative_expression
 additive_expression
 	: multiplicative_expression				{ $$ = $1; }
 	| additive_expression '+' multiplicative_expression	{ $$ = create_non_term("+", $1, $3); }
-	| additive_expression '-' multiplicative_expression	{ $$ = create_non_term("-", $1, $3); }
+	| additive_expression '-' multiplicative_expression	{ $$ = create_additive_expression("-", $1, $3); }
 	;
 
 shift_expression
@@ -242,6 +242,7 @@ expression
 	| expression ',' assignment_expression	 { $$ = create_non_term("expression", $1, $3); }
 	;
 
+/* Revisit this */ 
 constant_expression
 	: conditional_expression	 { $$ = $1; }
 	;
@@ -420,7 +421,7 @@ direct_abstract_declarator
 	|  '(' ')'	 						{ $$ = create_direct_abstract_declarator( ROUND ); } 
 	|  '(' parameter_type_list ')'	 				{ $$ = create_direct_abstract_declarator( ROUND, NULL, $2 ); } 
 	|  direct_abstract_declarator '(' ')'	 			{ $$ = create_direct_abstract_declarator( ROUND, $1 ); } 
-	|  direct_abstract_declarator '(' parameter_type_list ')'	{ $$ = create_direct_abstract_declarator( ROUND, $1, $3 ); } 
+	|  directype_namet_abstract_declarator '(' parameter_type_list ')'	{ $$ = create_direct_abstract_declarator( ROUND, $1, $3 ); } 
 	;
 
 initializer

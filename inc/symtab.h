@@ -7,6 +7,7 @@
 #include <string>
 
 enum PrimitiveTypes = {CHAR, U_CHAR, SHORT, U_SHORT, INT, U_INT, L_INT, UL_INT, FLOAT, DOUBLE};
+}
 
 class StructDefinition;
 
@@ -28,11 +29,200 @@ class Expression : public Non_Terminal {
 	Expression( Types * type, int num_op );
 };
 
-class PrimaryExpressin : public Expression {
-	Expression * op1;
+class PrimaryExpression : public Expression {
+	/**
+    isTerminal = 1 when IDENTIFIER
+    isTerminal = 2 when CONSTANT
+    isTerminal = 3 when STRING_LITERAL
+  */
+ public :
+  std::string lval;
+  int isTerminal; 
+  Expression * op1;
+  Types * type;
+  Types * evaluate_type();
+  PrimaryExpression(std::string u_op, std::string terminal){
+    if(u_op == "1"){
+        isTerminal=1;
+    }
+    else if (u_op == "2"){
+        isTerminal=2;
+    }
+    else if(u_op == "3"){
+        isTerminal=3;
+    }
+    else{
+      //Raise Error
+    }
+    lval = terminal;
+    op1 = nullptr;
+  }
+
+  PrimaryExpression(Expression *e){
+    isTerminal = 0;
+    lval = "";
+    op1 = e;
+  }
+};
+PrimaryExpression * create_primary_terminal(std::string u_op,std::string terminal);
+PrimaryExpression * create_primary_expression(PrimaryExpression * pre);
+
+class ArgumentExprList: public Expression{
+  Expression *op1; // This will be null in case of root object
+  Expression *op2;
+  Types * type;
+  Types * evaluate_type(); // XXX: TODO: Do we need type checking here?
+  
+  ArgumentExprList(Expression* ase){
+    op1 = nullptr;
+    op2 = ase;
+  }
+  ArgumentExprList(Expression *ae_list, Expression *ase){
+    op1 = ae_list;
+    op2 = ase;
+  }
+  
+};
+class AssignmentExpression;
+ArgumentExprList * create_argument_expr_assignement(AssignmentExpression *ase);
+ArgumentExprList * create_argument_expr_list(ArgumentExprList *ae_list, AssignmentExpression *ase);
+class UnaryExpression: public Expression{
+  public:
+    Expression *op1;
+    Types * type;
+    Types * evaluate_type();
+
+  /// XXX: TODO
+  UnaryExpression(std::string u_op, Expression *e){
+    if(u_op == "++"){
+      //Set Something
+        /// XXX : Should we type check in the constructor itself?
+        // if(dynamic_cast<UnaryExpression *>(e) != nullptr)
+    }
+    else if(u_op == "--"){
+      //Set something
+    }
+    else if(u_op == "sizeof"){
+      //Set something
+    }
+    else{
+      //ERROR
+    }
+    op1 = e;
+  }
+
 };
 
+class CastExpression;
 
+UnaryExpression * create_unary_expression_ue(std::string u_op, UnaryExpression* ue); // INC_OP, DEC_OP
+UnaryExpression * create_unary_expression_cast(std::string u_op, CastExpression* ce);
+ 
+UnaryExpression * create_unary_expression_typename();
+
+class CastExpression : public Expression{
+  Expression * op1;
+  Types * evaluate_type();
+};
+// unary not neeeded
+CastExpression * create_caste_expression_typename(CastExpression* ce); // type_name wala add krna hai
+
+class MultiplicativeExpression : public Expression{
+  Expression * op1;
+  Expression * op2;
+  Types * type;
+  Types * evaluate_type();
+};
+MultiplicativeExpression * create_multiplicative_expression(std::string u_op,MultiplicativeExpression *me, CastExpression *ce);
+
+class AdditiveExpression : public Expression{
+    Expression *op1;
+    Expression *op2;
+    Types * type;
+    Types * evaluate_type();
+};
+AdditiveExpression * create_additive_expression(std::string u_op,AdditiveExpression * ade, MultiplicativeExpression *me);
+
+class ShiftExpression : public Expression{
+    Expression *op1;
+    Expression *op2;
+    Types * type;
+    Types * evaluate_type();
+};
+ShiftExpression * create_shift_expression(std::string u_op,ShiftExpression *se, AdditiveExpression *ade);
+
+class RelationalExpression : public Expression{
+    Expression *op1;
+    Expression *op2;
+    Types * type;
+    Types * evaluate_type();
+};
+RelationalExpression * create_relational_expression(std::string u_op, RelationalExpression *re, ShiftExpression *se);
+class EqualityExpression : public Expression{
+    Expression *op1;
+    Expression *op2;
+    Types * type;
+    Types * evaluate_type();
+};
+EqualityExpression * create_equality_expression(std::string u_op,EqualityExpression *eq, RelationalExpression *re);
+class AndExpression : public Expression{
+    Expression *op1;
+    Expression *op2;
+    Types * type;
+    Types * evaluate_type();
+}; 
+AndExpression * create_and_expression(std::string u_op,AndExpression * an,EqualityExpression * eq);
+class ExclusiveorExpression : public Expression{
+    Expression *op1;
+    Expression *op2;
+    Types * evaluate_type();
+};
+ExclusiveorExpression * create_exclusive_or_expression(std::string u_op,ExclusiveorExpression * ex,AndExpression * an);
+
+class InclusiveorExpression : public Expression{
+    Expression *op1;
+    Expression *op2;
+    Types * evaluate_type();
+};
+InclusiveorExpression * create_inclusive_or_expression(std::string u_op,InclusiveorExpression * ie, ExclusiveorExpression *ex); 
+ 
+class Logical_andExpression : public Expression{
+    Expression *op1;
+    Expression *op2;
+    Types * evaluate_type();
+};
+Logical_andExpression * creat_logical_and_expression(std::string u_op,Logical_andExpression * la, InclusiveorExpression *ie);
+class Logical_orExpression : public Expression{
+    Expression *op1;
+    Expression *op2;
+    Types * evaluate_type();
+};
+Logical_orExpression * creat_logical_or_expression(std::string u_op,Logical_orExpression * lo, Logical_andExpression *la);
+class ConditionalExpression : public Expression{
+    Expression *op1;
+    Expression *op2;
+    Expression *op3;
+    Types * evaluate_type();
+};
+ConditionalExpression * create_conditional_expression(std::string u_op,Logical_orExpression *lo,Expression * e, ConditionalExpression * coe);
+class AssignmentExpresiion : public Expression{
+  Expression *op1;
+  Expression *op2;
+  std::string a_op_string;
+  Types * evaluate_type();
+  
+};
+AssignmentExpresiion * create_assignment_expression(std::string u_op,UnaryExpression * ue,AssignmentExpresiion * ase); // change later for assignment operator
+class TopLevelExpression : public Expression{
+  Expression *op1;
+  Expression *op2;
+  Types * evaluate_type();
+}; 
+TopLevelExpression
+class ConstantExpression : public Expression{
+    Expression *op1;
+    Types * evaluate_type();
+};
 enum PostfixExpressionTypes {ARRAY,FUNCTION, STRUCT, INC, DEC };
 
 class PostfixExpression : public Expression {
@@ -289,7 +479,7 @@ typedef enum {
 
 class DirectAbstractDeclarator : public Non_Terminal {
   public:
-    DIRECT_ABSTRACT_DECLARATOR_TYPE type;
+    DIRECT_ABSTRACT_DECLARATOR_TYPE type;Type
     AbstractDeclarator *abstract_declarator;
     Node *const_expr;
     DirectAbstractDeclarator *direct_abstract_declarator;

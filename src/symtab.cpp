@@ -13,6 +13,72 @@ LocalSymbolTable local_symbol_table;
 GlobalSymbolTable global_symbol_table;
 
 //##############################################################################
+//################################ Expression #####################################
+//##############################################################################
+
+// Object creation APIs
+
+// 1.Primary Expression
+PrimaryExpression * create_primary_terminal(std::string u_op,std::string terminal){
+    PrimaryExpression *P = new PrimaryExpression(u_op,terminal);
+    return P;
+    
+}
+PrimaryExpression * create_primary_expression(PrimaryExpression * pre){
+    PrimaryExpression *P = new PrimaryExpression(pre);
+    return P;
+}
+//
+
+
+// Unary Expression
+
+UnaryExpression *create_unary_expression_ue(std::string u_op, UnaryExpression *ue){
+    UnaryExpression *U = new UnaryExpression();
+    if(u_op == "++"){
+        //INC_OP
+    }
+    else if(u_op == "--"){
+        //DEC_OP
+    }
+    else if(u_op == "sizeof"){
+        //SizeOf
+    }
+    else{
+        //Raise Error
+    }
+}
+
+// & (int) (x)
+// &(x) -> pointer value of x
+
+UnaryExpression *create_unary_expression_cast(std::string u_op, CastExpression *ce){
+    UnaryExpression *U = new UnaryExpression();
+    if (u_op == "&"){
+        // ce->op1 should be of type IDENTIFIER because we dont support function pointers
+
+    }
+    else if(u_op == "*"){
+
+    }
+    else if(u_op == "-"){
+
+    }
+    else if(u_op == "+"){
+
+    }
+    else if(u_op == "!"){
+
+    }
+    else if(u_op == "~"){
+
+    }
+    else{
+        //Throw Error
+    }
+}
+
+//##############################################################################
 //################################ POINTER #####################################
 //##############################################################################
 
