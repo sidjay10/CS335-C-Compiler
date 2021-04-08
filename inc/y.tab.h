@@ -1,8 +1,9 @@
-/* A Bison parser, made by GNU Bison 3.0.4.  */
+/* A Bison parser, made by GNU Bison 3.5.1.  */
 
 /* Bison interface for Yacc-like parsers in C
 
-   Copyright (C) 1984, 1989-1990, 2000-2015 Free Software Foundation, Inc.
+   Copyright (C) 1984, 1989-1990, 2000-2015, 2018-2020 Free Software Foundation,
+   Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -29,6 +30,9 @@
 
    This special exception was added by the Free Software Foundation in
    version 2.2 of Bison.  */
+
+/* Undocumented macros, especially those whose name start with YY_,
+   are private implementation details.  Do not rely on them.  */
 
 #ifndef YY_YY_Y_TAB_H_INCLUDED
 # define YY_YY_Y_TAB_H_INCLUDED
@@ -76,12 +80,12 @@ extern int yydebug;
     STATIC = 286,
     AUTO = 287,
     REGISTER = 288,
-    CHAR = 289,
-    SHORT = 290,
-    INT = 291,
-    LONG = 292,
-    SIGNED = 293,
-    UNSIGNED = 294,
+    SIGNED = 289,
+    UNSIGNED = 290,
+    CHAR = 291,
+    SHORT = 292,
+    LONG = 293,
+    INT = 294,
     FLOAT = 295,
     DOUBLE = 296,
     VOID = 297,
@@ -137,12 +141,12 @@ extern int yydebug;
 #define STATIC 286
 #define AUTO 287
 #define REGISTER 288
-#define CHAR 289
-#define SHORT 290
-#define INT 291
-#define LONG 292
-#define SIGNED 293
-#define UNSIGNED 294
+#define SIGNED 289
+#define UNSIGNED 290
+#define CHAR 291
+#define SHORT 292
+#define LONG 293
+#define INT 294
 #define FLOAT 295
 #define DOUBLE 296
 #define VOID 297
@@ -167,10 +171,9 @@ extern int yydebug;
 
 /* Value type.  */
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
-
 union YYSTYPE
 {
-#line 13 "src/grammar.y" /* yacc.c:1909  */
+#line 13 "src/grammar.y"
 
 	Node * node;
 	int value;
@@ -195,9 +198,9 @@ union YYSTYPE
 	DirectAbstractDeclarator * direct_abstract_declarator;
 	AbstractDeclarator * abstract_declarator;
 
-#line 199 "y.tab.h" /* yacc.c:1909  */
-};
+#line 202 "y.tab.h"
 
+};
 typedef union YYSTYPE YYSTYPE;
 # define YYSTYPE_IS_TRIVIAL 1
 # define YYSTYPE_IS_DECLARED 1

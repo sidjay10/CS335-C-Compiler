@@ -156,7 +156,7 @@ class TypeQualifierList : public Non_Terminal {
 TypeQualifierList *create_type_qualifier_list( TYPE_QUALIFIER type );
 TypeQualifierList *add_to_type_qualifier_list( TypeQualifierList *tql,
                                                TYPE_QUALIFIER type );
-
+void is_Valid(TypeQualifierList *ts);
 class Pointer : public Non_Terminal {
   public:
     TypeQualifierList *type_qualifier_list;
@@ -187,7 +187,7 @@ Declarator *add_initializer_to_declarator( Declarator *declarator,
 Declarator *create_declarator( Pointer *pointer,
                                DirectDeclarator *direct_declarator );
 
-Declarator *verify_struct_declarator( Declarator *declarator );
+
 
 typedef enum direct_declartor_enum {
     ID,
@@ -249,11 +249,11 @@ class DeclarationSpecifiers : public Non_Terminal {
     std::vector<STORAGE_CLASS> storage_class;
     std::vector<TypeSpecifier *> type_specifier;
     std::vector<TYPE_QUALIFIER> type_qualifier;
-
     bool isValid(); // Type Checking
 
     DeclarationSpecifiers();
 };
+void is_Valid(DeclarationSpecifiers *ds);
 
 DeclarationSpecifiers *new_storage_class( STORAGE_CLASS sc );
 DeclarationSpecifiers *new_type_specifier( TypeSpecifier *ts );
@@ -418,7 +418,7 @@ create_struct_declaration_list( StructDeclaration *struct_declaration );
 StructDeclarationList *
 add_to_struct_declaration_list( StructDeclarationList *struct_declaration_list,
                                 StructDeclaration *struct_declaration );
-
+void verify_struct_declarator( StructDeclarationList *st );
 class Enumerator : public Non_Terminal {
   public:
     Identifier *id;

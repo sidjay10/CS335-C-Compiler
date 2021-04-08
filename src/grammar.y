@@ -48,7 +48,7 @@
 %token <node> XOR_ASSIGN OR_ASSIGN TYPE_NAME
 
 %token <value> TYPEDEF EXTERN STATIC AUTO REGISTER
-%token <value> CHAR SHORT INT LONG SIGNED UNSIGNED FLOAT DOUBLE VOID
+%token <value> SIGNED UNSIGNED CHAR SHORT LONG INT FLOAT DOUBLE VOID
 %token <value> CONST VOLATILE
 %token <value> STRUCT UNION ENUM ELLIPSIS
 
@@ -251,8 +251,8 @@ constant_expression
 	;
 
 declaration
-	: declaration_specifiers ';'			  { $$ = new_declaration( $1, NULL ); }
-	| declaration_specifiers init_declarator_list ';' { $$ = new_declaration( $1, $2 ); }
+	: declaration_specifiers ';'			  { $$ = new_declaration( $1, NULL );}
+	| declaration_specifiers init_declarator_list ';' {$$ = new_declaration( $1, $2 );}
 	;
 
 /* These are types */
@@ -331,7 +331,7 @@ struct_declarator_list
 	;
 
 struct_declarator
-	:  declarator	 { $$ = verify_struct_declarator( $1 ); }
+	:  declarator	 { $$ = $1; }
 /*	|  ':' constant_expression	 { $$ = create_non_term(":", $2); }
 	|  declarator ':' constant_expression	 { $$ = create_non_term(":", $1, $3); } */
 	;
