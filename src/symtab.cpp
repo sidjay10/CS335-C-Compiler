@@ -232,16 +232,20 @@ UnaryExpression *create_unary_expression_ue(std::string u_op, UnaryExpression *u
         else{
             //Incorrect type throw error
             delete U;
-            std::cerr << "Prefix operator " << op << " cannot be applied to type " << ue->type.name;
+            std::cerr << "Prefix operator " << u_op << " cannot be applied to type " << ue->type.name;
             exit(0);
         }
     }
     else if(u_op == "sizeof"){
         //SizeOf
-        U->typeIndex = PrimitiveTypes::U_INT_T;
+        U->type.typeIndex = PrimitiveTypes::U_INT_T;
+        U->type.ptr_level = 0;
+        U->type.is_const = false;
     }
     else{
         //Raise Error
+        std::cerr << "Error parsing Unary Expression.\n";
+        exit(0);
     }
 
     return U;
@@ -253,29 +257,28 @@ UnaryExpression *create_unary_expression_cast(std::string u_op, CastExpression *
     UnaryExpression *U = new UnaryExpression();
     U->op = u_op;
     U->op1 = ce;
-    Types ceT = ce->getType();
+    Type ceT = ce->type;
     if (u_op == "&"){
         // ce->op1 should be of type IDENTIFIER because we dont support function pointers
-        if(ce->typeCast == -1){
-            ///XXX:: TODO implement getPointerTypeIndex()
-            U->op1->typeIndex = ceT.getPointerTypeIndex(); 
-        }
-        else{
-            //Error cannot get reference to type casts
-            std::cerr << "lvalue required as unary & operator";
-            delete U;
-            exit(0);
-        }
+        ///XXX:: TODO implement getPointerTypeIndex()
+        U->type = ce->type;
+        U->type.ptr_level++;
+        // else{
+        //     //Error cannot get reference to type casts
+        //     std::cerr << "lvalue required as unary & operator";
+        //     delete U;
+        //     exit(0);
+        // }
     }
     else if(u_op == "*"){
-        if(ceT.typeFamily == 2){
-            ///XXX:: TODO implement getUnderlyingTypeIndex()
-            U->op1->typeIndex = ceT.getUnderlyingTypeIndex();            
+        if(ce->type.ptr_level > 0){
+            U->type = ce->type;
+            U->type.ptr_level--;            
         }
         else{
             //Error because of dereference of non-pointer type
             delete U;
-            std::cerr << "Error : Invalid dereference of type";
+            std::cerr << "Error : Invalid dereference of type " << ce->type.get_name();
             exit(0);
         }
     }
@@ -678,7 +681,7 @@ AssignmentExpression * create_assignment_expression(std::string op,UnaryExpressi
     }
     else if(op=="%="){
         if((uet.isInt()&&aset.isInt()){
-            P->typeIndex = PrimitiveTypes::U_INT_T;
+            P->typeIndex = ue
         }
         else{
             //Error
@@ -794,9 +797,9 @@ Declaration ::Declaration( DeclarationSpecifiers *declaration_specifiers_,
 
 void set_index(DeclarationSpecifiers *ds)
 {   
-    int err=0;
+    ds->is_const=false;int err=0;
     
-    if(ds->storage_class.size()==1){
+    if(ds->ds1){
         if(declaration_specifiers->storage_class.at(0)==TYPEDEF) {}
         else err+=1;
         }
@@ -806,9 +809,11 @@ void set_index(DeclarationSpecifiers *ds)
     ty.push_back(ds->type_specifier.at(i)->type);
 
     std::sort(ty.begin(),ty.end());
+    Type t=new Type(0,0);
 
-    Type t=new Temp(0,0);
-      if(ty.size()==3){
+    type->is_const=false;
+    type->typeIndex=-1;
+    if(ty.size()==3){
         if (ty.at(0)==UNSIGNED  && ty.at(1)==INT && ty.at(2)==LONG) {t.typeIndex=8;}
         else if (ty.at(0)==SIGNED  && ty.at(1)==INT&& ty.at(2)==LONG) {t.typeIndex=9;}
         else err+=2;
@@ -828,10 +833,12 @@ void set_index(DeclarationSpecifiers *ds)
     else if (ty.size()==1) {
         if (ty.at(0)==FLOAT){t.typeIndex=10}
         else if (ty.at(0)==DOUBLE){t.typeIndex=11}
+        else if (ty.at(0)==STRUCT || ty.at(0)==POINTER || ty.at(0)==ENUM) {type->typeIndex=-1;}
         else err+=2;
     }   
     for(int i=0; i < ds->type_qualifier.size(); i++){
-        if(ds->type_qualifier.at(i)==CONST){type.is_const=true;}
+
+    if(ds->type_qualifier.at(i)==CONST){type.is_const=true;ds->is_const=true;}
         else if(ds->type_qualifier.at(i)==VOLATILE){}
         else {err+=4;break;}
         }
@@ -839,8 +846,8 @@ void set_index(DeclarationSpecifiers *ds)
     if (err&2) {std::cerr << "Error in type specifier declarator";exit(0);}
     if (err&4) {std::cerr << "Error in type qualifier declarator";exit(0);}
     //To take care:  pointer | size to be added.
- 
-}get_
+    ds->typeindex=get_index(t);
+}
 
 
 

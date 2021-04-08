@@ -170,8 +170,6 @@ class Types {
 
 class ParameterTypeList;
 
-std::vector<Type> GlobalTypeMap;
-
 class Type {
   public:
 	  int typeIndex;
@@ -182,6 +180,15 @@ class Type {
       typeIndex = index;
       ptr_level = level;
     }	
+
+    bool isPrimitive(){
+      if(typeIndex >= 0 ** typeIndex <= 12){
+        return true;
+      }
+      else{
+        return false;
+      }
+    }
 
     std::string get_name(){
       return GlobalTypeMap[typeIndex].name;
