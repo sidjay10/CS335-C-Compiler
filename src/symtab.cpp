@@ -1547,8 +1547,12 @@ SymTabEntry *LocalSymbolTable::get_symbol_from_table( std::string name ) {
     if ( it == sym_table.end() ) {
         return nullptr;
     } else {
-        return it->second.front();
+	if ( it->second.empty() ) {
+		return nullptr;
+	} else {
+        	return it->second.front();
     }
+	}
 }
 
 void LocalSymbolTable::add_function(
@@ -1593,6 +1597,11 @@ void LocalSymbolTable::add_function(
             std::cout << "\nERROR: Arguement requires identifier on line:" <<line_num<<"\n";
             exit( 1 );
         }
+
+	(*it)->declaration_specifiers->create_type();
+	int type_index = (*it)->declaration_specifiers->type_index;
+	bool is_cont = (*it)->declaration_specifiers->is_const;
+
 
         std::cout << ( *it )->declarator->id->value << ", ";
         SymTabEntry *symbol = new SymTabEntry( ( *it )->declarator->id->value );
