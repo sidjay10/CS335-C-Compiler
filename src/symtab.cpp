@@ -19,6 +19,7 @@ LocalSymbolTable local_symbol_table;
 GlobalSymbolTable global_symbol_table;
 std::vector<Types> defined_types;
 unsigned int anon_count = 0;
+extern int line_num;
 
 std::string primitive_type_name( PrimitiveTypes type ) {
     std::stringstream ss;
@@ -168,7 +169,7 @@ int Type::get_size() {
 }
 
 bool Type::isInt() {
-    if ( typeIndex >= 0 && typeIndex <= 9 ) {
+    if ( typeIndex >= 0 && typeIndex <= 7 ) {
         if ( ptr_level == 0 ) {
             return true;
         } else {
@@ -180,13 +181,13 @@ bool Type::isInt() {
 }
 
 bool Type::isFloat() {
-    if ( typeIndex >= 10 && typeIndex <= 12 && ptr_level == 0 )
+    if ( typeIndex >= 8 && typeIndex <= 10 && ptr_level == 0 )
         return true;
     else
         return false;
 }
 bool Type::isIntorFloat() {
-    if ( typeIndex <= 12 && ptr_level == 0 )
+    if ( typeIndex <= 10 && ptr_level == 0 )
         return true;
     else
         return false;
@@ -326,6 +327,7 @@ void is_Valid( TypeQualifierList *ts ) {
              ts->type_qualifier_list.at( i ) == VOLATILE ) {
         } else {
             std::cout << "Error in pointer type qualfier pointer\n";
+            std::cerr << "ERROR at line " << line_num << "\n";
             break;
         }
     }
@@ -380,6 +382,12 @@ Declaration *new_declaration( DeclarationSpecifiers *declaration_specifiers,
         new Declaration( declaration_specifiers, init_declarator_list );
     d->add_children( declaration_specifiers, init_declarator_list );
     declaration_specifiers->create_type();
+    if(declaration_specifiers->type_specifier.at(0)->type==VOID)
+    {
+        std::cerr << "Error in strorage class declarator\n";
+        std::cerr << "ERROR at line " << line_num << "\n";
+        exit( 0 );
+    }
     return d;
 }
 
@@ -529,6 +537,8 @@ void DeclarationSpecifiers::create_type() {
         } else if ( ty.at( 0 ) == CHAR ) {
             type_index = CHAR_T;
 
+        }  else if ( ty.at( 0 ) == VOID ) {
+            type_index = VOID_T;
         } else if ( ty.at( 0 ) == LONG ) {
             type_index = LONG_T;
         } else if ( ty.at( 0 ) == ENUM ) {
@@ -552,15 +562,18 @@ void DeclarationSpecifiers::create_type() {
         }
     }
     if ( err & 1 ) {
-        std::cerr << "Error in strorage class declarator";
+        std::cerr << "Error in strorage class declarator\n";
+        std::cerr << "ERROR at line " << line_num << "\n";
         exit( 0 );
     }
     if ( err & 2 ) {
-        std::cerr << "Error in type specifier declarator";
+        std::cerr << "Error in type specifier declarator\n";
+        std::cerr << "ERROR at line " << line_num << "\n";
         exit( 0 );
     }
     if ( err & 4 ) {
-        std::cerr << "Error in type qualifier declarator";
+        std::cerr << "Error in type qualifier declarator\n";
+        std::cerr << "ERROR at line " << line_num << "\n";
         exit( 0 );
     }
 }
@@ -738,10 +751,16 @@ void verify_struct_declarator( StructDeclarationList *st ) {
                     break;
                 }
             }
-            if ( err & 2 )
+            if ( err & 2 ){
                 std::cout << "Error in type specifier struct\n";
-            if ( err & 4 )
+                std::cerr << "ERROR at line " << line_num << "\n";
+                exit(0);
+            }
+            if ( err & 4 ){
                 std::cout << "Error in type qualifier struct\n";
+                std::cerr << "ERROR at line " << line_num << "\n";
+                exit(0);
+            }
         }
         // std::cout<<"done2 ";
     }
@@ -1043,6 +1062,64 @@ TypeSpecifier *create_type_specifier( TYPE_SPECIFIER type ) {
     return ts;
 }
 
+#if 0
+void verify_struct_declarator( StructDeclarationList *st ) {
+    int err;
+    if ( st != NULL ) {
+        // std::cout<<st->struct_declaration_list.size();
+        for ( int i = 0; i < st->struct_declaration_list.size(); i++ ) {
+            std::vector<TypeSpecifier *> ts =
+                st->struct_declaration_list.at( i )->sq_list->type_specifiers;
+            std::vector<TYPE_QUALIFIER> tq =
+                st->struct_declaration_list.at( i )->sq_list->type_qualifiers;
+            err = 0;
+            std::vector<TYPE_SPECIFIER> ty;
+            for ( int i = 0; i < ts.size(); i++ )
+                ty.push_back( ts.at( i )->type );
+            std::sort( ty.begin(), ty.end() );
+
+            if ( ty.size() == 3 ) {
+                if ( ( ty.at( 0 ) == UNSIGNED || ty.at( 0 ) == SIGNED ) &&
+                     ( ty.at( 1 ) == SHORT || ty.at( 1 ) == LONG ) &&
+                     ty.at( 2 ) == INT ) {
+                } else
+                    err += 2;
+            } else if ( ty.size() == 2 ) {
+                if ( ( ty.at( 0 ) == UNSIGNED || ty.at( 0 ) == SIGNED ) &&
+                     ( ty.at( 1 ) == SHORT || ty.at( 1 ) == LONG ||
+                       ty.at( 1 ) == INT || ty.at( 1 ) == CHAR ) ) {
+                } else if ( ( ty.at( 0 ) == SHORT || ty.at( 0 ) == LONG ) &&
+                            ty.at( 1 ) == INT ) {
+                } else if ( ty.at( 0 ) == LONG && ty.at( 1 ) == DOUBLE ) {
+                } else
+                    err += 2;
+            } else if ( ty.size() == 1 )
+                if ( ty.at( 0 ) == SHORT || ty.at( 0 ) == LONG ||
+                     ty.at( 0 ) == INT || ty.at( 0 ) == CHAR ||
+                     ty.at( 0 ) == FLOAT || ty.at( 0 ) == DOUBLE ||
+                     ty.at( 0 ) == STRUCT || ty.at( 0 ) == UNION ||
+                     ty.at( 0 ) == ENUM) {
+                } else
+                    err += 2;
+
+            for ( int i = 0; i < tq.size(); i++ ) {
+                if ( tq.at( i ) == CONST || tq.at( i ) == VOLATILE ) {
+                } else {
+                    err += 4;
+                    break;
+                }
+            }
+            if ( err & 2 )
+                std::cout << "Error in type specifier struct";
+            if ( err & 4 )
+                std::cout << "Error in type qualifier struct";
+        }
+        // std::cout<<"done2 ";
+    }
+}
+
+#endif
+
 TypeSpecifier *
 create_type_specifier( TYPE_SPECIFIER type, Identifier *id,
                        StructDeclarationList *struct_declaration_list ) {
@@ -1227,6 +1304,8 @@ void SpecifierQualifierList::create_type() {
         } else if ( ty.at( 0 ) == CHAR ) {
             type_index = CHAR_T;
 
+        }  else if ( ty.at( 0 ) == VOID ) {
+            type_index = VOID_T;
         } else if ( ty.at( 0 ) == LONG ) {
             type_index = LONG_T;
         } else if ( ty.at( 0 ) == ENUM ) {
@@ -1250,15 +1329,18 @@ void SpecifierQualifierList::create_type() {
         }
     }
     if ( err & 1 ) {
-        std::cerr << "Error in strorage class declarator";
+        std::cerr << "Error in strorage class declarator\n";
+        std::cerr << "ERROR at line " << line_num << "\n";
         exit( 0 );
     }
     if ( err & 2 ) {
-        std::cerr << "Error in type specifier declarator";
+        std::cerr << "Error in type specifier declarator\n";
+        std::cerr << "ERROR at line " << line_num << "\n";
         exit( 0 );
     }
     if ( err & 4 ) {
-        std::cerr << "Error in type qualifier declarator";
+        std::cerr << "Error in type qualifier declarator\n";
+        std::cerr << "ERROR at line " << line_num << "\n";
         exit( 0 );
     }
 }

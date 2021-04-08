@@ -182,12 +182,12 @@ unary_expression
 	;
 
 unary_operator
-	: '&'	{ $$ = create_non_term("UNARY &"); }
-	| '*'	{ $$ = create_non_term("UNARY *"); }
-	| '+'	{ $$ = create_non_term("UNARY +"); }
-	| '-'	{ $$ = create_non_term("UNARY -"); }
-	| '~'	{ $$ = create_non_term("UNARY ~"); }
-	| '!'	{ $$ = create_non_term("UNARY !"); }
+	: '&'	{ $$ = create_non_term("&"); }
+	| '*'	{ $$ = create_non_term("*"); }
+	| '+'	{ $$ = create_non_term("+"); }
+	| '-'	{ $$ = create_non_term("-"); }
+	| '~'	{ $$ = create_non_term("~"); }
+	| '!'	{ $$ = create_non_term("!"); }
 	;
 
 cast_expression

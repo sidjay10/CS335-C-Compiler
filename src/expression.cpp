@@ -13,6 +13,9 @@
 #include <utility>
 #include <iterator>
 
+extern int line_num;
+extern int column;
+
 //##############################################################################
 //############################# EXPRESSION #####################################
 //##############################################################################
@@ -30,13 +33,15 @@ Expression *create_primary_identifier( Identifier *a ) {
         if ( ste == nullptr ) {
             // Error
             std::cerr << "Undefined symbol " << a->value << "\n";
+            std::cerr << "ERROR at line " << line_num << "\n";
             exit( 0 );
         }
     }
 
     P->type = ste->type;
     P->name = "primary_expression";
-    P->add_child( a );
+    P->add_child(a);
+    
     return P;
 }
 
@@ -55,7 +60,7 @@ Expression *create_primary_stringliteral( StringLiteral *a ) {
     PrimaryExpression *P = new PrimaryExpression();
     P->isTerminal = 3;
     P->Sval = a;
-    P->type.typeIndex = PrimitiveTypes::CHAR_T;
+    P->type.typeIndex = PrimitiveTypes::U_CHAR_T;
     P->type.ptr_level = 1;
 
     P->name = "primary_expression";
@@ -110,7 +115,8 @@ Expression *create_postfix_expr_arr( Expression *pe, Expression *e ) {
             P->type.ptr_level = 0;
         } else {
             // Error
-            std::cerr << "Array subscript is not an integer";
+            std::cerr << "ERROR: Array subscript is not an integer\n";
+            std::cerr << "ERROR at line " << line_num << "\n";
             exit( 0 );
         }
     }
@@ -152,13 +158,15 @@ Expression *create_postfix_expr_struct( std::string access_op, Expression *pe,
             Type *iType = peT.struct_definition->get_member( i );
             if ( iType == nullptr ) {
                 // Error
-                std::cerr << "Error";
+                std::cerr << "Error\n";
+                std::cerr << "ERROR at line " << line_num << "\n";
             } else {
                 P->type = *iType;
             }
         } else {
-            std::cerr << "Operand Error";
-            exit( 0 );
+            std::cerr<<"Operand Error\n";
+            std::cerr << "ERROR at line " << line_num << "\n";
+            exit(0);
         }
     } else if ( access_op == "->" ) {
         if ( peT.is_struct && pe->type.ptr_level == 1 ) {
@@ -166,13 +174,15 @@ Expression *create_postfix_expr_struct( std::string access_op, Expression *pe,
             Type *iType = peT.struct_definition->get_member( i );
             if ( iType == nullptr ) {
                 // Error
-                std::cerr << "Error";
+                std::cerr << "Error\n";
+                std::cerr << "ERROR at line " << line_num << "\n";
             } else {
                 P->type = *iType;
             }
         } else {
-            std::cerr << "Operand Error";
-            exit( 0 );
+            std::cerr<<"Operand Error\n";
+            std::cerr << "ERROR at line " << line_num << "\n";
+            exit(0);
         }
     }
 
@@ -196,12 +206,14 @@ Expression *create_postfix_expr_ido( std::string op, Expression *pe ) {
         } else {
             // Error postfix operator
             std::cerr << "Postfix operator " << op
-                      << " cannot be applied to type";
+                      << " cannot be applied to type" << pe->type.get_name() << "\n";
+                      std::cerr << "ERROR at line " << line_num << "\n";
             exit( 0 );
         }
     } else {
         // This should not have reached
         std::cerr << "Parse error";
+        std::cerr << "ERROR at line " << line_num << "\n";
         exit( 0 );
     }
     if ( op == "++" )
@@ -226,9 +238,9 @@ Expression *create_unary_expression_ue( std::string u_op, Expression *ue ) {
         } else {
             // Incorrect type throw error
             delete U;
-            std::cerr << "Prefix operator " << u_op
-                      << " cannot be applied to type " << ue->type.get_name();
-            exit( 0 );
+            std::cerr << "Prefix operator " << u_op << " cannot be applied to type " << ue->type.get_name() << "\n";
+            std::cerr << "ERROR at line " << line_num << "\n";
+            exit(0);
         }
     } else if ( u_op == "sizeof" ) {
         // SizeOf
@@ -238,7 +250,8 @@ Expression *create_unary_expression_ue( std::string u_op, Expression *ue ) {
     } else {
         // Raise Error
         std::cerr << "Error parsing Unary Expression.\n";
-        exit( 0 );
+        std::cerr << "ERROR at line " << line_num << "\n";
+        exit(0);
     }
     U->name = 'unary_expression';
     U->add_child( ue );
@@ -273,23 +286,25 @@ Expression *create_unary_expression_cast( Node *n_op, Expression *ce ) {
         } else {
             // Error because of dereference of non-pointer type
             delete U;
-            std::cerr << "Error : Invalid dereference of type "
-                      << ce->type.get_name();
-            exit( 0 );
+            std::cerr << "Error : Invalid dereference of type " << ce->type.get_name() << "\n";
+            std::cerr << "ERROR at line " << line_num << "\n";
+            exit(0);
         }
-    } else if ( u_op == "-" || u_op == "+" || u_op == "!" || u_op == "-" ) {
-        if ( ce->type.isIntorFloat() ) {
-            U->type = ce->type;
-        } else {
-            // Throw Error
-            std::cerr << "Invalid use of unary operator " << u_op << " on type "
-                      << ce->type.get_name();
-            exit( 0 );
+    } else if ( u_op == "-" || u_op == "+" || u_op == "!" || u_op == "-") {
+        if(ce->type.isIntorFloat()){
+            U->type = ce->type;    
+        }
+        else{
+            //Throw Error
+            std::cerr << "Invalid use of unary operator " << u_op << " on type " << ce->type.get_name() << "\n";
+            std::cerr << "ERROR at line " << line_num << "\n";
+            exit(0);
         }
     } else {
         // Throw Error
-        std::cerr << "Parse error, invalid unary operator";
-        exit( 0 );
+        std::cerr << "Parse error, invalid unary operator\n";
+        std::cerr << "ERROR at line " << line_num << "\n";
+        exit(0);
     }
 
     U->name = "unary_expression";
@@ -349,6 +364,7 @@ Expression *create_multiplicative_expression( std::string op, Expression *me,
             std::cerr << "Undefined operation " << op
                       << " for operands of type " << meT.get_name() << " and "
                       << ceT.get_name() << "\n";
+            std::cerr << "ERROR at line " << line_num << "\n";
         }
     } else if ( op == "%" ) {
         if ( meT.isInt() && ceT.isInt() ) {
@@ -358,6 +374,7 @@ Expression *create_multiplicative_expression( std::string op, Expression *me,
             // Error
             std::cerr << "Invalid Operands to binary % having type "
                       << meT.get_name() << " and " << ceT.get_name() << "\n";
+            std::cerr << "ERROR at line " << line_num << "\n";
             exit( 0 );
         }
     }
@@ -387,16 +404,20 @@ Expression *create_additive_expression( std::string op, Expression *ade,
 
     } else if ( ( meT.isFloat() && adeT.isInt() ) ||
                 ( meT.isInt() && adeT.isFloat() ) ) {
-        P->type = meT.isFloat() ? meT : adeT;
-    } else if ( meT.isPointer() && ( ( meT.isFloat() && adeT.isInt() ) ||
-                                     ( meT.isInt() && adeT.isFloat() ) ) ) {
+        P->type = meT.isFloat() ? meT : adeT; 
+    }else if( (meT.isPointer()&& adeT.isInt()) || (adeT.isPointer()&& meT.isInt())){
+            P->type = meT.isPointer() ? meT: adeT;
+    } 
+    else if ( meT.isPointer() && ( ( meT.isFloat() && adeT.isInt() ) ||
+                                   ( meT.isInt() && adeT.isFloat() ) ) ) {
         P->type = meT.isFloat() ? meT : adeT;
     } else if ( meT.isFloat() && adeT.isFloat() ) {
         P->type = meT.typeIndex > adeT.typeIndex ? meT : adeT;
     } else {
         // Error
-        std::cerr << "Undefined operation * for operands of type "
-                  << meT.get_name() << " and " << adeT.get_name() << "\n";
+        std::cerr << "Undefined operation " << op << " for operands of type " << meT.get_name()
+                  << " and " << adeT.get_name() << "\n";
+        std::cerr << "ERROR at line " << line_num << "\n";
         exit( 0 );
     }
 
@@ -426,6 +447,7 @@ Expression *create_shift_expression( std::string op, Expression *se,
             std::cerr << "Undefined operation of " << op
                       << " on operands of type " << adeT.get_name() << " and "
                       << seT.get_name() << "\n";
+            std::cerr << "ERROR at line " << line_num << "\n";
             exit( 0 );
         }
     } else {
@@ -458,6 +480,7 @@ Expression *create_relational_expression( std::string op, Expression *re,
             std::cerr << "Undefined operation of " << op
                       << " on operands of type " << reT.get_name() << " and "
                       << seT.get_name() << "\n";
+            std::cerr << "ERROR at line " << line_num << "\n";
             exit( 0 );
         }
     } else {
@@ -490,6 +513,7 @@ Expression *create_equality_expression( std::string op, Expression *eq,
             std::cerr << "Undefined operation of " << op
                       << " on operands of type " << reT.get_name() << " and "
                       << eqT.get_name() << "\n";
+            std::cerr << "ERROR at line " << line_num << "\n";
             exit( 0 );
         }
     } else {
@@ -524,6 +548,7 @@ Expression *create_and_expression( std::string op, Expression *an,
             std::cerr << "Undefined operation of " << op
                       << " on operands of type " << anT.get_name() << " and "
                       << eqT.get_name() << "\n";
+            std::cerr << "ERROR at line " << line_num << "\n";
             exit( 0 );
         }
     } else {
@@ -557,6 +582,7 @@ Expression *create_exclusive_or_expression( std::string op, Expression *ex,
             std::cerr << "Undefined operation of " << op
                       << " on operands of type " << exT.get_name() << " and "
                       << anT.get_name() << "\n";
+            std::cerr << "ERROR at line " << line_num << "\n";
             exit( 0 );
         }
     } else {
@@ -588,8 +614,9 @@ Expression *create_inclusive_or_expression( std::string op, Expression *ie,
                 P->type.make_signed();
             } else {
                 std::cerr << "Undefined operation of " << op
-                          << " on operands of type " << ieT.get_name()
-                          << " and " << exT.get_name() << "\n";
+                          << " on operands of type " << ieT.get_name() << " and "
+                          << exT.get_name() << "\n";
+                std::cerr << "ERROR at line " << line_num << "\n";
                 exit( 0 );
             }
         } else {
@@ -622,6 +649,7 @@ Expression *create_logical_and_expression( std::string op, Expression *la,
             std::cerr << "Undefined operation of " << op
                       << " on operands of type " << ieT.get_name() << " and "
                       << laT.get_name() << "\n";
+            std::cerr << "ERROR at line " << line_num << "\n";
             exit( 0 );
         }
     } else {
@@ -653,6 +681,7 @@ Expression *create_logical_or_expression( std::string op, Expression *lo,
             std::cerr << "Undefined operation of " << op
                       << " on operands of type " << laT.get_name() << " and "
                       << loT.get_name() << "\n";
+            std::cerr << "ERROR at line " << line_num << "\n";
             exit( 0 );
         }
     } else {
@@ -713,12 +742,17 @@ Expression *create_assignment_expression( Expression *ue, Node *n_op,
     P->op = op;
     Type ueT = ue->type;
     Type aseT = ase->type;
-    if ( op == "=" ) {
+    if(ueT.is_const){
+        std::cerr << "ERROR: Cannot assign to constant variable\n";
+        std::cerr << "ERROR at line " << line_num << "\n";
+        exit(0);
+    }
+    if (op == "=") {
         if ( ( ueT.isIntorFloat() ) && ( aseT.isIntorFloat() ) ) {
             // int and/or flot
             if ( ueT.typeIndex != aseT.typeIndex ) {
-                std::cout << "Warning: operation " << op << " between "
-                          << ueT.get_name() << " and " << aseT.get_name();
+                std::cout << "Warning: operation " << op << " between " << ueT.get_name() << " and " << aseT.get_name() << "\n";
+                std::cout << "Warning on line " << line_num << "\n";
             }
             P->type = ueT;
         } else if ( ueT.ptr_level > 0 && aseT.ptr_level > 0 &&
@@ -726,26 +760,58 @@ Expression *create_assignment_expression( Expression *ue, Node *n_op,
             /// meed the types of pointers
             if ( ueT.typeIndex == aseT.typeIndex ) {
                 P->type = ueT;
-            } else {
-                std::cerr << "Undefined operation of " << op
-                          << " on operands of type " << ueT.get_name()
-                          << " and " << aseT.get_name() << "\n";
-                exit( 0 );
+            }
+            else {
+            std::cerr << "Undefined operation of " << op
+                    << " on operands of type " << ueT.get_name() << " and "
+                      << aseT.get_name() << "\n";
+            std::cerr << "ERROR at line " << line_num << "\n";
+            exit( 0);
             }
         }
-    } else if ( op == "*=" || op == "/=" || op == "+=" || op == "-=" ) {
-        if ( ( ueT.isIntorFloat() ) && ( aseT.isIntorFloat() ) ) {
+        else{
+            std::cerr << "Undefined operation of " << op
+                    << " on operands of type " << ueT.get_name() << " and "
+                      << aseT.get_name() << "\n";
+            std::cerr << "ERROR at line " << line_num << "\n";
+            exit( 0);
+        }
+    }    
+    else if ( op == "*=" || op == "/="  ) {
+            if ( ( ueT.isIntorFloat() ) && ( aseT.isIntorFloat() ) ) {
             // int and/or flot
             if ( ueT.typeIndex != aseT.typeIndex ) {
                 std::cout << "Warning: operation " << op << " between "
-                          << ueT.get_name() << " and " << aseT.get_name()
-                          << "\n";
-            }
-            P->type = ueT;
-        } else {
-            std::cerr << "Undefined operation of " << op
+                          << ueT.get_name() << " and " << aseT.get_name() << "\n";
+                std::cout << "Warning on line " << line_num << "\n";
+                }
+                P->type = ueT;
+            }else {
+                std::cerr << "Undefined operation of " << op
                       << " on operands of type " << ueT.get_name() << " and "
                       << aseT.get_name() << "\n";
+                std::cerr << "ERROR at line " << line_num << "\n";
+            exit( 0 );
+            }
+    }
+    else if (op == "+=" || op =="-="){
+        if ( ( ueT.isIntorFloat() ) && ( aseT.isIntorFloat() ) ) {
+            // int and/or flot
+                if ( ueT.typeIndex != aseT.typeIndex ) {
+                std::cout << "Warning: operation " << op << " between "
+                          << ueT.get_name() << " and " << aseT.get_name() << "\n";
+                std::cout << "Warning on line " << line_num << "\n";
+                }
+                P->type = ueT;
+            }
+            else if(ueT.isPointer() && aseT.isInt()){
+                P->type = ueT;
+            }
+            else {
+                std::cerr << "Undefined operation of " << op
+                      << " on operands of type " << ueT.get_name() << " and "
+                      << aseT.get_name() << "\n";
+                std::cerr << "ERROR at line " << line_num << "\n";
             exit( 0 );
         }
     } else if ( op == "%=" ) {
@@ -753,8 +819,9 @@ Expression *create_assignment_expression( Expression *ue, Node *n_op,
             P->type = ueT;
         } else {
             // Error
-            std::cerr << "Invalid Operands " << op << "having type "
-                      << ueT.get_name() << " and " << aseT.get_name() << "\n";
+            std::cerr << "Invalid Operands " << op << "having type " << ueT.get_name()
+                      << " and " << aseT.get_name() << "\n";
+            std::cerr << "ERROR at line " << line_num << "\n";
             exit( 0 );
         }
     } else if ( op == "<<=" || op == ">>=" ) {
@@ -765,6 +832,7 @@ Expression *create_assignment_expression( Expression *ue, Node *n_op,
             std::cerr << "Undefined operation of " << op
                       << " on operands of type " << ueT.get_name() << " and "
                       << ase->name << "\n";
+            std::cerr << "ERROR at line " << line_num << "\n";
             exit( 0 );
         }
     } else if ( op == "&=" || op == "|=" && op == "^=" ) {
@@ -780,16 +848,19 @@ Expression *create_assignment_expression( Expression *ue, Node *n_op,
             std::cerr << "Undefined operation of " << op
                       << " on operands of type " << ueT.get_name() << " and "
                       << aseT.get_name() << "\n";
+            std::cerr << "ERROR at line " << line_num << "\n";
             exit( 0 );
         }
 
     } else {
         std::cerr << "Incorrect logical or expression. Something went wrong\n";
+        std::cerr << "ERROR at line " << line_num << "\n";
         exit( 0 );
     }
 
-    P->name = "assignment_expression";
-    P->add_children( ue, ase );
+    // std::cerr << "Finished assignment\n";
+    P->name="assignment_expression";
+    P->add_children(ue, ase);
     return P;
 }
 
