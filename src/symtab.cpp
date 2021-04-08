@@ -75,7 +75,10 @@ PrimaryExpression *create_primary_identifier( Identifier *a ) {
             exit( 0 );
         }
     }
+
     P->type = ste->type;
+    P->name = "primary_expression";
+    P->add_child(a);
     return P;
 }
 
@@ -85,6 +88,9 @@ PrimaryExpression *create_primary_constant( Constant *a ) {
     P->Cval = a;
     P->type = a->getConstantType();
 
+    P->name = "primary_expression";
+    P->add_child(a);
+
     return P;
 }
 PrimaryExpression *create_primary_stringliteral( StringLiteral *a ) {
@@ -93,6 +99,9 @@ PrimaryExpression *create_primary_stringliteral( StringLiteral *a ) {
     P->Sval = a;
     P->type.typeIndex = PrimitiveTypes::CHAR_T;
     P->type.ptr_level = 1;
+
+    P->name = "primary_expression";
+    P->add_child(a);
     return P;
 }
 PrimaryExpression *create_primary_expression( TopLevelExpression *a ) {
@@ -100,6 +109,9 @@ PrimaryExpression *create_primary_expression( TopLevelExpression *a ) {
     P->isTerminal = 0;
     P->op1 = a;
     P->type = a->type;
+
+    P->name = "primary_expression";
+    P->add_child(a);
 
     return P;
 }
@@ -110,7 +122,9 @@ create_argument_expr_assignement( AssignmentExpression *ase ) {
     ArgumentExprList *P = new ArgumentExprList();
     P->op2 = ase;
     // ArguementExprList does not have any type as it is a composite entity
-
+    P->name = "assignment_expression";
+    P->add_child(ase);
+    
     return P;
 }
 ArgumentExprList *create_argument_expr_list( ArgumentExprList *ae_list,
@@ -118,7 +132,9 @@ ArgumentExprList *create_argument_expr_list( ArgumentExprList *ae_list,
     ArgumentExprList *P = new ArgumentExprList();
     P->op1 = ae_list;
     P->op2 = ase;
-
+    
+    P->name="assignment_expression_list";
+    P->add_children(ae_list,ase);
     return P;
 }
 
@@ -141,12 +157,18 @@ PostfixExpression *create_postfix_expr_arr( PostfixExpression *pe,
         }
     }
 
+    P->name = "ARRAY ACCESS";
+    P->add_children(pe, e);
     return P;
 }
 
 PostfixExpression *create_postfix_expr_voidfun( Identifier *fi ) {
     PostfixExpression *P = new PostfixExpression();
     // Lookup Function type from symbol table - should be void
+       
+    P->name = "FUNCTION CALL";
+    P->add_child(fi);
+
     return P;
 }
 
@@ -156,6 +178,9 @@ PostfixExpression *create_postfix_expr_fun( Identifier *fi,
     // Here, we need to check two things:
     // 1. whether ArguementExprList matches with Function signature from lookup
     // of symbol table table
+
+    P->name = "FUNCTION CALL";
+    P->add_children(fi,ae);
 
     return P;
 }
@@ -176,7 +201,7 @@ PostfixExpression *create_postfix_expr_struct( std::string access_op,
                 P->type = *iType;
             }
         } else {
-            // Error
+            std::cerr<<"Operand Error";exit(0);
         }
     } else if ( access_op == "->" ) {
         if ( peT.is_struct && pe->type.ptr_level == 1 ) {
@@ -189,9 +214,12 @@ PostfixExpression *create_postfix_expr_struct( std::string access_op,
                 P->type = *iType;
             }
         } else {
-            // Error
+            std::cerr<<"Operand Error";exit(0);
         }
     }
+
+    P->name = access_op;
+    P->add_children(pe, i);
     return P;
 }
 
@@ -215,6 +243,12 @@ PostfixExpression *create_postfix_expr_ido( std::string op,
         std::cerr << "Parse error";
         exit( 0 );
     }
+    if(op == "++")
+        P->name = "POST INCREMENT";
+    else
+        P->name = "POST DECREMENT";
+    
+    P->add_child(pe);
     return P;
 }
 
@@ -247,15 +281,18 @@ UnaryExpression *create_unary_expression_ue( std::string u_op,
         std::cerr << "Error parsing Unary Expression.\n";
         exit(0);
     }
-
+    U->name = 'unary_expression';
+    U->add_child(ue);
     return U;
 }
 
 // & (int) (x)
 // &(x) -> pointer value of x
-UnaryExpression *create_unary_expression_cast( std::string u_op,
+UnaryExpression *create_unary_expression_cast( Node *n_op,
                                                CastExpression *ce ) {
     UnaryExpression *U = new UnaryExpression();
+    Non_Terminal * nt_op = dynamic_cast<Non_Terminal *>(n_op);
+    std::string u_op = nt_op->name;
     U->op = u_op;
     U->op1 = ce;
     Type ceT = ce->type;
@@ -296,17 +333,22 @@ UnaryExpression *create_unary_expression_cast( std::string u_op,
         std::cerr << "Parse error, invalid unary operator";
         exit(0);
     }
+    
+    U->name = "unary_expression";
+    U->add_children(n_op, ce);
     return U;
 }
 
 // Cast Expression
-CastExpression *create_caste_expression_typename( Node *n,
+CastExpression *create_cast_expression_typename( Node *n,
                                                   CastExpression *ce ) {
     // XXX: TODO Implement
     CastExpression *P = new CastExpression();
     P->op1 = ce;
     P->type = ce->type;
-
+    
+    P->name="caste_expression";
+    P->add_children(n,ce);
     return P;
 }
 
@@ -352,6 +394,10 @@ create_multiplicative_expression( std::string op, MultiplicativeExpression *me,
             exit( 0 );
         }
     }
+    
+    P->name="multiplicative expression";
+    Node * n_op = create_non_term((op).c_str());
+    P->add_children(me, n_op, ce);
     return P;
 }
 
@@ -387,6 +433,11 @@ AdditiveExpression *create_additive_expression( std::string op,
                   << " and " << adeT.get_name() << "\n";
         exit( 0 );
     }
+
+    P->name="additive_expression";
+    Node * n_op = create_non_term((op).c_str());
+    P->add_children(ade, n_op, me);
+    
     return P;
 
 }
@@ -417,6 +468,10 @@ ShiftExpression *create_shift_expression( std::string op, ShiftExpression *se,
         std::cerr << "Incorrect shift expression. Something went wrong\n";
         exit( 0 );
     }
+    
+    P->name="shift_expression";
+    Node * n_op = create_non_term((op).c_str());
+    P->add_children(se, n_op, ade);
     return P;
 }
 
@@ -445,6 +500,10 @@ RelationalExpression *create_relational_expression( std::string op,
         std::cerr << "Incorrect relation expression. Something went wrong\n";
         exit( 0 );
     }
+    
+    P->name="relational_expression";
+    Node * n_op = create_non_term((op).c_str());
+    P->add_children(re,n_op, se);
     return P;
 }
 
@@ -474,6 +533,10 @@ EqualityExpression *create_equality_expression( std::string op,
         std::cerr << "Incorrect equality expression. Something went wrong\n";
         exit( 0 );
     }
+    
+    P->name="eqality_expression";
+    Node * n_op = create_non_term((op).c_str());
+    P->add_children(eq, n_op, re);
     return P;
 }
 
@@ -504,6 +567,10 @@ AndExpression *create_and_expression( std::string op, AndExpression *an,
         std::cerr << "Incorrect and_expression. Something went wrong\n";
         exit( 0 );
     }
+    
+    P->name="and_expression";
+    Node * n_op = create_non_term((op).c_str());
+    P->add_children(an, n_op, eq);
     return P;
 }
 
@@ -535,6 +602,10 @@ create_exclusive_or_expression( std::string op, ExclusiveorExpression *ex,
             << "Incorrect exclusive or expression. Something went wrong\n";
         exit( 0 );
     }
+    
+    P->name="exclusive_or_expression";
+    Node * n_op = create_non_term((op).c_str());
+    P->add_children(ex, n_op, an);
     return P;
 }
 
@@ -564,6 +635,10 @@ InclusiveorExpression* create_inclusive_or_expression( std::string op, Inclusive
             exit( 0 );
         }
     }
+
+    P->name="inclusive_or_expression";
+    Node * n_op = create_non_term((op).c_str());
+    P->add_children(ie, n_op, ex);
     return P;
 }
 
@@ -592,7 +667,12 @@ creat_logical_and_expression( std::string op, Logical_andExpression *la,
                      "wrong\n";
         exit( 0 );
     }
+    
+    P->name="logical_and_expression";
+    Node * n_op = create_non_term((op).c_str());
+    P->add_children(la, n_op, ie);
     return P;
+    
 }
 
 // Logical or
@@ -620,6 +700,9 @@ create_logical_or_expression( std::string op, Logical_orExpression *lo,
                      "wrong\n";
         exit( 0 );
     }
+
+    P->name="logical_or_expression";
+    P->add_children(lo,la);
     return P;
 }
 
@@ -653,13 +736,18 @@ create_conditional_expression( std::string op, Logical_orExpression *lo,
             exit( 0 );
         }
     }
+
+    P->name="conditional_expression";
+    P->add_children(lo,te,coe);
     return P;
 }
 
 // AssignmentExpression
 
-AssignmentExpression *create_assignment_expression( std::string op, UnaryExpression *ue, AssignmentExpression *ase ) {
+AssignmentExpression *create_assignment_expression( UnaryExpression *ue, Node *n_op, AssignmentExpression *ase ) {
     AssignmentExpression *P = new AssignmentExpression();
+    Non_Terminal * nt_op = dynamic_cast<Non_Terminal *>(n_op);
+    std::string op = nt_op->name;
     P->op1 = ue;
     P->op2 = ase;
     P->op = op;
@@ -745,6 +833,9 @@ AssignmentExpression *create_assignment_expression( std::string op, UnaryExpress
         std::cerr << "Incorrect logical or expression. Something went wrong\n";
         exit( 0 );
     }
+
+    P->name="assignment_expression";
+    P->add_children(ue, ase);
     return P;
 }
 
@@ -757,7 +848,9 @@ TopLevelExpression *create_toplevel_expression( TopLevelExpression *te, Assignme
     Type teT = te->type;
     Type aseT = ase->type;
     //////need TO DO LATER///////////
-
+    
+    P->name="toplevel_expression";
+    P->add_children(te,ase);
     return P;
 }
 

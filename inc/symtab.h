@@ -192,6 +192,12 @@ class Type {
     int ptr_level;
     bool is_const;
 
+    Type(){
+      typeIndex = -1;
+      ptr_level = -1;
+      is_const = -1;
+    }
+
     Type( int index, int level, bool c ) {
         typeIndex = index;
         ptr_level = level;
@@ -341,7 +347,7 @@ class UnaryExpression : public Expression {
 UnaryExpression *
 create_unary_expression_ue( std::string u_op,
                             UnaryExpression *ue ); // INC_OP, DEC_OP, SIZEOF
-UnaryExpression *create_unary_expression_cast( std::string u_op,
+UnaryExpression *create_unary_expression_cast( Node *n_op,
                                                CastExpression *ce );
 UnaryExpression *create_unary_expression_typename();
 
@@ -361,7 +367,7 @@ class CastExpression : public Expression {
     };
 };
 // NEED TO DO LATER
-CastExpression *create_caste_expression_typename(
+CastExpression *create_cast_expression_typename(
     CastExpression *ce ); // type_name wala add krna hai
 
 //-------------------------------------------------
@@ -568,9 +574,8 @@ class AssignmentExpression : public Expression {
 };
 
 AssignmentExpression *create_assignment_expression(
-    std::string op, UnaryExpression *ue,
-    AssignmentExpression
-        *ase ); // can change string to node* later for assignment operator
+    UnaryExpression *ue, Node* n_op, 
+    AssignmentExpression *ase ); // can change string to node* later for assignment operator
 
 //-------------------------------------------------
 class TopLevelExpression : public Expression {

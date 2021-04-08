@@ -120,25 +120,25 @@ postfix_expression
 	: primary_expression	{ $$ = $1; } 
 	| postfix_expression '[' expression ']'	{ $$ = create_postfix_expr_arr( ARRAY, $1, $3 ); } 
 /*	| postfix_expression '(' ')'	{ $$ = create_non_term("FUNCTION CALL", $1 ); } */
-	| IDENTIFIER '(' ')'	{ $$ = create_postfix_expr_fun( FUNCTION, $1 ); } 
-	| IDENTIFIER '(' argument_expression_list ')'	{ } 
+	| IDENTIFIER '(' ')'	{ $$ = create_postfix_expr_voidfun( FUNCTION, $1 ); } 
+	| IDENTIFIER '(' argument_expression_list ')'	{ $$ = create_postfix_expr_fun($1, $2); } 
 /*	| postfix_expression '(' argument_expression_list ')'	{ create_non_term("FUNCTION CALL ARGS", $1, $3 ); } */
-	| postfix_expression '.' IDENTIFIER	{ $$ = create_non_term(".", $1, $3); } 
-	| postfix_expression PTR_OP IDENTIFIER	{ $$ = create_non_term("->", $1, $3); } 
-	| postfix_expression INC_OP	{ $$ = create_non_term("POST INCREMENT", $1); } 
-	| postfix_expression DEC_OP	{ $$ = create_non_term("POST DECREMENT", $1); } 
+	| postfix_expression '.' IDENTIFIER	{ $$ = create_postfix_expr_struct(".", $1, $3); } 
+	| postfix_expression PTR_OP IDENTIFIER	{ $$ = create_postfix_expr_struct("->", $1, $3); } 
+	| postfix_expression INC_OP	{ $$ = create_postfix_expr_ido("++", $1); } 
+	| postfix_expression DEC_OP	{ $$ = create_postfix_expr_ido("--", $1); } 
 	;
 
 argument_expression_list
-	: assignment_expression					{ $$ = create_non_term("assignment_expression", $1); } 
-	| argument_expression_list ',' assignment_expression	{ $$ = create_non_term("assignment_expression_list", $1, $3); } 
+	: assignment_expression					{ $$ = create_argument_expr_assignement($1); } 
+	| argument_expression_list ',' assignment_expression	{ $$ = create_argument_expr_list($1, $3); } 
 	;
 
 unary_expression
 	: postfix_expression			{ $$ = $1; } 
 	| INC_OP unary_expression		{ $$ = create_unary_expression_ue("++", $2); } 
 	| DEC_OP unary_expression		{ $$ = create_unary_expression_ue("--", $2); } 
-	| unary_operator cast_expression	{ $1->add_child($2); $$ = $1; } 
+	| unary_operator cast_expression	{ $$=create_unary_expression_cast($1,$2); } 
 	| SIZEOF unary_expression		{ $$ = create_unary_expression_ue("sizeof", $2); } 
 	| SIZEOF '(' type_name ')'		{ $$ = create_non_term("SIZEOF type_name", $3); } 
 	;
@@ -159,70 +159,70 @@ cast_expression
 
 multiplicative_expression
 	: cast_expression				{ $$ = $1; }
-	| multiplicative_expression '*' cast_expression	{ $$ = create_non_term("*", $1, $3); }
-	| multiplicative_expression '/' cast_expression	{ $$ = create_non_term("/", $1, $3); }
-	| multiplicative_expression '%' cast_expression	{ $$ = create_non_term("%", $1, $3); }
+	| multiplicative_expression '*' cast_expression	{ $$ = create_multiplicative_expression("*", $1, $3); }
+	| multiplicative_expression '/' cast_expression	{ $$ = create_multiplicative_expression("/", $1, $3); }
+	| multiplicative_expression '%' cast_expression	{ $$ = create_multiplicative_expression("%", $1, $3); }
 	;
 
 additive_expression
 	: multiplicative_expression				{ $$ = $1; }
-	| additive_expression '+' multiplicative_expression	{ $$ = create_non_term("+", $1, $3); }
+	| additive_expression '+' multiplicative_expression	{ $$ = create_additive_expression("+", $1, $3); }
 	| additive_expression '-' multiplicative_expression	{ $$ = create_additive_expression("-", $1, $3); }
 	;
 
 shift_expression
 	: additive_expression				{ $$ = $1; }
-	| shift_expression LEFT_OP additive_expression	{ $$ = create_non_term(">>", $1, $3); }
-	| shift_expression RIGHT_OP additive_expression	{ $$ = create_non_term("<<", $1, $3); }
+	| shift_expression LEFT_OP additive_expression	{ $$ = create_shift_expression(">>", $1, $3); }
+	| shift_expression RIGHT_OP additive_expression	{ $$ = create_shift_expression("<<", $1, $3); }
 	;
 
 relational_expression
 	: shift_expression				{ $$ = $1; }
-	| relational_expression '<' shift_expression	{ $$ = create_non_term("<", $1, $3); }
-	| relational_expression '>' shift_expression	{ $$ = create_non_term(">", $1, $3); }
-	| relational_expression LE_OP shift_expression	{ $$ = create_non_term("<=", $1, $3); }
-	| relational_expression GE_OP shift_expression	{ $$ = create_non_term(">=", $1, $3); }
+	| relational_expression '<' shift_expression	{ $$ = create_relational_expression("<", $1, $3); }
+	| relational_expression '>' shift_expression	{ $$ = create_relational_expression(">", $1, $3); }
+	| relational_expression LE_OP shift_expression	{ $$ = create_relational_expression("<=", $1, $3); }
+	| relational_expression GE_OP shift_expression	{ $$ = create_relational_expression(">=", $1, $3); }
 	;
 
 equality_expression
 	: relational_expression					{ $$ = $1; }
-	| equality_expression EQ_OP relational_expression	{ $$ = create_non_term("==", $1, $3); }
-	| equality_expression NE_OP relational_expression	{ $$ = create_non_term("!=", $1, $3); }
+	| equality_expression EQ_OP relational_expression	{ $$ = create_equality_expression("==", $1, $3); }
+	| equality_expression NE_OP relational_expression	{ $$ = create_equality_expression("!=", $1, $3); }
 	;
 
 and_expression
 	: equality_expression				{ $$ = $1; }
-	| and_expression '&' equality_expression	{ $$ = create_non_term("&", $1, $3); }
+	| and_expression '&' equality_expression	{ $$ = create_and_expression("&", $1, $3); }
 	;
 
 exclusive_or_expression
 	: and_expression				{ $$ = $1; }
-	| exclusive_or_expression '^' and_expression	{ $$ = create_non_term("^", $1, $3); }
+	| exclusive_or_expression '^' and_expression	{ $$ = create_exclusive_or_expression("^", $1, $3); }
 	;
 
 inclusive_or_expression
 	: exclusive_or_expression				{ $$ = $1; }
-	| inclusive_or_expression '|' exclusive_or_expression	{ $$ = create_non_term("|", $1, $3); }
+	| inclusive_or_expression '|' exclusive_or_expression	{ $$ = create_inclusive_or_expression("|", $1, $3); }
     ;
 
 logical_and_expression
 	: inclusive_or_expression				{ $$ = $1; }
-	| logical_and_expression AND_OP inclusive_or_expression	{ $$ = create_non_term("&&", $1, $3); }
+	| logical_and_expression AND_OP inclusive_or_expression	{ $$ = create_logical_and_expression("&&", $1, $3); }
 	;
 
 logical_or_expression
 	: logical_and_expression				{ $$ = $1; }
-	| logical_or_expression OR_OP logical_and_expression	{ $$ = create_non_term("||", $1, $3); }
+	| logical_or_expression OR_OP logical_and_expression	{ $$ = create_logical_or_expression("||", $1, $3); }
 	;
 
 conditional_expression
 	: logical_or_expression							{ $$ = $1; }
-	| logical_or_expression '?' expression ':' conditional_expression	{ $$ = create_non_term("?:", $1, $3, $5); }
+	| logical_or_expression '?' expression ':' conditional_expression	{ $$ = create_conditional_expression("?:", $1, $3, $5); }
 	;
 
 assignment_expression
 	: conditional_expression					 { $$ = $1; }
-	| unary_expression assignment_operator assignment_expression	 { $2->add_children($1,$3); $$ = $2;}
+	| unary_expression assignment_operator assignment_expression	 { $$=create_assignment_expression($1,$2,$3); }
 	;
 
 assignment_operator
@@ -240,8 +240,8 @@ assignment_operator
 	;
 
 expression
-	: assignment_expression			 { $$ = create_non_term("expression", $1); }
-	| expression ',' assignment_expression	 { $$ = create_non_term("expression", $1, $3); }
+	: assignment_expression			 { $$ = $1; }
+	| expression ',' assignment_expression	 { $$ = create_toplevel_expression($1, $3); }
 	;
 
 /* Revisit this */ 
