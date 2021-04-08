@@ -48,7 +48,7 @@
 %token <node> XOR_ASSIGN OR_ASSIGN TYPE_NAME
 
 %token <value> TYPEDEF EXTERN STATIC AUTO REGISTER
-%token <value> CHAR SHORT INT LONG SIGNED UNSIGNED FLOAT DOUBLE VOID
+%token <value> UNSIGNED SIGNED CHAR SHORT INT LONG FLOAT DOUBLE VOID
 %token <value> CONST VOLATILE
 %token <value> STRUCT UNION ENUM ELLIPSIS
 
@@ -110,17 +110,17 @@
 %%
 
 primary_expression
-	: IDENTIFIER		{ $$ = $1; } 
-	| CONSTANT		{ $$ = $1; }
-	| STRING_LITERAL	{ $$ = create_terminal("STRING_LITERAL", NULL); } 
+	: IDENTIFIER		{ $$ = create_primary_identifier($1); } 
+	| CONSTANT		{ $$ = create_primary_constant($1); }
+	| STRING_LITERAL	{ $$ = create_primary_stringliteral($1); } 
 	| '(' expression ')'	{ $$ = $2; } 
 	;
 
 postfix_expression
 	: primary_expression	{ $$ = $1; } 
 	| postfix_expression '[' expression ']'	{ $$ = create_postfix_expr_arr( ARRAY, $1, $3 ); } 
-	| postfix_expression '(' ')'	{ $$ = create_postfix_expr_fun( FUNCTION, $1 ); } 
-	| postfix_expression '(' argument_expression_list ')'	{ } 
+	| IDENTIFIER '(' ')'	{ $$ = create_postfix_expr_fun( FUNCTION, $1 ); } 
+	| IDENTIFIER '(' argument_expression_list ')'	{ } 
 	| postfix_expression '.' IDENTIFIER	{ $$ = create_non_term(".", $1, $3); } 
 	| postfix_expression PTR_OP IDENTIFIER	{ $$ = create_non_term("->", $1, $3); } 
 	| postfix_expression INC_OP	{ $$ = create_non_term("POST INCREMENT", $1); } 
@@ -134,10 +134,10 @@ argument_expression_list
 
 unary_expression
 	: postfix_expression			{ $$ = $1; } 
-	| INC_OP unary_expression		{ $$ = create_non_term("PRE INCREMENT", $2); } 
-	| DEC_OP unary_expression		{ $$ = create_non_term("PRE DECREMENT", $2); } 
+	| INC_OP unary_expression		{ $$ = create_unary_expression_ue("++", $2); } 
+	| DEC_OP unary_expression		{ $$ = create_unary_expression_ue("--", $2); } 
 	| unary_operator cast_expression	{ $1->add_child($2); $$ = $1; } 
-	| SIZEOF unary_expression		{ $$ = create_non_term("SIZEOF unary_expr", $2); } 
+	| SIZEOF unary_expression		{ $$ = create_unary_expression_ue("sizeof", $2); } 
 	| SIZEOF '(' type_name ')'		{ $$ = create_non_term("SIZEOF type_name", $3); } 
 	;
 
@@ -152,7 +152,7 @@ unary_operator
 
 cast_expression
 	: unary_expression			{ $$ = $1; }
-	| '(' type_name ')' cast_expression	{ $$ = create_non_term("cast_expression", $2, $4); }
+	| '(' type_name ')' cast_expression	{ $$ = create_cast_expression_typename($2, $4); }
 	;
 
 multiplicative_expression

@@ -6,91 +6,201 @@
 #include <map>
 #include <string>
 
-enum PrimitiveTypes = {CHAR, U_CHAR, SHORT, U_SHORT, INT, U_INT, L_INT, UL_INT, FLOAT, DOUBLE};
-}
+enum PrimitiveTypes {U_CHAR_T = 0, CHAR_T = 1, U_SHORT_T = 2, SHORT_T = 3, U_INT_T = 4, INT_T=5, U_LONG_T=6, LONG_T=7, U_INT_LONG_T=8, INT_LONG_T=9, FLOAT_T=10, DOUBLE_T=11, LONG_DOUBLE_T=12};
 
+// All class declarations
 class StructDefinition;
+class AssignmentExpression;
+class ParameterTypeList;
+class CastExpression;
+
+
+//SXXX:TODO Add all primitive types by default 
 
 class Types {
-	int index;
-	std::string name;
-	size_t size;
-	bool is_user_defined;
-	StructDefinition * struct_definition;
+  public:
+    int sc;
+    int tq;
+	  int index; // For primitive types the order in GlobalTypeMap is same as enum
+
+    /**
+      typeFamily:
+      0 = Integer types
+      1 = Floating types
+      2 = Pointer types : direct assignments allowed?
+      3 = Other User Defined : No direct assignments allowed
+    */
+    int typeFamily;
+    
+    //Variable for pointers
+    int pointerLevel;
+    
+	  //Variable for arrays
+    /* ndarray = 0 => not an array, else it is level of array */
+    int ndarray;
+    size_t size;
+
+	  /**
+      0 = PrimitveType
+      1 = Pointer
+      2 = Array
+      3 = Struct
+      4 = Union -- not supported for now
+     */
+    int userDefined;
+
+    //Variable for 
+	  StructDefinition * struct_definition;
+
+    // Types(int a, int b, int c,..){
+    //   typFamily = a;
+    //   ...
+    // }
+    Types(int tc,int sc, int tq,int ind, int typeF,int pL,int nd, size_t s, int uD) {
+      tq=tq;sc=sc;
+      index=ind;
+      typeFamily=typeF;
+      pointerLevel=pL;
+      ndarray=nd;
+      size=s;
+      userDefined=uD;
+    }
+
+    bool isPrimitive(){
+      if (typeFamily ==0 || typeFamily ==1){
+        return true;
+      }
+      else{
+        return false;
+      }
+    }
+
+    bool isUserDefined(){
+      if(userDefined != 0){
+        return true;
+      }
+      else{
+        return false;
+      }
+    }
+    bool isArray(){
+      if(ndarray!=0){
+        return true;
+      }
+      else{
+        return false;
+      }
+    }
+
+    Types getArrayType(){
+      Types t;
+      return t;
+    }
+
+    // Returns an Index to the type's Pointer in Global Type Map
+    //Used for reference '&' operator
+    int getPointerTypeIndex(){
+      Types t;
+      return t.index;
+    }
+
+    //Used for dereference operator
+    int getUnderlyingTypeIndex(){
+      if(typeFamily != 2){
+        //Ideally if it is 2 then it is a programming error
+        std::cout << "Should not have happened";
+        return index;
+      }
+      //Get the underlying type or create it
+      Types t;
+      return t.index;
+  }
+
+  bool isUnsigned(){
+    if(index == 0 || index == 2 || index == 4 || index == 6){
+      return true;
+    }
+    else{
+      return false;
+    }
+  bool is_Present(Types t)
+  //to be written
+  }
 };
 
-class ParameterTypeList;
-
+std::vector<Types> GlobalTypeMap;
 
 class Expression : public Non_Terminal {
-	Types * type;
-	/* Change this late */
-	int num_opearands;
-	Expression( Types * type, int num_op );
+	public:
+    int typeIndex;
+	  /* Change this late */
+	  int num_opearands;
+	  // Expression( Types * type, int num_op );
+
+    int pointer_level;
+
+
+    Types getType(){
+      Types t; // Lookup using typeIndex 
+      return t;
+    }
+  
+  Expression();
 };
 
+
+//-------------------------------------------------
 class PrimaryExpression : public Expression {
 	/**
+    isTerminal = 0 when ( Expression )
     isTerminal = 1 when IDENTIFIER
     isTerminal = 2 when CONSTANT
     isTerminal = 3 when STRING_LITERAL
   */
  public :
-  std::string lval;
-  int isTerminal; 
-  Expression * op1;
-  Types * type;
-  Types * evaluate_type();
-  PrimaryExpression(std::string u_op, std::string terminal){
-    if(u_op == "1"){
-        isTerminal=1;
-    }
-    else if (u_op == "2"){
-        isTerminal=2;
-    }
-    else if(u_op == "3"){
-        isTerminal=3;
-    }
-    else{
-      //Raise Error
-    }
-    lval = terminal;
-    op1 = nullptr;
-  }
+  int isTerminal;
+  Identifier *Ival;
+  StringLiteral *Sval;
+  Constant *Cval;
+  Expression *op1;
 
-  PrimaryExpression(Expression *e){
-    isTerminal = 0;
-    lval = "";
-    op1 = e;
-  }
+  PrimaryExpression();
+  Types *evaluate_type();
+
 };
-PrimaryExpression * create_primary_terminal(std::string u_op,std::string terminal);
-PrimaryExpression * create_primary_expression(PrimaryExpression * pre);
+
+//Grammar warppers for PrimaryExpression
+PrimaryExpression *create_primary_identifier(Identifier *a);
+PrimaryExpression *create_primary_constant(Constant *a);
+PrimaryExpression *create_primary_stringliteral(StringLiteral *a);
+PrimaryExpression *create_primary_expression(TopLevelExpression *a);
+
+
+
+//-------------------------------------------------
 
 class ArgumentExprList: public Expression{
+  public :
   Expression *op1; // This will be null in case of root object
   Expression *op2;
-  Types * type;
   Types * evaluate_type(); // XXX: TODO: Do we need type checking here?
-  
-  ArgumentExprList(Expression* ase){
-    op1 = nullptr;
-    op2 = ase;
-  }
-  ArgumentExprList(Expression *ae_list, Expression *ase){
-    op1 = ae_list;
-    op2 = ase;
-  }
-  
+  ArgumentExprList();
 };
-class AssignmentExpression;
+
+//Grammar warppers for ArguementExpressionList
 ArgumentExprList * create_argument_expr_assignement(AssignmentExpression *ase);
 ArgumentExprList * create_argument_expr_list(ArgumentExprList *ae_list, AssignmentExpression *ase);
+
+
+
+//-------------------------------------------------
 class UnaryExpression: public Expression{
   public:
     Expression *op1;
-    Types * type;
+    std::string op;
     Types * evaluate_type();
+
+    UnaryExpression();
 
   /// XXX: TODO
   UnaryExpression(std::string u_op, Expression *e){
@@ -113,137 +223,229 @@ class UnaryExpression: public Expression{
 
 };
 
-class CastExpression;
-
-UnaryExpression * create_unary_expression_ue(std::string u_op, UnaryExpression* ue); // INC_OP, DEC_OP
-UnaryExpression * create_unary_expression_cast(std::string u_op, CastExpression* ce);
- 
+//Grammar warppers for UnaryExpression
+UnaryExpression * create_unary_expression_ue(std::string u_op, UnaryExpression* ue); // INC_OP, DEC_OP, SIZEOF
+UnaryExpression * create_unary_expression_cast(std::string u_op, CastExpression* ce); 
 UnaryExpression * create_unary_expression_typename();
 
+
+//-------------------------------------------------
 class CastExpression : public Expression{
-  Expression * op1;
-  Types * evaluate_type();
+  public :
+    Expression * op1;
+    /**
+      Index of Type casted to in GlobalTypes
+      -1 if there is no casting
+    */
+    int typeCast; 
+    Types * evaluate_type();
+  CastExpression();
 };
-// unary not neeeded
+// NEED TO DO LATER
 CastExpression * create_caste_expression_typename(CastExpression* ce); // type_name wala add krna hai
 
+
+//-------------------------------------------------
 class MultiplicativeExpression : public Expression{
+  public :
   Expression * op1;
   Expression * op2;
-  Types * type;
+  std::string op;
   Types * evaluate_type();
+  MultiplicativeExpression();
 };
-MultiplicativeExpression * create_multiplicative_expression(std::string u_op,MultiplicativeExpression *me, CastExpression *ce);
+MultiplicativeExpression * create_multiplicative_expression(std::string op,MultiplicativeExpression *me, CastExpression *ce);
 
+
+//-------------------------------------------------
 class AdditiveExpression : public Expression{
+    public :
     Expression *op1;
     Expression *op2;
-    Types * type;
+    std::string op;
     Types * evaluate_type();
+    AdditiveExpression();
 };
-AdditiveExpression * create_additive_expression(std::string u_op,AdditiveExpression * ade, MultiplicativeExpression *me);
+AdditiveExpression * create_additive_expression(std::string op,AdditiveExpression * ade, MultiplicativeExpression *me);
 
+
+
+//-------------------------------------------------
 class ShiftExpression : public Expression{
+  public  :
     Expression *op1;
     Expression *op2;
-    Types * type;
+    std::string op;
     Types * evaluate_type();
+    ShiftExpression();
+    
 };
-ShiftExpression * create_shift_expression(std::string u_op,ShiftExpression *se, AdditiveExpression *ade);
 
+ShiftExpression * create_shift_expression(std::string op,ShiftExpression *se, AdditiveExpression *ade);
+
+
+
+//-------------------------------------------------
 class RelationalExpression : public Expression{
+    public :
     Expression *op1;
     Expression *op2;
-    Types * type;
+    std::string op;
     Types * evaluate_type();
+    RelationalExpression();
 };
-RelationalExpression * create_relational_expression(std::string u_op, RelationalExpression *re, ShiftExpression *se);
-class EqualityExpression : public Expression{
-    Expression *op1;
-    Expression *op2;
-    Types * type;
-    Types * evaluate_type();
-};
-EqualityExpression * create_equality_expression(std::string u_op,EqualityExpression *eq, RelationalExpression *re);
-class AndExpression : public Expression{
-    Expression *op1;
-    Expression *op2;
-    Types * type;
-    Types * evaluate_type();
-}; 
-AndExpression * create_and_expression(std::string u_op,AndExpression * an,EqualityExpression * eq);
-class ExclusiveorExpression : public Expression{
-    Expression *op1;
-    Expression *op2;
-    Types * evaluate_type();
-};
-ExclusiveorExpression * create_exclusive_or_expression(std::string u_op,ExclusiveorExpression * ex,AndExpression * an);
+RelationalExpression * create_relational_expression(std::string op, RelationalExpression *re, ShiftExpression *se);
 
+
+//-------------------------------------------------
+class EqualityExpression : public Expression{
+    public :
+    Expression *op1;
+    Expression *op2;
+    std::string op;
+    Types * evaluate_type();
+    EqualityExpression();
+};
+EqualityExpression * create_equality_expression(std::string op,EqualityExpression *eq, RelationalExpression *re);
+
+
+
+//-------------------------------------------------
+class AndExpression : public Expression{
+    public :
+    Expression *op1;
+    Expression *op2;
+    std::string op;
+    Types * evaluate_type();
+    AndExpression();
+}; 
+AndExpression * create_and_expression(std::string op,AndExpression * an,EqualityExpression * eq);
+
+
+
+//-------------------------------------------------
+class ExclusiveorExpression : public Expression{
+    public :
+    Expression *op1;
+    Expression *op2;
+    std::string op;
+    Types * evaluate_type();
+    ExclusiveorExpression();
+};
+ExclusiveorExpression * create_exclusive_or_expression(std::string op,ExclusiveorExpression * ex,AndExpression * an);
+
+
+
+//-------------------------------------------------
 class InclusiveorExpression : public Expression{
+  public :
     Expression *op1;
     Expression *op2;
+    std::string op;
     Types * evaluate_type();
+    InclusiveorExpression();
 };
-InclusiveorExpression * create_inclusive_or_expression(std::string u_op,InclusiveorExpression * ie, ExclusiveorExpression *ex); 
+InclusiveorExpression * create_inclusive_or_expression(std::string op,InclusiveorExpression * ie, ExclusiveorExpression *ex); 
  
+
+
+//-------------------------------------------------
 class Logical_andExpression : public Expression{
+  public :
     Expression *op1;
     Expression *op2;
+    std::string op;
     Types * evaluate_type();
+    Logical_andExpression();
 };
-Logical_andExpression * creat_logical_and_expression(std::string u_op,Logical_andExpression * la, InclusiveorExpression *ie);
+Logical_andExpression * creat_logical_and_expression(std::string op,Logical_andExpression * la, InclusiveorExpression *ie);
+
+
+
+//-------------------------------------------------
 class Logical_orExpression : public Expression{
+    public :
     Expression *op1;
     Expression *op2;
+    std::string op;
     Types * evaluate_type();
+    Logical_orExpression();
 };
-Logical_orExpression * creat_logical_or_expression(std::string u_op,Logical_orExpression * lo, Logical_andExpression *la);
+Logical_orExpression * creat_logical_or_expression(std::string op,Logical_orExpression * lo, Logical_andExpression *la);
+
+
+
+//-------------------------------------------------
 class ConditionalExpression : public Expression{
+  public:
     Expression *op1;
     Expression *op2;
     Expression *op3;
+    std::string op;
     Types * evaluate_type();
+    ConditionalExpression();
 };
-ConditionalExpression * create_conditional_expression(std::string u_op,Logical_orExpression *lo,Expression * e, ConditionalExpression * coe);
-class AssignmentExpresiion : public Expression{
-  Expression *op1;
-  Expression *op2;
-  std::string a_op_string;
-  Types * evaluate_type();
-  
+ConditionalExpression * create_conditional_expression(std::string op,Logical_orExpression *lo,TopLevelExpression * te, ConditionalExpression * coe);
+
+
+
+//-------------------------------------------------
+class AssignmentExpression : public Expression{
+  public: 
+    Expression *op1;
+    Expression *op2;
+    std::string op;
+    Types *evaluate_type();
+    AssignmentExpression();
+
 };
-AssignmentExpresiion * create_assignment_expression(std::string u_op,UnaryExpression * ue,AssignmentExpresiion * ase); // change later for assignment operator
+
+AssignmentExpression * create_assignment_expression(std::string op,UnaryExpression * ue,  AssignmentExpression * ase); // can change string to node* later for assignment operator
+
+
+//-------------------------------------------------
 class TopLevelExpression : public Expression{
+  public :
   Expression *op1;
   Expression *op2;
   Types * evaluate_type();
+  TopLevelExpression();
 }; 
-TopLevelExpression
+TopLevelExpression * create_toplevel_expression(TopLevelExpression *te, AssignmentExpression *ase);
+
+
+//-------------------------------------------------
 class ConstantExpression : public Expression{
+  public:
     Expression *op1;
     Types * evaluate_type();
 };
+
+
+//-------------------------------------------------
 enum PostfixExpressionTypes {ARRAY,FUNCTION, STRUCT, INC, DEC };
 
 class PostfixExpression : public Expression {
-	PostfixExpressionTypes pe_type;
-	PostfixExpression * pe;
-	Expression * exp;
-	Identifier * id;
-	ArgumentExprList * ae_list;
-	PostfixExpression();
+	public:
+    PostfixExpressionTypes pe_type;
+	  PostfixExpression * pe;
+	  Expression *exp;
+	  Identifier *id;
+	  ArgumentExprList * ae_list;
+	  PostfixExpression();
 };
 
-PostfixExpression * create_postfix_expr_arr( PostfixExpressionTypes * type, PostfixExpression * pe,  Expression * exp);
-PostfixExpression * create_postfix_expr_fun( PostfixExpressionTypes * type, PostfixExpression * pe,  ArgumentExprList * ae_list);
-PostfixExpression * create_postfix_expr_str( PostfixExpressionTypes * type, PostfixExpression * pe,  Identifier * id, bool is_pointer);
-PostfixExpression * create_postfix_expr_ido( PostfixExpressionTypes * type, PostfixExpression * pe,  bool is_inc );
+PostfixExpression *create_postfix_expr_arr(PostfixExpression * pe,  Expression * exp);
+PostfixExpression *create_postfix_fun();
+PostfixExpression *create_postfix_expr_fun(PostfixExpression * pe,  ArgumentExprList * ae_list);
+PostfixExpression *create_postfix_expr_str( PostfixExpressionTypes * type, PostfixExpression * pe,  Identifier * id, bool is_pointer);
+PostfixExpression *create_postfix_expr_ido( PostfixExpressionTypes * type, PostfixExpression * pe,  bool is_inc );
 
 
 class SymTabEntry {
   public:
     std::string name;
-    std::string type;
+    int typeIndex;
     int level;
 
     // TODO: This needs to be expanded
@@ -301,6 +503,60 @@ typedef int TYPE_QUALIFIER;
 class Identifier : public Terminal {
   public:
     Identifier( const char *name );
+    
+    
+};
+
+class Constant : public Terminal {
+  public:
+    Constant (const char *name);
+
+    int getConstantType(){
+      int length = value.length(); 
+      if(name == "CONSTANT HEX" || name == "CONSTANT INT"){
+          int islong=0,isunsigned=0;
+          for(int i=0;i<length;i++){
+            if(value[i]=='l' || value[i]=='L')
+              islong=1;
+            if(value[i]=='u' || value[i]=='U')
+              isunsigned=1;
+            if(islong && isunsigned)
+              return UL_INT_T;
+          }
+          if(islong)
+            return L_INT_T;
+          if(isunsigned)
+            return U_INT_T;
+          return INT_T;
+        //loop over value to get unsigned etc and return typeIndex
+      }
+      else if(name == "CONSTANT FLOAT"){
+        int isfloat=0;
+        for(int i=0;i<length;i++){
+          if(value[i]=='f' || value[i]=='F')
+            return FLOAT_T;
+        }
+        return DOUBLE_T;
+        //loop over value to get float
+      }
+      else if(name == "CONSANT EXP"){
+        //loop over value to get if long or double
+        int islong=0;
+        for(int i=0;i<length;i++){
+          if(value[i]=='f' || value[i]=='F')
+            return FLOAT_T;
+        }
+        return LONG_T;
+      }
+      else{
+        return 0;
+      }
+    }
+};
+
+class StringLiteral : public Terminal {
+  public:
+    StringLiteral(const char *name);
 };
 
 class TypeQualifierList : public Non_Terminal {
@@ -411,7 +667,7 @@ class DeclarationSpecifiers : public Non_Terminal {
     std::vector<TypeSpecifier *> type_specifier;
     std::vector<TYPE_QUALIFIER> type_qualifier;
 
-    isValid(); // Type Checking
+    int isValid(); // Type Checking
 
     DeclarationSpecifiers();
 };
@@ -431,6 +687,7 @@ class Declaration : public Non_Terminal {
   public:
     DeclarationSpecifiers *declaration_specifiers;
     DeclaratorList *init_declarator_list;
+    int type;
 
     Declaration( DeclarationSpecifiers *declaration_specifiers_,
                  DeclaratorList *init_declarator_list_ );

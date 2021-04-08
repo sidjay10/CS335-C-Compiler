@@ -66,14 +66,14 @@ int line_num=1;
 
 {L}({L}|{D})*		{ count(); return(check_type()); }
 
-0[xX]{H}+{IS}?		{ count(); yylval.node = create_terminal("CONSTANT", yytext); return(CONSTANT); }
-0{D}+{IS}?		{ count(); yylval.node = create_terminal("CONSTANT", yytext); return(CONSTANT); }
-{D}+{IS}?		{ count(); yylval.node = create_terminal("CONSTANT", yytext); return(CONSTANT); }
+0[xX]{H}+{IS}?		{ count(); yylval.node = create_terminal("CONSTANT HEX", yytext); return(CONSTANT); }
+0{D}+{IS}?		{ count(); yylval.node = create_terminal("CONSTANT INT", yytext); return(CONSTANT); }
+{D}+{IS}?		{ count(); yylval.node = create_terminal("CONSTANT INT", yytext); return(CONSTANT); }
 L?'(\\.|[^\\'])+'	{ count(); yylval.node = create_terminal("CONSTANT", yytext); return(CONSTANT); }
 
-{D}+{E}{FS}?		{ count(); yylval.node = create_terminal("CONSTANT", yytext); return(CONSTANT); }
-{D}*"."{D}+({E})?{FS}?	{ count(); yylval.node = create_terminal("CONSTANT", yytext); return(CONSTANT); }
-{D}+"."{D}*({E})?{FS}?	{ count(); yylval.node = create_terminal("CONSTANT", yytext); return(CONSTANT); }
+{D}+{E}{FS}?		{ count(); yylval.node = create_terminal("CONSTANT EXP", yytext); return(CONSTANT); }
+{D}*"."{D}+({E})?{FS}?	{ count(); yylval.node = create_terminal("CONSTANT FLOAT", yytext); return(CONSTANT); }
+{D}+"."{D}*({E})?{FS}?	{ count(); yylval.node = create_terminal("CONSTANT FLOAT", yytext); return(CONSTANT); }
 
 L?\"(\\.|[^\\"])*\"	{ count(); return(STRING_LITERAL); }
 
