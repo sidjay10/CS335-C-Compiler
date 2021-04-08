@@ -6,7 +6,18 @@
 #include <map>
 #include <string>
 
-enum PrimitiveTypes {char_t, uchar_t, short_t, ushort_t, int_t, uint_t, lint_t, ulint_t, float_t, double_t};
+enum PrimitiveTypes {
+    char_t,
+    uchar_t,
+    short_t,
+    ushort_t,
+    int_t,
+    uint_t,
+    lint_t,
+    ulint_t,
+    float_t,
+    double_t
+};
 
 class Types;
 
@@ -14,42 +25,42 @@ class Identifier;
 
 class StructDeclarationList;
 class StructDefinition {
-	public:
-	std::map <std::string, Types *> members;
-	int un_or_st;
-	StructDefinition();
-	size_t get_size();
+  public:
+    std::map<std::string, Types *> members;
+    int un_or_st;
+    StructDefinition();
+    size_t get_size();
 };
 
-
-StructDefinition * create_struct_definition( int un_or_st, StructDeclarationList * sdl );
+StructDefinition *create_struct_definition( int un_or_st,
+                                            StructDeclarationList *sdl );
 
 class Types {
-public:
-	int index;
-	std::string name;
-	size_t size;
-	bool is_primitive;
-	bool is_struct;
-	bool is_union;
-	int pointer_level;
-	StructDefinition * struct_definition;
+  public:
+    int index;
+    std::string name;
+    size_t size;
+    bool is_primitive;
+    bool is_struct;
+    bool is_union;
+    int pointer_level;
+    StructDefinition *struct_definition;
 };
 
-extern std::vector < Types * >  type_specifiers;
+extern std::vector<Types *> type_specifiers;
 
 class ParameterTypeList;
 
 class Expression : public Non_Terminal {
-	Types * type;
-	/* Change this late */
-	int num_opearands;
-	Expression( Types * type, int num_op );
+    Types *type;
+    /* Change this late */
+    int num_opearands;
+    Expression( Types *type, int num_op );
 };
 
 /*
 class PrimaryExpression : public Expression {
-	Expression * op1;
+        Expression * op1;
 };
 
 
@@ -62,18 +73,21 @@ PrimaryExpression * create_primary_expression( Expression * );
 enum PostfixExpressionTypes { ARR,FUN, STR_UN, INC, DEC };
 
 class PostfixExpression : public Expression {
-	PostfixExpressionTypes pe_type;
-	PostfixExpression * pe;
-	Expression * exp;
-	Identifier * id;
-	//ArgumentExprList * ae_list;
-	PostfixExpression();
+        PostfixExpressionTypes pe_type;
+        PostfixExpression * pe;
+        Expression * exp;
+        Identifier * id;
+        //ArgumentExprList * ae_list;
+        PostfixExpression();
 };
 
-PostfixExpression * create_postfix_expr_arr( PostfixExpressionTypes * type, PostfixExpression * pe,  Expression * exp);
-PostfixExpression * create_postfix_expr_fun( PostfixExpressionTypes * type, PostfixExpression * pe,  ArgumentExprList * ae_list);
-PostfixExpression * create_postfix_expr_str( PostfixExpressionTypes * type, PostfixExpression * pe,  Identifier * id, bool is_pointer);
-PostfixExpression * create_postfix_expr_ido( PostfixExpressionTypes * type, PostfixExpression * pe );
+PostfixExpression * create_postfix_expr_arr( PostfixExpressionTypes * type,
+PostfixExpression * pe,  Expression * exp); PostfixExpression *
+create_postfix_expr_fun( PostfixExpressionTypes * type, PostfixExpression * pe,
+ArgumentExprList * ae_list); PostfixExpression * create_postfix_expr_str(
+PostfixExpressionTypes * type, PostfixExpression * pe,  Identifier * id, bool
+is_pointer); PostfixExpression * create_postfix_expr_ido( PostfixExpressionTypes
+* type, PostfixExpression * pe );
 
 */
 class SymTabEntry {
@@ -113,8 +127,6 @@ class GlobalSymbolTable : public SymbolTable {
     void add_symbol( DeclarationSpecifiers *declaration_specifiers,
                      Declarator *declarator );
     SymTabEntry *get_symbol_from_table( std::string name );
-
-	
 };
 
 class LocalSymbolTable : public SymbolTable {
@@ -156,7 +168,7 @@ class TypeQualifierList : public Non_Terminal {
 TypeQualifierList *create_type_qualifier_list( TYPE_QUALIFIER type );
 TypeQualifierList *add_to_type_qualifier_list( TypeQualifierList *tql,
                                                TYPE_QUALIFIER type );
-void is_Valid(TypeQualifierList *ts);
+void is_Valid( TypeQualifierList *ts );
 class Pointer : public Non_Terminal {
   public:
     TypeQualifierList *type_qualifier_list;
@@ -186,8 +198,6 @@ Declarator *add_initializer_to_declarator( Declarator *declarator,
 
 Declarator *create_declarator( Pointer *pointer,
                                DirectDeclarator *direct_declarator );
-
-
 
 typedef enum direct_declartor_enum {
     ID,
@@ -253,7 +263,7 @@ class DeclarationSpecifiers : public Non_Terminal {
 
     DeclarationSpecifiers();
 };
-void is_Valid(DeclarationSpecifiers *ds);
+void is_Valid( DeclarationSpecifiers *ds );
 
 DeclarationSpecifiers *new_storage_class( STORAGE_CLASS sc );
 DeclarationSpecifiers *new_type_specifier( TypeSpecifier *ts );
@@ -399,8 +409,8 @@ class StructDeclaration : public Non_Terminal {
     DeclaratorList *declarator_list;
 
     StructDeclaration( SpecifierQualifierList *sq_list_,
-                                      DeclaratorList *declarator_list_ ); 
-	void add_to_struct_definition( StructDefinition * );
+                       DeclaratorList *declarator_list_ );
+    void add_to_struct_definition( StructDefinition * );
 };
 
 StructDeclaration *
@@ -435,7 +445,8 @@ class EnumeratorList : public Non_Terminal {
 };
 
 EnumeratorList *create_enumerator_list( Enumerator *enumerator );
-EnumeratorList *add_to_enumerator_list( EnumeratorList *enumerator_list, Enumerator *enumerator );
+EnumeratorList *add_to_enumerator_list( EnumeratorList *enumerator_list,
+                                        Enumerator *enumerator );
 
 typedef int TYPE_SPECIFIER;
 

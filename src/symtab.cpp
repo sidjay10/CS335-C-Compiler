@@ -1,5 +1,6 @@
 // symtab.cpp
 
+#include <algorithm>
 #include <assert.h>
 #include <ast.h>
 #include <iostream>
@@ -8,61 +9,61 @@
 #include <symtab.h>
 #include <vector>
 #include <y.tab.h>
-#include <algorithm>
 
 LocalSymbolTable local_symbol_table;
 GlobalSymbolTable global_symbol_table;
 
-std::vector < Types * > defined_types;
+std::vector<Types *> defined_types;
 
 unsigned int anon_count = 0;
 //##############################################################################
 //############################ STRUCT DEFINITION ###############################
 //##############################################################################
-StructDefinition::StructDefinition() {};
+StructDefinition::StructDefinition(){};
 
 size_t StructDefinition::get_size() {
-	size_t size = 0;
-	for ( auto it = members.begin(); it != members.end(); it++ ) {
-		// TODO: Implement This
-		size += 8;
-	}
-	return size;
+    size_t size = 0;
+    for ( auto it = members.begin(); it != members.end(); it++ ) {
+        // TODO: Implement This
+        size += 8;
+    }
+    return size;
 }
 
-StructDefinition * create_struct_definition( int un_or_st, StructDeclarationList * sdl ) {
-	StructDefinition * sd = new StructDefinition();
-	sd->un_or_st = un_or_st;
-		std::cout<<"struct {\n";
-	for ( auto it = sdl->struct_declaration_list.begin(); it != sdl->struct_declaration_list.end(); it ++ )
-	{
-		//TODO: Complete this
+StructDefinition *create_struct_definition( int un_or_st,
+                                            StructDeclarationList *sdl ) {
+    StructDefinition *sd = new StructDefinition();
+    sd->un_or_st = un_or_st;
+    std::cout << "struct {\n";
+    for ( auto it = sdl->struct_declaration_list.begin();
+          it != sdl->struct_declaration_list.end(); it++ ) {
+        // TODO: Complete this
 
+        std::vector<Declarator *> &dl =
+            ( *it )->declarator_list->declarator_list;
 
-		std::vector <Declarator * > & dl = (*it)->declarator_list->declarator_list ;
+        for ( auto jt = dl.begin(); jt != dl.end(); jt++ ) {
 
-		for ( auto jt = dl.begin(); jt != dl.end(); jt++ ) { 
-			
-			sd->members.insert({ (*jt)->id->value , nullptr });
-			std::cout<< "  " << (*jt)->id->value << "\n";
-		}
-
-	}
-		std::cout << "}\n";
-	return sd;
+            sd->members.insert( {( *jt )->id->value, nullptr} );
+            std::cout << "  " << ( *jt )->id->value << "\n";
+        }
+    }
+    std::cout << "}\n";
+    return sd;
 }
-
 
 //##############################################################################
 //################################ POINTER #####################################
 //##############################################################################
-void is_Valid(TypeQualifierList *ts){
-     for(int i=0; i < ts->type_qualifier_list.size(); i++){
-        if(ts->type_qualifier_list.at(i)==CONST||ts->type_qualifier_list.at(i)==VOLATILE) {}
-        else {
-            std::cout<<"Error in pointer type qualfier pointer";
-            break;}
+void is_Valid( TypeQualifierList *ts ) {
+    for ( unsigned int i = 0; i < ts->type_qualifier_list.size(); i++ ) {
+        if ( ts->type_qualifier_list.at( i ) == CONST ||
+             ts->type_qualifier_list.at( i ) == VOLATILE ) {
+        } else {
+            std::cout << "Error in pointer type qualfier pointer";
+            break;
         }
+    }
 }
 
 Pointer::Pointer() : Non_Terminal( "pointer" ){};
@@ -79,7 +80,7 @@ Pointer *create_pointer() {
 Pointer *create_pointer( TypeQualifierList *type_list, Pointer *pointer ) {
     Pointer *p = new Pointer( type_list, pointer );
     p->add_children( type_list, pointer );
-    is_Valid(type_list);
+    is_Valid( type_list );
     return p;
 }
 
@@ -123,7 +124,7 @@ Declaration *new_declaration( DeclarationSpecifiers *declaration_specifiers,
     Declaration *d =
         new Declaration( declaration_specifiers, init_declarator_list );
     d->add_children( declaration_specifiers, init_declarator_list );
-    is_Valid(declaration_specifiers);
+    is_Valid( declaration_specifiers );
     return d;
 }
 
@@ -161,44 +162,70 @@ void Declaration::add_to_symbol_table( GlobalSymbolTable &sym_tab ) {
 DeclarationSpecifiers ::DeclarationSpecifiers()
     : Non_Terminal( "declaration_specifiers" ){};
 
-
-void is_Valid(DeclarationSpecifiers *ds){
-    int err=0;
-    if(ds->storage_class.size()==1){
-        if(ds->storage_class.at(0)==TYPEDEF) err=0;
-        else err+=1;
+void is_Valid( DeclarationSpecifiers *ds ) {
+    int err = 0;
+    if ( ds->storage_class.size() == 1 ) {
+        if ( ds->storage_class.at( 0 ) == TYPEDEF ) {
+            err = 0;
+        } else {
+            err += 1;
         }
+    }
 
     std::vector<TYPE_SPECIFIER> ty;
-    
-    for(int i=0; i < ds->type_specifier.size(); i++)
-    ty.push_back(ds->type_specifier.at(i)->type);
-    std::sort(ty.begin(),ty.end());
 
-    if(ty.size()==3){
-        if ((ty.at(0)==UNSIGNED || ty.at(0)==SIGNED) && (ty.at(1)==SHORT || ty.at(1)==LONG) && ty.at(2)==INT) {}
-        else err+=2;
-        }
-    else if (ty.size()==2){
-        if ((ty.at(0)==UNSIGNED || ty.at(0)==SIGNED) && (ty.at(1)==SHORT || ty.at(1)==LONG || ty.at(1)==INT || ty.at(1)==CHAR)) {}
-        else if ((ty.at(0)==SHORT || ty.at(0)==LONG) && ty.at(1)==INT) {}
-        else if (ty.at(0)==LONG && ty.at(1)==DOUBLE) {}
-        else err+=2;
-        }
-    else if (ty.size()==1) 
-        if (ty.at(0)==SHORT || ty.at(0)==LONG || ty.at(0)==INT || ty.at(0)==CHAR || ty.at(0)==FLOAT||ty.at(0)==DOUBLE || ty.at(0)==STRUCT ||ty.at(0)==UNION || ty.at(0)==ENUM){}
-    else err+=2;
+    for ( unsigned int i = 0; i < ds->type_specifier.size(); i++ ) {
+        ty.push_back( ds->type_specifier.at( i )->type );
+    }
+    std::sort( ty.begin(), ty.end() );
 
-    for(int i=0; i < ds->type_qualifier.size(); i++){
-        if(ds->type_qualifier.at(i)==CONST||ds->type_qualifier.at(i)==VOLATILE) {}
-        else {err+=4;break;}
+    if ( ty.size() == 3 ) {
+        if ( ( ty.at( 0 ) == UNSIGNED || ty.at( 0 ) == SIGNED ) &&
+             ( ty.at( 1 ) == SHORT || ty.at( 1 ) == LONG ) &&
+             ty.at( 2 ) == INT ) {
+        } else {
+            err += 2;
         }
-    //for(int i=0; i < ds->type_qualifier.size(); i++)
-    //std::cout << ds->type_qualifier.at(i) << ' ';
-    if (err&1) std::cout << "Error in strorage class declarator";
-    if (err&2) std::cout << "Error in type specifier declarator";
-    if (err&4) std::cout << "Error in type qualifier declarator";
-
+    } else if ( ty.size() == 2 ) {
+        if ( ( ty.at( 0 ) == UNSIGNED || ty.at( 0 ) == SIGNED ) &&
+             ( ty.at( 1 ) == SHORT || ty.at( 1 ) == LONG || ty.at( 1 ) == INT ||
+               ty.at( 1 ) == CHAR ) ) {
+        } else if ( ( ty.at( 0 ) == SHORT || ty.at( 0 ) == LONG ) &&
+                    ty.at( 1 ) == INT ) {
+        } else if ( ty.at( 0 ) == LONG && ty.at( 1 ) == DOUBLE ) {
+        } else {
+            err += 2;
+        }
+    } else if ( ty.size() == 1 ) {
+        if ( ty.at( 0 ) == SHORT || ty.at( 0 ) == LONG || ty.at( 0 ) == INT ||
+             ty.at( 0 ) == CHAR || ty.at( 0 ) == FLOAT ||
+             ty.at( 0 ) == DOUBLE || ty.at( 0 ) == STRUCT ||
+             ty.at( 0 ) == UNION || ty.at( 0 ) == ENUM ) {
+        } else {
+            err += 2;
+        }
+    }
+    for ( unsigned int i = 0; i < ds->type_qualifier.size(); i++ ) {
+        if ( ds->type_qualifier.at( i ) == CONST ||
+             ds->type_qualifier.at( i ) == VOLATILE ) {
+        } else {
+            err += 4;
+            break;
+        }
+    }
+    // for(int i=0; i < ds->type_qualifier.size(); i++)
+    // std::cout << ds->type_qualifier.at(i) << ' ';
+    if ( err & 1 ) {
+        {
+            std::cout << "Error in strorage class declarator\n";
+        }
+        if ( err & 2 ) {
+            std::cout << "Error in type specifier declarator\n";
+        }
+        if ( err & 4 ) {
+            std::cout << "Error in type qualifier declarator\n";
+        }
+    }
 }
 
 DeclarationSpecifiers *new_storage_class( STORAGE_CLASS sc ) {
@@ -310,44 +337,64 @@ Declarator *add_initializer_to_declarator( Declarator *declarator, Node *ie ) {
 //############################## STRUCT VERIFY ################################
 //##############################################################################
 
-void verify_struct_declarator( StructDeclarationList *st) {
+void verify_struct_declarator( StructDeclarationList *st ) {
     int err;
-    if (st!=NULL){
-        //std::cout<<st->struct_declaration_list.size();
-        for(int i=0; i < st->struct_declaration_list.size(); i++){
-            std::vector<TypeSpecifier *> ts=st->struct_declaration_list.at(i)->sq_list->type_specifiers;
-            std::vector<TYPE_QUALIFIER> tq=st->struct_declaration_list.at(i)->sq_list->type_qualifiers;
-            err=0;
+    if ( st != NULL ) {
+        // std::cout<<st->struct_declaration_list.size();
+        for ( unsigned int i = 0; i < st->struct_declaration_list.size();
+              i++ ) {
+            std::vector<TypeSpecifier *> ts =
+                st->struct_declaration_list.at( i )->sq_list->type_specifiers;
+            std::vector<TYPE_QUALIFIER> tq =
+                st->struct_declaration_list.at( i )->sq_list->type_qualifiers;
+            err = 0;
             std::vector<TYPE_SPECIFIER> ty;
-            for(int i=0; i < ts.size(); i++)
-            ty.push_back(ts.at(i)->type);
-            std::sort(ty.begin(),ty.end());
-            
-            if(ty.size()==3){
-                if ((ty.at(0)==UNSIGNED || ty.at(0)==SIGNED) && (ty.at(1)==SHORT || ty.at(1)==LONG) && ty.at(2)==INT) {}
-                else err+=2;
-                }
-            else if (ty.size()==2){
-                if ((ty.at(0)==UNSIGNED || ty.at(0)==SIGNED) && (ty.at(1)==SHORT || ty.at(1)==LONG || ty.at(1)==INT || ty.at(1)==CHAR)) {}
-                else if ((ty.at(0)==SHORT || ty.at(0)==LONG) && ty.at(1)==INT) {}
-                else if (ty.at(0)==LONG && ty.at(1)==DOUBLE) {}
-                else err+=2;
-                }
-            else if (ty.size()==1) 
-                if (ty.at(0)==SHORT || ty.at(0)==LONG || ty.at(0)==INT || ty.at(0)==CHAR || ty.at(0)==FLOAT||ty.at(0)==DOUBLE || ty.at(0)==STRUCT ||ty.at(0)==UNION || ty.at(0)==ENUM){}
-            else err+=2;
+            for ( unsigned int i = 0; i < ts.size(); i++ ) {
+                ty.push_back( ts.at( i )->type );
+            }
+            std::sort( ty.begin(), ty.end() );
 
-            for(int i=0; i < tq.size(); i++){
-                if(tq.at(i)==CONST||tq.at(i)==VOLATILE) {}
-                else {err+=4;break;}
+            if ( ty.size() == 3 ) {
+                if ( ( ty.at( 0 ) == UNSIGNED || ty.at( 0 ) == SIGNED ) &&
+                     ( ty.at( 1 ) == SHORT || ty.at( 1 ) == LONG ) &&
+                     ty.at( 2 ) == INT ) {
+                } else
+                    err += 2;
+            } else if ( ty.size() == 2 ) {
+                if ( ( ty.at( 0 ) == UNSIGNED || ty.at( 0 ) == SIGNED ) &&
+                     ( ty.at( 1 ) == SHORT || ty.at( 1 ) == LONG ||
+                       ty.at( 1 ) == INT || ty.at( 1 ) == CHAR ) ) {
+                } else if ( ( ty.at( 0 ) == SHORT || ty.at( 0 ) == LONG ) &&
+                            ty.at( 1 ) == INT ) {
+                } else if ( ty.at( 0 ) == LONG && ty.at( 1 ) == DOUBLE ) {
+                } else
+                    err += 2;
+            } else if ( ty.size() == 1 ) {
+                if ( ty.at( 0 ) == SHORT || ty.at( 0 ) == LONG ||
+                     ty.at( 0 ) == INT || ty.at( 0 ) == CHAR ||
+                     ty.at( 0 ) == FLOAT || ty.at( 0 ) == DOUBLE ||
+                     ty.at( 0 ) == STRUCT || ty.at( 0 ) == UNION ||
+                     ty.at( 0 ) == ENUM ) {
+                } else {
+                    err += 2;
                 }
-    if (err&2) std::cout << "Error in type specifier struct";
-    if (err&4) std::cout << "Error in type qualifier struct";
-    }
-   //std::cout<<"done2 ";
+            }
+
+            for ( unsigned int i = 0; i < tq.size(); i++ ) {
+                if ( tq.at( i ) == CONST || tq.at( i ) == VOLATILE ) {
+                } else {
+                    err += 4;
+                    break;
+                }
+            }
+            if ( err & 2 )
+                std::cout << "Error in type specifier struct";
+            if ( err & 4 )
+                std::cout << "Error in type qualifier struct";
+        }
+        // std::cout<<"done2 ";
     }
 }
-
 
 //##############################################################################
 //############################ DIRECT DECLARATOR ###############################
@@ -647,41 +694,40 @@ create_type_specifier( TYPE_SPECIFIER type, Identifier *id,
     }
     ts->name = ss.str();
     ts->add_children( id, struct_declaration_list );
-	if( struct_declaration_list != nullptr ) {
-    verify_struct_declarator(struct_declaration_list);
-	std::string struct_name;
-	
-	if ( id == nullptr ) {
-		struct_name = "anon" + std::to_string(anon_count);
-		anon_count++;
-	}
-	else {
-		struct_name = id->value;
-	}
+    if ( struct_declaration_list != nullptr ) {
+        verify_struct_declarator( struct_declaration_list );
+        std::string struct_name;
 
-	Types * struct_type = new Types;
-	struct_type->name=struct_name;
-	struct_type->is_primitive = false;
-	struct_type->pointer_level = 0;
+        if ( id == nullptr ) {
+            struct_name = "anon" + std::to_string( anon_count );
+            anon_count++;
+        } else {
+            struct_name = id->value;
+        }
 
-	switch ( type ) {
-    case UNION:
-	struct_type->is_union = true;
-        break;
-    case STRUCT:
-	struct_type->is_union = false;
-        break;
-    default:
-        assert( 0 );
+        Types *struct_type = new Types;
+        struct_type->name = struct_name;
+        struct_type->is_primitive = false;
+        struct_type->pointer_level = 0;
 
-}
-	struct_type->struct_definition = create_struct_definition( type, struct_declaration_list );
+        switch ( type ) {
+        case UNION:
+            struct_type->is_union = true;
+            break;
+        case STRUCT:
+            struct_type->is_union = false;
+            break;
+        default:
+            assert( 0 );
+        }
+        struct_type->struct_definition =
+            create_struct_definition( type, struct_declaration_list );
 
-	struct_type->size = struct_type->struct_definition->get_size();
+        struct_type->size = struct_type->struct_definition->get_size();
 
-struct_type->pointer_level = 0;
-}
-	 
+        struct_type->pointer_level = 0;
+    }
+
     return ts;
 }
 
@@ -736,7 +782,6 @@ StructDeclaration::StructDeclaration( SpecifierQualifierList *sq_list_,
     : Non_Terminal( "struct_declaration" ), sq_list( sq_list_ ),
       declarator_list( declarator_list_ ){};
 
-
 StructDeclaration *
 create_struct_declaration( SpecifierQualifierList *sq_list,
                            DeclaratorList *struct_declarator_list ) {
@@ -745,9 +790,6 @@ create_struct_declaration( SpecifierQualifierList *sq_list,
     sd->add_children( sq_list, struct_declarator_list );
     return sd;
 }
-
-
-
 
 //##############################################################################
 //######################### SPECIFIER QUALIFIER LIST ###########################
@@ -844,7 +886,7 @@ void LocalSymbolTable::increase_level() {
 void LocalSymbolTable::clear_current_level() {
 
     for ( auto it = sym_table.begin(); it != sym_table.end(); it++ ) {
-        if (it->second.empty()){
+        if ( it->second.empty() ) {
             continue;
         }
         SymTabEntry *entry = ( it->second ).front();
@@ -898,11 +940,11 @@ void LocalSymbolTable::add_function(
 
     assert( declarator->direct_declarator->type == FUNCTION );
     function_name = declarator->id->value;
-    std::cout << "L: " << function_name ;
+    std::cout << "L: " << function_name;
 
     // Check whether the arguements are of the form ( )
     if ( declarator->direct_declarator->params == nullptr ) {
-	std:: cout << "( )\n";
+        std::cout << "( )\n";
         return;
     }
     std::vector<ParameterDeclaration *> &param_list =
@@ -916,7 +958,7 @@ void LocalSymbolTable::add_function(
             std::vector<TypeSpecifier *> &v =
                 ( *it )->declaration_specifiers->type_specifier;
             if ( v.size() == 1 && ( *v.begin() )->type == VOID ) {
-		std:: cout << "( void )\n";
+                std::cout << "( void )\n";
                 return;
             }
         }
@@ -925,7 +967,7 @@ void LocalSymbolTable::add_function(
     // increase_level and clear_from_level to avoid thier side effects
 
     current_level = 1;
-	std::cout << "( ";
+    std::cout << "( ";
     for ( auto it = param_list.begin(); it != param_list.end(); it++ ) {
 
         if ( ( *it )->declarator == nullptr ||
@@ -939,7 +981,7 @@ void LocalSymbolTable::add_function(
         add_to_table( symbol );
     }
     current_level = 0;
-	std::cout << " )\n";
+    std::cout << " )\n";
 }
 
 //##############################################################################
@@ -967,7 +1009,7 @@ Node *add_to_global_symbol_table( Declaration *declaration ) {
 }
 
 //##############################################################################
-//########################### SYMBOL TABLE ENTRY  ##############################
+//########################### SYMBOL TABLE ENTRY ##############################
 //##############################################################################
 
 SymTabEntry::SymTabEntry( std::string name ) : name( name ){};

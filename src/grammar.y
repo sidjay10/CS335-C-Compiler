@@ -112,19 +112,17 @@
 primary_expression
 	: IDENTIFIER		{ $$ = $1; } 
 	| CONSTANT		{ $$ = $1; } 
-
-
 	| STRING_LITERAL	{ $$ = create_terminal("STRING LITERAL",NULL); }
-
 	| '(' expression ')'	{ $$ = create_non_term("primary_expression", $2 ); } 
-
 	;
 
 postfix_expression
 	: primary_expression	{ $$ = $1; } 
 	| postfix_expression '[' expression ']'	{ $$ = create_non_term("[]", $1, $3); }
-	| postfix_expression '(' ')'	{ $$ = create_non_term("FUNCTION CALL", $1 ); } 
-	| postfix_expression '(' argument_expression_list ')'	{ create_non_term("FUNCTION CALL ARGS", $1, $3 ); } 
+/*	| postfix_expression IDENTIFER '(' ')'	{ $$ = create_non_term("FUNCTION CALL", $1 ); } */
+	| IDENTIFIER '(' ')'	{ $$ = create_non_term("FUNCTION CALL", $1 ); } 
+/*	| postfix_expression '(' argument_expression_list ')'	{ create_non_term("FUNCTION CALL ARGS", $1, $3 ); } */
+	| IDENTIFIER '(' argument_expression_list ')'	{ create_non_term( "FUNCTION CALL ARGS", $1, $3 ); }
 	| postfix_expression '.' IDENTIFIER	{ $$ = create_non_term(".", $1, $3); } 
 	| postfix_expression PTR_OP IDENTIFIER	{ $$ = create_non_term("->", $1, $3); } 
 	| postfix_expression INC_OP	{ $$ = create_non_term("POST INCREMENT", $1); } 
