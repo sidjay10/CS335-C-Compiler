@@ -32,6 +32,7 @@ int main(int argc, char *argv[]) {
 	  exit(0);
   }
 
+
   	// std::ofstream outfile(argv[3]);
   	dot_file.open(argv[3]); // = outfile;
 
@@ -41,6 +42,9 @@ int main(int argc, char *argv[]) {
 	dot_file << ss.str();
 
 	root = create_non_term("translation_unit");
+
+	setup_primitive_types();
+
 	int abc = yyparse();
 	root->dotify();
 	

@@ -17,13 +17,234 @@
 
 LocalSymbolTable local_symbol_table;
 GlobalSymbolTable global_symbol_table;
-
-std::vector<Types> GlobalTypesMap;
-
+std::vector<Types> defined_types;
 unsigned int anon_count = 0;
+
+std::string primitive_type_name( PrimitiveTypes type ) {
+    std::stringstream ss;
+    switch ( type ) {
+    case U_CHAR_T:
+        ss << "unsigned char";
+        break;
+    case CHAR_T:
+        ss << "char";
+        break;
+    case U_SHORT_T:
+        ss << "unsigned short";
+        break;
+    case SHORT_T:
+        ss << "short";
+        break;
+    case U_INT_T:
+        ss << "unsigned int";
+        break;
+    case INT_T:
+        ss << "int";
+        break;
+    case U_LONG_T:
+        ss << "unsigned long";
+        break;
+    case LONG_T:
+        ss << "long";
+        break;
+    case FLOAT_T:
+        ss << "float";
+        break;
+    case DOUBLE_T:
+        ss << "double";
+        break;
+    case LONG_DOUBLE_T:
+        ss << "long double";
+        break;
+    case VOID_T:
+        ss << "void";
+        break;
+    default:
+        std::cerr << "Invalid Type" << type << "\n";
+        assert( 0 );
+    }
+    return ss.str();
+}
+size_t primitive_type_size( PrimitiveTypes type ) {
+    size_t size = 0;
+    switch ( type ) {
+    case U_CHAR_T:
+        size = 1;
+        break;
+    case CHAR_T:
+        size = 1;
+        break;
+    case U_SHORT_T:
+        size = 2;
+        break;
+    case SHORT_T:
+        size = 2;
+        break;
+    case U_INT_T:
+        size = 4;
+        break;
+    case INT_T:
+        size = 4;
+        break;
+    case U_LONG_T:
+        size = 8;
+        break;
+    case LONG_T:
+        size = 8;
+        break;
+    case FLOAT_T:
+        size = 4;
+        break;
+    case DOUBLE_T:
+        size = 8;
+        break;
+    case LONG_DOUBLE_T:
+        size = 16;
+        break;
+    case VOID_T:
+        size = 0;
+        break;
+    default:
+        std::cerr << "Invalid Type";
+        assert( 0 );
+    }
+    return size;
+}
+
+void setup_primitive_types() {
+
+    for ( int i = 0; i <= VOID_T; i++ ) {
+        Types t;
+        t.index = i;
+        t.name = primitive_type_name( (PrimitiveTypes)i );
+        t.size = primitive_type_size( (PrimitiveTypes)i );
+        t.is_primitive = true;
+        t.is_union = false;
+        t.is_struct = false;
+        t.struct_definition = nullptr;
+        defined_types.push_back( t );
+    }
+}
+
 //##############################################################################
-//############################ STRUCT DEFINITION ###############################
+//################################## TYPE
+//######################################
 //##############################################################################
+
+Type::Type() {
+    typeIndex = -1;
+    ptr_level = -1;
+    is_const = false;
+}
+
+Type::Type( int idx, int p_lvl, bool is_con ) {
+    typeIndex = idx;
+    ptr_level = p_lvl;
+    is_const = is_con;
+}
+bool Type::isPrimitive() {
+    if ( typeIndex >= 0 && typeIndex <= 12 ) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+std::string Type::get_name() { return defined_types[typeIndex].name; }
+
+bool Type::isInt() {
+    if ( typeIndex >= 0 && typeIndex <= 9 ) {
+        if ( ptr_level == 0 ) {
+            return true;
+        } else {
+            return false;
+        }
+    } else {
+        return false;
+    }
+}
+
+bool Type::isFloat() {
+    if ( typeIndex >= 10 && typeIndex <= 12 && ptr_level == 0 )
+        return true;
+    else
+        return false;
+}
+bool Type::isIntorFloat() {
+    if ( typeIndex <= 12 && ptr_level == 0 )
+        return true;
+    else
+        return false;
+}
+
+bool Type::isUnsigned() {
+    if ( typeIndex == 0 || typeIndex == 2 || typeIndex == 4 ||
+         typeIndex == 6 ) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+bool Type::isPointer() {
+    if ( ptr_level ) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+void Type::make_signed() {
+    if ( typeIndex == 0 || typeIndex == 2 || typeIndex == 4 ||
+         typeIndex == 6 ) {
+        typeIndex += 1;
+    }
+}
+
+void Type::make_unsigned() {
+    if ( typeIndex == 1 || typeIndex == 3 || typeIndex == 5 ||
+         typeIndex == 7 ) {
+        typeIndex -= 1;
+    }
+}
+//##############################################################################
+//################################## TYPES
+//#####################################
+//##############################################################################
+
+int add_to_defined_types( Types *typ ) {
+    for ( auto it = defined_types.begin(); it != defined_types.end(); it++ ) {
+        if ( ( *it ).name == typ->name ) {
+            return ( *it ).index;
+        }
+    }
+
+    typ->index = defined_types.size();
+    defined_types.push_back( *typ );
+    return defined_types.size() - 1;
+}
+
+int get_type_index( std::string name ) {
+    for ( auto it = defined_types.begin(); it != defined_types.end(); it++ ) {
+        if ( ( *it ).name == name ) {
+            return ( *it ).index;
+        }
+    }
+    return -1;
+}
+
+void add_struct_defintion_to_type( int index,
+                                   StructDefinition *struct_definition ) {
+    defined_types[index].struct_definition = struct_definition;
+    defined_types[index].size = struct_definition->get_size();
+}
+
+
+//##############################################################################
+//############################ STRUCT DEFINITION
+//###############################
+//##############################################################################
+
 StructDefinition::StructDefinition(){};
 
 size_t StructDefinition::get_size() {
@@ -43,24 +264,43 @@ StructDefinition *create_struct_definition( int un_or_st,
     for ( auto it = sdl->struct_declaration_list.begin();
           it != sdl->struct_declaration_list.end(); it++ ) {
         // TODO: Complete this
+        int type_index = ( *it )->sq_list->type_index;
+        bool is_const = ( *it )->sq_list->is_const;
+        //	    assert( type_index != -1 );
 
         std::vector<Declarator *> dl =
             ( *it )->declarator_list->declarator_list;
 
         for ( auto jt = dl.begin(); jt != dl.end(); jt++ ) {
+            int pointer_level = ( *jt )->get_pointer_level();
+            Type type( type_index, pointer_level, is_const );
 
-            sd->members.insert(
-                std::make_pair( ( *jt )->id->value, Type( -1, 0, 0 ) ) );
-            std::cout << "  " << ( *jt )->id->value << "\n";
+            sd->members.insert( {( *jt )->id->value, type} );
+            std::cout << "  " << ( *jt )->id->value << " " << type_index << " "
+                      << pointer_level << "\n";
         }
     }
     std::cout << "}\n";
     return sd;
 }
 
+
 //##############################################################################
-//################################ POINTER #####################################
+//################################ POINTER
+//#####################################
 //##############################################################################
+void is_Valid( TypeQualifierList *ts ) {
+
+    for ( unsigned int i = 0; i < ts->type_qualifier_list.size(); i++ ) {
+        if ( ts->type_qualifier_list.at( i ) == CONST ||
+             ts->type_qualifier_list.at( i ) == VOLATILE ) {
+        } else {
+            std::cout << "Error in pointer type qualfier pointer";
+            break;
+        }
+    }
+}
+
 Pointer::Pointer() : Non_Terminal( "pointer" ){};
 
 Pointer::Pointer( TypeQualifierList *type_list, Pointer *pointer_ )
@@ -75,7 +315,7 @@ Pointer *create_pointer() {
 Pointer *create_pointer( TypeQualifierList *type_list, Pointer *pointer ) {
     Pointer *p = new Pointer( type_list, pointer );
     p->add_children( type_list, pointer );
-
+    // is_Valid( type_list );
     return p;
 }
 
@@ -120,6 +360,7 @@ int get_index( Type t ) {
     }
     return t.typeIndex;
 }
+#if 0
 int set_index( DeclarationSpecifiers *ds ) {
     ds->is_const = false;
     int err = 0;
@@ -130,6 +371,7 @@ int set_index( DeclarationSpecifiers *ds ) {
         }
     }
 
+<<<<<<< HEAD
     std::vector<TYPE_SPECIFIER> ty;
     for ( int i = 0; i < ds->type_specifier.size(); i++ ) {
         ty.push_back( ds->type_specifier.at( i )->type );
@@ -140,6 +382,8 @@ int set_index( DeclarationSpecifiers *ds ) {
     t.typeIndex = -1;
     for ( int i = 0; i < ty.size(); i++ )
         std::cout << ty.at( i ) << ' ';
+=======
+>>>>>>> sidjay
 
     if ( ty.size() == 3 ) {
         if ( ty.at( 0 ) == UNSIGNED && ty.at( 1 ) == INT &&
@@ -223,12 +467,18 @@ int set_index( DeclarationSpecifiers *ds ) {
     ds->type_index = get_index( t );
     return ds->type_index;
 }
+#endif
+//##############################################################################
+//############################# DECLARATION
+//####################################
+//##############################################################################
 
 Declaration *new_declaration( DeclarationSpecifiers *declaration_specifiers,
                               DeclaratorList *init_declarator_list ) {
     Declaration *d =
         new Declaration( declaration_specifiers, init_declarator_list );
-    d->type = set_index( declaration_specifiers );
+    d->add_children( declaration_specifiers, init_declarator_list );
+    declaration_specifiers->create_type();
     return d;
 }
 
@@ -237,14 +487,21 @@ void Declaration::add_to_symbol_table( LocalSymbolTable &sym_tab ) {
         return;
     }
     std::vector<Declarator *> &dec = init_declarator_list->declarator_list;
+    int type_index = declaration_specifiers->type_index;
+    bool is_const = declaration_specifiers->is_const;
+    assert( type_index != -1 );
 
     for ( auto i = dec.begin(); i != dec.end(); i++ ) {
         for ( int i = 0; i < sym_tab.current_level; i++ ) {
             std::cout << "  ";
         }
+        int pointer_level = ( *i )->get_pointer_level();
+
         SymTabEntry *e = new SymTabEntry( ( *i )->id->value );
+        e->type = Type( type_index, pointer_level, is_const );
         sym_tab.add_to_table( e );
-        std::cout << ( *i )->id->value << " " << sym_tab.current_level << "\n";
+        std::cout << ( *i )->id->value << " " << type_index << " "
+                  << pointer_level << " : " << sym_tab.current_level << "\n";
     }
 }
 
@@ -282,7 +539,110 @@ void Declaration::add_to_symbol_table( GlobalSymbolTable &sym_tab ) {
 //##############################################################################
 
 DeclarationSpecifiers ::DeclarationSpecifiers()
-    : Non_Terminal( "declaration_specifiers" ){};
+    : Non_Terminal( "declaration_specifiers" ), is_const( false ),
+      type_index( -1 ){};
+
+void DeclarationSpecifiers::create_type() {
+
+    int err = 0;
+
+    if ( storage_class.size() == 0 ) {
+        ;
+    } else if ( storage_class.size() == 1 &&
+                storage_class.at( 0 ) == TYPEDEF ) {
+        ;
+    } else {
+        err += 1;
+    }
+
+    std::vector<TYPE_SPECIFIER> ty;
+    for ( unsigned int i = 0; i < type_specifier.size(); i++ )
+        ty.push_back( type_specifier.at( i )->type );
+
+    std::sort( ty.begin(), ty.end() );
+
+    is_const = false;
+    type_index = -1;
+    if ( ty.size() == 3 ) {
+        if ( ty.at( 0 ) == UNSIGNED && ty.at( 1 ) == LONG &&
+             ty.at( 2 ) == LONG ) {
+            type_index = U_LONG_T;
+        } else {
+            err += 2;
+        }
+    } else if ( ty.size() == 2 ) {
+        if ( ty.at( 0 ) == UNSIGNED && ty.at( 1 ) == CHAR ) {
+            type_index = U_CHAR_T;
+        } else if ( ty.at( 0 ) == SIGNED && ty.at( 1 ) == CHAR ) {
+            type_index = CHAR_T;
+        } else if ( ty.at( 0 ) == UNSIGNED && ty.at( 1 ) == SHORT ) {
+            type_index = U_SHORT_T;
+        } else if ( ty.at( 0 ) == SIGNED && ty.at( 1 ) == SHORT ) {
+            type_index = SHORT_T;
+        } else if ( ty.at( 0 ) == UNSIGNED && ty.at( 1 ) == INT ) {
+            type_index = U_INT_T;
+        } else if ( ty.at( 0 ) == SIGNED && ty.at( 1 ) == INT ) {
+            type_index = INT_T;
+        } else if ( ty.at( 0 ) == UNSIGNED && ty.at( 1 ) == LONG ) {
+            type_index = U_LONG_T;
+        } else if ( ty.at( 0 ) == SIGNED && ty.at( 1 ) == LONG ) {
+            type_index = LONG_T;
+            //        } else if ( ty.at( 0 ) == FLOAT && ty.at( 1 ) ==
+            //        DOUBLE )
+            //        {
+            //            type_index = DOUBLE_T;
+        } else
+            err += 2;
+    } else if ( ty.size() == 1 ) {
+        if ( ty.at( 0 ) == FLOAT ) {
+            type_index = FLOAT_T;
+        } else if ( ty.at( 0 ) == DOUBLE ) {
+            type_index = DOUBLE_T;
+
+        } else if ( ty.at( 0 ) == INT ) {
+            type_index = INT_T;
+
+        } else if ( ty.at( 0 ) == SHORT ) {
+            type_index = SHORT_T;
+
+        } else if ( ty.at( 0 ) == CHAR ) {
+            type_index = CHAR_T;
+
+        } else if ( ty.at( 0 ) == LONG ) {
+            type_index = LONG_T;
+        } else if ( ty.at( 0 ) == ENUM ) {
+            std::cerr << "ENUM not supported\n";
+            exit( 0 );
+
+        } else if ( ty.at( 0 ) == STRUCT || ty.at( 0 ) == UNION ) {
+            type_index = type_specifier.at( 0 )->type_index;
+        } else {
+            err += 2;
+        }
+    }
+    for ( unsigned int i = 0; i < type_qualifier.size(); i++ ) {
+
+        if ( type_qualifier.at( i ) == CONST ) {
+            is_const = true;
+        } else if ( type_qualifier.at( i ) == VOLATILE ) {
+        } else {
+            err += 4;
+            break;
+        }
+    }
+    if ( err & 1 ) {
+        std::cerr << "Error in strorage class declarator";
+        exit( 0 );
+    }
+    if ( err & 2 ) {
+        std::cerr << "Error in type specifier declarator";
+        exit( 0 );
+    }
+    if ( err & 4 ) {
+        std::cerr << "Error in type qualifier declarator";
+        exit( 0 );
+    }
+}
 
 DeclarationSpecifiers *new_storage_class( STORAGE_CLASS sc ) {
     DeclarationSpecifiers *ds = new DeclarationSpecifiers();
@@ -379,6 +739,16 @@ Declarator ::Declarator( Pointer *p, DirectDeclarator *dd )
     id = dd->id;
 };
 
+int Declarator::get_pointer_level() {
+    Pointer *ptr = pointer;
+    int count = 0;
+    while ( ptr != NULL ) {
+        count++;
+        ptr = ptr->pointer;
+    }
+    return count;
+}
+
 Declarator *create_declarator( Pointer *pointer,
                                DirectDeclarator *direct_declarator ) {
     Declarator *d = new Declarator( pointer, direct_declarator );
@@ -392,14 +762,68 @@ Declarator *add_initializer_to_declarator( Declarator *declarator, Node *ie ) {
     declarator->add_child( create_non_term( "=", id, ie ) );
     return declarator;
 }
-int Declarator::get_pointer_level() {
-    Pointer *temp = pointer;
-    int r = 0;
-    while ( temp != NULL ) {
-        r += 1;
-        temp = temp->pointer;
+//##############################################################################
+//############################## STRUCT VERIFY
+//################################
+//##############################################################################
+
+void verify_struct_declarator( StructDeclarationList *st ) {
+    int err;
+    if ( st != NULL ) {
+        // std::cout<<st->struct_declaration_list.size();
+        for ( unsigned int i = 0; i < st->struct_declaration_list.size();
+              i++ ) {
+            std::vector<TypeSpecifier *> ts =
+                st->struct_declaration_list.at( i )->sq_list->type_specifiers;
+            std::vector<TYPE_QUALIFIER> tq =
+                st->struct_declaration_list.at( i )->sq_list->type_qualifiers;
+            err = 0;
+            std::vector<TYPE_SPECIFIER> ty;
+            for ( unsigned int i = 0; i < ts.size(); i++ ) {
+                ty.push_back( ts.at( i )->type );
+            }
+            std::sort( ty.begin(), ty.end() );
+
+            if ( ty.size() == 3 ) {
+                if ( ( ty.at( 0 ) == UNSIGNED || ty.at( 0 ) == SIGNED ) &&
+                     ( ty.at( 1 ) == SHORT || ty.at( 1 ) == LONG ) &&
+                     ty.at( 2 ) == INT ) {
+                } else
+                    err += 2;
+            } else if ( ty.size() == 2 ) {
+                if ( ( ty.at( 0 ) == UNSIGNED || ty.at( 0 ) == SIGNED ) &&
+                     ( ty.at( 1 ) == SHORT || ty.at( 1 ) == LONG ||
+                       ty.at( 1 ) == INT || ty.at( 1 ) == CHAR ) ) {
+                } else if ( ( ty.at( 0 ) == SHORT || ty.at( 0 ) == LONG ) &&
+                            ty.at( 1 ) == INT ) {
+                } else if ( ty.at( 0 ) == LONG && ty.at( 1 ) == DOUBLE ) {
+                } else
+                    err += 2;
+            } else if ( ty.size() == 1 ) {
+                if ( ty.at( 0 ) == SHORT || ty.at( 0 ) == LONG ||
+                     ty.at( 0 ) == INT || ty.at( 0 ) == CHAR ||
+                     ty.at( 0 ) == FLOAT || ty.at( 0 ) == DOUBLE ||
+                     ty.at( 0 ) == STRUCT || ty.at( 0 ) == UNION ||
+                     ty.at( 0 ) == ENUM ) {
+                } else {
+                    err += 2;
+                }
+            }
+
+            for ( unsigned int i = 0; i < tq.size(); i++ ) {
+                if ( tq.at( i ) == CONST || tq.at( i ) == VOLATILE ) {
+                } else {
+                    err += 4;
+                    break;
+                }
+            }
+            if ( err & 2 )
+                std::cout << "Error in type specifier struct";
+            if ( err & 4 )
+                std::cout << "Error in type qualifier struct";
+        }
+        // std::cout<<"done2 ";
     }
-    return r;
 }
 //##############################################################################
 //############################ DIRECT DECLARATOR
@@ -632,18 +1056,20 @@ create_function_defintion( DeclarationSpecifiers *declaration_specifiers,
 
 TypeSpecifier::TypeSpecifier( TYPE_SPECIFIER typ )
     : Non_Terminal( "type_specifier" ), type( typ ), id( nullptr ),
-      struct_declaration_list( nullptr ), enumerator_list( nullptr ){};
+      struct_declaration_list( nullptr ), enumerator_list( nullptr ),
+      type_index( -1 ){};
 
 TypeSpecifier::TypeSpecifier( TYPE_SPECIFIER type_, Identifier *id_,
                               StructDeclarationList *struct_declaration_list_ )
     : Non_Terminal( "type_specifier" ), type( type_ ), id( id_ ),
       struct_declaration_list( struct_declaration_list_ ),
-      enumerator_list( nullptr ){};
+      enumerator_list( nullptr ), type_index( -1 ){};
 
 TypeSpecifier::TypeSpecifier( TYPE_SPECIFIER type_, Identifier *id_,
                               EnumeratorList *enumerator_list_ )
     : Non_Terminal( "type_specifier" ), type( type_ ), id( id_ ),
-      struct_declaration_list( nullptr ), enumerator_list( enumerator_list_ ){};
+      struct_declaration_list( nullptr ), enumerator_list( enumerator_list_ ),
+      type_index( -1 ){};
 
 TypeSpecifier *create_type_specifier( TYPE_SPECIFIER type ) {
     assert( type != UNION && type != STRUCT && type != ENUM );
@@ -765,10 +1191,10 @@ create_type_specifier( TYPE_SPECIFIER type, Identifier *id,
         std::string struct_name;
 
         if ( id == nullptr ) {
-            struct_name = "anon" + std::to_string( anon_count );
+            struct_name = "struct #anon_" + std::to_string( anon_count );
             anon_count++;
         } else {
-            struct_name = id->value;
+            struct_name = "struct " + id->value;
         }
 
         Types *struct_type = new Types;
@@ -785,12 +1211,13 @@ create_type_specifier( TYPE_SPECIFIER type, Identifier *id,
         default:
             assert( 0 );
         }
-        struct_type->struct_definition =
+        ts->type_index = add_to_defined_types( struct_type );
+        StructDefinition *struct_definition =
             create_struct_definition( type, struct_declaration_list );
+        add_struct_defintion_to_type( ts->type_index, struct_definition );
 
-        struct_type->size = struct_type->struct_definition->get_size();
-
-        // struct_type->pointer_level = 0;
+    } else {
+        ts->type_index = get_type_index( "struct " + id->value );
     }
 
     return ts;
@@ -855,6 +1282,7 @@ create_struct_declaration( SpecifierQualifierList *sq_list,
     StructDeclaration *sd =
         new StructDeclaration( sq_list, struct_declarator_list );
     sd->add_children( sq_list, struct_declarator_list );
+    sq_list->create_type();
     return sd;
 }
 
@@ -865,6 +1293,99 @@ create_struct_declaration( SpecifierQualifierList *sq_list,
 
 SpecifierQualifierList::SpecifierQualifierList()
     : Non_Terminal( "specifier_qualifier_list" ){};
+
+void SpecifierQualifierList::create_type() {
+
+    int err = 0;
+
+    std::vector<TYPE_SPECIFIER> ty;
+    for ( unsigned int i = 0; i < type_specifiers.size(); i++ )
+        ty.push_back( type_specifiers.at( i )->type );
+
+    std::sort( ty.begin(), ty.end() );
+
+    is_const = false;
+    type_index = -1;
+    if ( ty.size() == 3 ) {
+        if ( ty.at( 0 ) == UNSIGNED && ty.at( 1 ) == LONG &&
+             ty.at( 2 ) == LONG ) {
+            type_index = U_LONG_T;
+        } else {
+            err += 2;
+        }
+    } else if ( ty.size() == 2 ) {
+        if ( ty.at( 0 ) == UNSIGNED && ty.at( 1 ) == CHAR ) {
+            type_index = U_CHAR_T;
+        } else if ( ty.at( 0 ) == SIGNED && ty.at( 1 ) == CHAR ) {
+            type_index = CHAR_T;
+        } else if ( ty.at( 0 ) == UNSIGNED && ty.at( 1 ) == SHORT ) {
+            type_index = U_SHORT_T;
+        } else if ( ty.at( 0 ) == SIGNED && ty.at( 1 ) == SHORT ) {
+            type_index = SHORT_T;
+        } else if ( ty.at( 0 ) == UNSIGNED && ty.at( 1 ) == INT ) {
+            type_index = U_INT_T;
+        } else if ( ty.at( 0 ) == SIGNED && ty.at( 1 ) == INT ) {
+            type_index = INT_T;
+        } else if ( ty.at( 0 ) == UNSIGNED && ty.at( 1 ) == LONG ) {
+            type_index = U_LONG_T;
+        } else if ( ty.at( 0 ) == SIGNED && ty.at( 1 ) == LONG ) {
+            type_index = LONG_T;
+            //        } else if ( ty.at( 0 ) == FLOAT && ty.at( 1 ) ==
+            //        DOUBLE )
+            //        {
+            //            type_index = DOUBLE_T;
+        } else
+            err += 2;
+    } else if ( ty.size() == 1 ) {
+        if ( ty.at( 0 ) == FLOAT ) {
+            type_index = FLOAT_T;
+        } else if ( ty.at( 0 ) == DOUBLE ) {
+            type_index = DOUBLE_T;
+
+        } else if ( ty.at( 0 ) == INT ) {
+            type_index = INT_T;
+
+        } else if ( ty.at( 0 ) == SHORT ) {
+            type_index = SHORT_T;
+
+        } else if ( ty.at( 0 ) == CHAR ) {
+            type_index = CHAR_T;
+
+        } else if ( ty.at( 0 ) == LONG ) {
+            type_index = LONG_T;
+        } else if ( ty.at( 0 ) == ENUM ) {
+            std::cerr << "ENUM not supported\n";
+            exit( 0 );
+
+        } else if ( ty.at( 0 ) == STRUCT || ty.at( 0 ) == UNION ) {
+            type_index = type_specifiers.at( 0 )->type_index;
+        } else {
+            err += 2;
+        }
+    }
+    for ( unsigned int i = 0; i < type_qualifiers.size(); i++ ) {
+
+        if ( type_qualifiers.at( i ) == CONST ) {
+            is_const = true;
+        } else if ( type_qualifiers.at( i ) == VOLATILE ) {
+        } else {
+            err += 4;
+            break;
+        }
+    }
+    if ( err & 1 ) {
+        std::cerr << "Error in strorage class declarator";
+        exit( 0 );
+    }
+    if ( err & 2 ) {
+        std::cerr << "Error in type specifier declarator";
+        exit( 0 );
+    }
+    if ( err & 4 ) {
+        std::cerr << "Error in type qualifier declarator";
+        exit( 0 );
+    }
+}
 
 SpecifierQualifierList *
 create_type_specifier_sq( TypeSpecifier *type_specifier ) {

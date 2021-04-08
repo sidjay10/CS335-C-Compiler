@@ -1,7 +1,10 @@
 int u,v;
 int flag=0;
+
+struct node;
+
 struct node{
-    int float key;
+    int key;
     struct node* next;
     int color;
 };
