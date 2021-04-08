@@ -1445,7 +1445,7 @@ void Declaration::add_to_symbol_table( LocalSymbolTable &sym_tab ) {
 
                 struct_type->size = struct_type->struct_definition->get_size();
 
-                struct_type->pointer_level = 0;
+                // struct_type->pointer_level = 0;
             }
 
             return ts;

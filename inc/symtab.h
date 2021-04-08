@@ -30,6 +30,7 @@ class ParameterTypeList;
 class CastExpression;
 class Constant;
 class StringLiteral;
+class TopLevelExpression;
 
 // SXXX:TODO Add all primitive types by default
 
@@ -210,7 +211,6 @@ class Type {
       return GlobalTypesMap[typeIndex].name;
     }
 
-    std::string get_name() { return GlobalTypesMap[typeIndex].name; }
     bool isInt() {
         if ( typeIndex >= 0 && typeIndex <= 9 ) {
             if ( ptr_level == 0 ) {
