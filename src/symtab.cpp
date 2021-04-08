@@ -8,6 +8,7 @@
 #include <symtab.h>
 #include <vector>
 #include <y.tab.h>
+#include <algorithm>
 
 LocalSymbolTable local_symbol_table;
 GlobalSymbolTable global_symbol_table;
@@ -15,6 +16,14 @@ GlobalSymbolTable global_symbol_table;
 //##############################################################################
 //################################ POINTER #####################################
 //##############################################################################
+void is_Valid(TypeQualifierList *ts){
+     for(int i=0; i < ts->type_qualifier_list.size(); i++){
+        if(ts->type_qualifier_list.at(i)==CONST||ts->type_qualifier_list.at(i)==VOLATILE) {}
+        else {
+            std::cout<<"Error in pointer type qualfier pointer";
+            break;}
+        }
+}
 
 Pointer::Pointer() : Non_Terminal( "pointer" ){};
 
@@ -30,6 +39,7 @@ Pointer *create_pointer() {
 Pointer *create_pointer( TypeQualifierList *type_list, Pointer *pointer ) {
     Pointer *p = new Pointer( type_list, pointer );
     p->add_children( type_list, pointer );
+    is_Valid(type_list);
     return p;
 }
 
@@ -73,6 +83,7 @@ Declaration *new_declaration( DeclarationSpecifiers *declaration_specifiers,
     Declaration *d =
         new Declaration( declaration_specifiers, init_declarator_list );
     d->add_children( declaration_specifiers, init_declarator_list );
+    is_Valid(declaration_specifiers);
     return d;
 }
 
@@ -109,6 +120,46 @@ void Declaration::add_to_symbol_table( GlobalSymbolTable &sym_tab ) {
 
 DeclarationSpecifiers ::DeclarationSpecifiers()
     : Non_Terminal( "declaration_specifiers" ){};
+
+
+void is_Valid(DeclarationSpecifiers *ds){
+    int err=0;
+    if(ds->storage_class.size()==1){
+        if(ds->storage_class.at(0)==TYPEDEF) err=0;
+        else err+=1;
+        }
+
+    std::vector<int> ty;
+    
+    for(int i=0; i < ds->type_specifier.size(); i++)
+    ty.push_back(ds->type_specifier.at(i)->type);
+    std::sort(ty.begin(),ty.end());
+
+    if(ty.size()==3){
+        if ((ty.at(0)==UNSIGNED || ty.at(0)==SIGNED) && (ty.at(1)==SHORT || ty.at(1)==LONG) && ty.at(2)==INT) {}
+        else err+=2;
+        }
+    else if (ty.size()==2){
+        if ((ty.at(0)==UNSIGNED || ty.at(0)==SIGNED) && (ty.at(1)==SHORT || ty.at(1)==LONG || ty.at(1)==INT || ty.at(1)==CHAR)) {}
+        else if ((ty.at(0)==SHORT || ty.at(0)==LONG) && ty.at(1)==INT) {}
+        else if (ty.at(0)==LONG && ty.at(1)==DOUBLE) {}
+        else err+=2;
+        }
+    else if (ty.size()==1) 
+        if (ty.at(0)==SHORT || ty.at(0)==LONG || ty.at(0)==INT || ty.at(0)==CHAR || ty.at(0)==FLOAT||ty.at(0)==DOUBLE || ty.at(0)==STRUCT ||ty.at(0)==UNION || ty.at(0)==ENUM){}
+    else err+=2;
+
+    for(int i=0; i < ds->type_qualifier.size(); i++){
+        if(ds->type_qualifier.at(i)==CONST||ds->type_qualifier.at(i)==VOLATILE) {}
+        else {err+=4;break;}
+        }
+    //for(int i=0; i < ds->type_qualifier.size(); i++)
+    //std::cout << ds->type_qualifier.at(i) << ' ';
+    if (err&1) std::cout << "Error in strorage class declarator";
+    if (err&2) std::cout << "Error in type specifier declarator";
+    if (err&4) std::cout << "Error in type qualifier declarator";
+
+}
 
 DeclarationSpecifiers *new_storage_class( STORAGE_CLASS sc ) {
     DeclarationSpecifiers *ds = new DeclarationSpecifiers();

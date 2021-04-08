@@ -6,7 +6,8 @@
 #include <map>
 #include <string>
 
-enum PrimitiveTypes = {CHAR, U_CHAR, SHORT, U_SHORT, INT, U_INT, L_INT, UL_INT, FLOAT, DOUBLE};
+
+//enum PrimitiveTypes{CHAR, U_CHAR, SHORT, U_SHORT, INT, U_INT, L_INT, UL_INT, FLOAT, DOUBLE};
 
 class ParameterTypeList;
 
@@ -87,7 +88,7 @@ class TypeQualifierList : public Non_Terminal {
 TypeQualifierList *create_type_qualifier_list( TYPE_QUALIFIER type );
 TypeQualifierList *add_to_type_qualifier_list( TypeQualifierList *tql,
                                                TYPE_QUALIFIER type );
-
+void is_Valid(TypeQualifierList *ts);
 class Pointer : public Non_Terminal {
   public:
     TypeQualifierList *type_qualifier_list;
@@ -180,11 +181,9 @@ class DeclarationSpecifiers : public Non_Terminal {
     std::vector<STORAGE_CLASS> storage_class;
     std::vector<TypeSpecifier *> type_specifier;
     std::vector<TYPE_QUALIFIER> type_qualifier;
-
-    isValid(); // Type Checking
-
     DeclarationSpecifiers();
 };
+void is_Valid(DeclarationSpecifiers *ds);
 
 DeclarationSpecifiers *new_storage_class( STORAGE_CLASS sc );
 DeclarationSpecifiers *new_type_specifier( TypeSpecifier *ts );
