@@ -13,7 +13,7 @@
 LocalSymbolTable local_symbol_table;
 GlobalSymbolTable global_symbol_table;
 
-std::vector<Types *> defined_types;
+std::vector<Types > GlobalTypesMap;
 
 unsigned int anon_count = 0;
 //##############################################################################

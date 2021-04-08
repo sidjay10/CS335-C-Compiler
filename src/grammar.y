@@ -110,7 +110,6 @@
 %%
 
 primary_expression
-<<<<<<< HEAD
 	: IDENTIFIER		{ $$ = create_primary_identifier($1); } 
 	| CONSTANT		{ $$ = create_primary_constant($1); }
 	| STRING_LITERAL	{ $$ = create_primary_stringliteral($1); } 
@@ -297,7 +296,6 @@ type_specifier
 	|  enum_specifier		{ $$ = $1; }
 	|  TYPE_NAME			{ $$ = create_type_specifier(TYPE_NAME); }
 	;
-rt
 struct_or_union_specifier
 	:  struct_or_union IDENTIFIER '{' struct_declaration_list '}'	{ $$ = create_type_specifier( $1, $2, $4); }
 	|  struct_or_union '{' struct_declaration_list '}'	 	{ $$ = create_type_specifier( $1, NULL, $3); }
@@ -426,7 +424,7 @@ direct_abstract_declarator
 	|  '(' ')'	 						{ $$ = create_direct_abstract_declarator( ROUND ); } 
 	|  '(' parameter_type_list ')'	 				{ $$ = create_direct_abstract_declarator( ROUND, NULL, $2 ); } 
 	|  direct_abstract_declarator '(' ')'	 			{ $$ = create_direct_abstract_declarator( ROUND, $1 ); } 
-	|  directype_namet_abstract_declarator '(' parameter_type_list ')'	{ $$ = create_direct_abstract_declarator( ROUND, $1, $3 ); } 
+	|  direct_abstract_declarator '(' parameter_type_list ')'	{ $$ = create_direct_abstract_declarator( ROUND, $1, $3 ); } 
 	;
 
 initializer

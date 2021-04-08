@@ -13,6 +13,8 @@ class StructDefinition;
 class AssignmentExpression;
 class ParameterTypeList;
 class CastExpression;
+class Constant;
+class StringLiteral;
 
 
 //SXXX:TODO Add all primitive types by default 
@@ -136,9 +138,11 @@ class Types {
 
 #endif
 
-std::vector<Types> GlobalTypesMap;
 
 class Types;
+class Type;
+
+extern std::vector<Types> GlobalTypesMap;
 
 class Identifier;
 
@@ -770,7 +774,7 @@ add_to_init_declarator_list( DeclaratorList *init_declarator_list,
 
 typedef int STORAGE_CLASS;
 class TypeSpecifier;
-void set_index(DeclarationSpecifiers *ds)
+void set_index(DeclarationSpecifiers *ds);
 class DeclarationSpecifiers : public Non_Terminal {
   public:
     std::vector<STORAGE_CLASS> storage_class;
