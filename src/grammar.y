@@ -120,7 +120,7 @@ primary_expression
 postfix_expression
 	: primary_expression	{ $$ = $1; } 
 	| postfix_expression '[' expression ']'	{ $$ = create_postfix_expr_arr( ARRAY, $1, $3 ); } 
-/*	| postfix_expression IDENTIFER '(' ')'	{ $$ = create_non_term("FUNCTION CALL", $1 ); } */
+/*	| postfix_expression '(' ')'	{ $$ = create_non_term("FUNCTION CALL", $1 ); } */
 	| IDENTIFIER '(' ')'	{ $$ = create_postfix_expr_fun( FUNCTION, $1 ); } 
 	| IDENTIFIER '(' argument_expression_list ')'	{ } 
 /*	| postfix_expression '(' argument_expression_list ')'	{ create_non_term("FUNCTION CALL ARGS", $1, $3 ); } */
@@ -297,7 +297,7 @@ type_specifier
 	|  enum_specifier		{ $$ = $1; }
 	|  TYPE_NAME			{ $$ = create_type_specifier(TYPE_NAME); }
 	;
-
+rt
 struct_or_union_specifier
 	:  struct_or_union IDENTIFIER '{' struct_declaration_list '}'	{ $$ = create_type_specifier( $1, $2, $4); }
 	|  struct_or_union '{' struct_declaration_list '}'	 	{ $$ = create_type_specifier( $1, NULL, $3); }
