@@ -194,7 +194,6 @@ class Declarator : public Non_Terminal {
     int get_pointer_level();
     Declarator();
     Declarator( Pointer *p, DirectDeclarator *dd );
-    int get_pointer_level();
 };
 
 Declarator *add_initializer_to_declarator( Declarator *declarator,

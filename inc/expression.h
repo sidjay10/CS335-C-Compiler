@@ -373,11 +373,11 @@ class Constant : public Terminal {
                 if ( value[i] == 'u' || value[i] == 'U' )
                     isunsigned = 1;
                 if ( islong && isunsigned )
-                    retT.typeIndex = PrimitiveTypes::U_INT_LONG_T;
+                    retT.typeIndex = PrimitiveTypes::U_LONG_T;
                 return retT;
             }
             if ( islong ) {
-                retT.typeIndex = PrimitiveTypes::INT_LONG_T;
+                retT.typeIndex = PrimitiveTypes::LONG_T;
                 return retT;
             }
             if ( isunsigned ) {

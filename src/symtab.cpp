@@ -284,6 +284,18 @@ StructDefinition *create_struct_definition( int un_or_st,
     return sd;
 }
 
+Type * StructDefinition::get_member( Identifier * id ) {
+	auto it = members.find(id->value);
+	if ( it == members.end() ) {
+		return nullptr;
+	}	
+	else {
+		return &(it->second);
+	}
+
+	return nullptr;
+
+}
 
 //##############################################################################
 //################################ POINTER
@@ -345,6 +357,8 @@ TypeQualifierList *create_type_qualifier_list( TYPE_QUALIFIER type ) {
 //     declaration_specifiers_ ), init_declarator_list( init_declarator_list_
 //     ){};
 
+
+#if 0
 int get_index( Type t ) {
     bool k = true;
     if ( t.typeIndex == -1 ) {
@@ -360,7 +374,6 @@ int get_index( Type t ) {
     }
     return t.typeIndex;
 }
-#if 0
 int set_index( DeclarationSpecifiers *ds ) {
     ds->is_const = false;
     int err = 0;
@@ -1113,6 +1126,8 @@ TypeSpecifier *create_type_specifier( TYPE_SPECIFIER type ) {
     ts->name = ss.str();
     return ts;
 }
+
+#if 0
 void verify_struct_declarator( StructDeclarationList *st ) {
     int err;
     if ( st != NULL ) {
@@ -1167,6 +1182,9 @@ void verify_struct_declarator( StructDeclarationList *st ) {
         // std::cout<<"done2 ";
     }
 }
+
+#endif
+
 TypeSpecifier *
 create_type_specifier( TYPE_SPECIFIER type, Identifier *id,
                        StructDeclarationList *struct_declaration_list ) {
@@ -1605,5 +1623,7 @@ Node *add_to_global_symbol_table( Declaration *declaration ) {
 //########################### SYMBOL TABLE ENTRY
 //##############################
 //##############################################################################
+
+SymTabEntry::SymTabEntry( std::string name ) : name( name ){};
 
 //##############################################################################

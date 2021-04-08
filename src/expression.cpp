@@ -106,7 +106,7 @@ Expression *create_postfix_expr_arr( Expression *pe,
     else
         P->pe = nullptr;
     P->exp = e;
-    Types peT = GlobalTypesMap[pe->type.typeIndex];
+    Types peT = defined_types[pe->type.typeIndex];
 
     if ( pe->type.ptr_level == 1 ) {
         if ( e->type.isInt() ) {
@@ -151,7 +151,7 @@ Expression *create_postfix_expr_struct( std::string access_op,
                                                Expression *pe,
                                                Identifier *i ) {
     PostfixExpression *P = new PostfixExpression();
-    Types peT = GlobalTypesMap[pe->type.typeIndex];
+    Types peT = defined_types[pe->type.typeIndex];
     if ( access_op == "." ) {
         if ( peT.is_struct && pe->type.ptr_level == 0 ) {
             // whether i exists in Struct
