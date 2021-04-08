@@ -1057,9 +1057,17 @@ create_function_defintion( DeclarationSpecifiers *declaration_specifiers,
     FunctionDefinition *fd = new FunctionDefinition(
         declaration_specifiers, declarator, compound_statement );
     fd->add_children( declaration_specifiers, declarator, compound_statement );
+	declaration_specifiers->create_type();
     global_symbol_table.add_symbol( declaration_specifiers, declarator );
     local_symbol_table.add_function( declaration_specifiers, declarator );
     return fd;
+}
+
+FunctionDefinition *
+add_stmt_to_function_definition( FunctionDefinition * fd, Node * compound_stmt ) {
+	fd->compound_statement = compound_stmt;
+	fd->add_child(compound_stmt);
+	return fd;
 }
 
 //##############################################################################
@@ -1525,8 +1533,8 @@ void LocalSymbolTable::add_to_table( SymTabEntry *symbol ) {
         std::deque<SymTabEntry *> &q = it->second;
         if ( q.front() && ( q.front() )->level == current_level ) {
             // Can't insert two symbols with same name at the same level
-            std::cerr << "ERROR: " << it->first << " " << symbol->name << "\n";
-            assert( 0 );
+            std::cout << "\nERROR: Redeclaration of symbol " << it->first << " on line:"<<line_num<<" in the scope.\n";
+		exit( 1 );
         } else {
             symbol->level = current_level;
             q.push_front( symbol );
@@ -1550,7 +1558,7 @@ void LocalSymbolTable::add_function(
 
     assert( declarator->direct_declarator->type == FUNCTION );
     function_name = declarator->id->value;
-    std::cout << "L: " << function_name;
+    std::cout << "L: " << function_name << " " << declaration_specifiers->type_index;
 
     // Check whether the arguements are of the form ( )
     if ( declarator->direct_declarator->params == nullptr ) {
@@ -1582,8 +1590,8 @@ void LocalSymbolTable::add_function(
 
         if ( ( *it )->declarator == nullptr ||
              ( *it )->declarator->id == nullptr ) {
-            std::cerr << "Declarator requires identifier\n";
-            assert( 0 );
+            std::cout << "\nERROR: Arguement requires identifier on line:" <<line_num<<"\n";
+            exit( 1 );
         }
 
         std::cout << ( *it )->declarator->id->value << ", ";

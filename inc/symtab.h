@@ -21,6 +21,8 @@ enum PrimitiveTypes {
     VOID_T = 11
 };
 
+
+extern int line_num;
 // All class declarations
 class StructDefinition;
 class AssignmentExpression;
@@ -320,6 +322,11 @@ class FunctionDefinition : public Non_Terminal {
 };
 
 FunctionDefinition* create_function_defintion( DeclarationSpecifiers *declaration_specifiers, Declarator *declarator, Node *compound_statement );
+
+FunctionDefinition *    
+add_stmt_to_function_definition( FunctionDefinition * fd, Node * compound_stmt );
+
+
 int isValid(); // Type Checking         ;
 
 class AbstractDeclarator;

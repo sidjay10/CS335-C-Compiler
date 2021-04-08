@@ -549,7 +549,7 @@ function_declaration
 	;
 
 function_definition
-	:  function_declaration compound_statement	 { $$ = $1; }
+	:  function_declaration compound_statement	 { $$ = add_stmt_to_function_definition( $1, $2 ); }
 	;
 /*	:  declaration_specifiers declarator compound_statement	 { $$ = create_function_defintion($1, $2, $3); }*/
 /*	|  declarator compound_statement	 { $$ = create_non_term("function_definition", $2); }*/
