@@ -6,7 +6,7 @@
 #include <map>
 #include <string>
 
-enum PrimitiveTypes {U_CHAR_T = 0, CHAR_T = 1, U_SHORT_T = 2, SHORT_T = 3, U_INT_T = 4, INT_T=5, U_LONG_T=6, LONG_T=7, U_INT_LONG_T=8, INT_LONG_T=9, FLOAT_T=10, DOUBLE_T=11, LONG_DOUBLE_T=12};
+enum PrimitiveTypes {U_CHAR_T = 0, CHAR_T = 1, U_SHORT_T = 2, SHORT_T = 3, U_INT_T = 4, INT_T=5, U_LONG_T=6, LONG_T=7, U_INT_LONG_T=8, INT_LONG_T=9, FLOAT_T=10, DOUBLE_T=11, LONG_DOUBLE_T=12 VOID_T=13};
 
 // All class declarations
 class StructDefinition;
@@ -130,14 +130,28 @@ class Types {
 
 std::vector<Types> GlobalTypeMap;
 
+
+class Type {
+	std::string name;
+	int typeIndex;
+	int ptr_level;
+
+	Type();	
+	bool isInt();
+	bool isFloat();
+	bool isUnsigned();
+	void make_signed();
+	void make_unsigned();
+
+};
+
 class Expression : public Non_Terminal {
 	public:
-    int typeIndex;
+    	Type type;
 	  /* Change this late */
 	  int num_opearands;
 	  // Expression( Types * type, int num_op );
 
-    int pointer_level;
 
 
     Types getType(){

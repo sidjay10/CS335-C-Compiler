@@ -221,41 +221,31 @@ MultiplicativeExpression * create_multiplicative_expression(std::string op, Mult
     P->op1=me;
     P->op2=ce;
     P->op=op;
-    Types meT = me->getType();
-    Types ceT = ce->getType();
+    Type meT = me->type;
+    Type ceT = ce->type;
     if(op == "*" || op == "/"){
-        if(meT.typeFamily == 0 && ceT.typeFamily == 0){
-            P->typeIndex = meT.index > ceT.index ? meT.index : ceT.index;
+        if( meT.int_type() && ceT.int_type() ) {
+            P->type = meT > ceT ? meT : ceT;
             if(!(meT.isUnsigned() && ceT.isUnsigned())){
                 //As a safety we upgrade unsigned type to corresponding signed type
-                if(P->typeIndex == PrimitiveTypes::U_CHAR_T){
-                    P->typeIndex = PrimitiveTypes::CHAR_T;
-                }
-                else if(P->typeIndex == PrimitiveTypes::U_SHORT_T){
-                    P->typeIndex = PrimitiveTypes::SHORT_T;
-                }
-                else if(P->typeIndex == PrimitiveTypes::U_INT_T){
-                    P->typeIndex = PrimitiveTypes::INT_T;
-                }
-                else if(P->typeIndex == PrimitiveTypes::UL_INT_T){
-                    P->typeIndex = PrimitiveTypes::L_INT_T;
-                }
+		P->type.make_signed();
             }
         }
-        else if((meT.typeFamily == 1 && ceT.typeFamily == 0) || (meT.typeFamily == 0 && ceT.typeFamily == 1)){
-            P->typeIndex = meT.typeFamily == 1? meT.index : ceT.index;
+        else if((meT.isFloat()  && ceT.isInt() ) || (meT.isInt() && ceT.isFloat() )){
+		P->type = meT.isFloat() ? meT : ceT;
         }
-        else if(meT.typeFamily == 1 && ceT.typeFamily == 1){
-            P->typeIndex = meT.index > ceT.index ? meT.index : ceT.index;
+	
+        else if(meT.isFloat() && ceT.isFloat() ){
+		P->type = meT > ceT ? meT : ceT;
         }
         else{
-            //Error
             std::cerr << "Undefined operation * for operands of type " << meT.name << " and " << ceT.name << "\n";
         }
     }
     else if(op == "%"){
-        if(meT.typeFamily == 0 && ceT.typeFamily == 0){
-            P->typeIndex = PrimitiveTypes::U_INT_T;
+        if(meT.isInt()  && ceT.isInt() ){
+		P->type = ceT;
+		P->type.make_unsigned();
         }
         else{
             //Error
@@ -266,39 +256,31 @@ MultiplicativeExpression * create_multiplicative_expression(std::string op, Mult
 
 }
 
+
+
+// TODO : Add Pointer Support
 // Additive Expression 
 AdditiveExpression * create_additive_expression(std::string op,AdditiveExpression * ade, MultiplicativeExpression *me){
     AdditiveExpression * P =new AdditiveExpression();
     P->op1=ade;
     P->op2=me;
     P->op=op;
-    Types adeT = ade->getType();
-    Types meT = me->getType();
-    if(meT.typeFamily ==0 && adeT.typeFamily ==0){
-        P->typeIndex = meT.index > adeT.index ? meT.index : adeT.index;
+    Type adeT = ade.type;
+    Type meT = me.type;
+    if(meT.isInt() && adeT.isInt() ){
+        P->type = meT > adeT ? meT : adeT;
         if(!(meT.isUnsigned() && adeT.isUnsigned())){
                 //As a safety we upgrade unsigned type to corresponding signed type
-                if(P->typeIndex == PrimitiveTypes::U_CHAR_T){
-                    P->typeIndex = PrimitiveTypes::CHAR_T;
-                }
-                else if(P->typeIndex == PrimitiveTypes::U_SHORT_T){
-                    P->typeIndex = PrimitiveTypes::SHORT_T;
-                }
-                else if(P->typeIndex == PrimitiveTypes::U_INT_T){
-                    P->typeIndex = PrimitiveTypes::INT_T;
-                }
-                else if(P->typeIndex == PrimitiveTypes::UL_INT_T){
-                    P->typeIndex = PrimitiveTypes::L_INT_T;
-                }
+		P->make_signed();
         }
 
     }
-    else if((meT.typeFamily == 1 && adeT.typeFamily == 0) || (meT.typeFamily == 0 && adeT.typeFamily == 1)){
-            P->typeIndex = meT.typeFamily == 1? meT.index : adeT.index;
+        else if((meT.isFloat()  && ceT.isInt() ) || (meT.isInt() && ceT.isFloat() )){
+		P->type = meT.isFloat() ? meT : ceT;
         }
-        
-    else if(meT.typeFamily == 1 && adeT.typeFamily == 1){
-            P->typeIndex = meT.index > adeT.index ? meT.index : adeT.index;
+	
+        else if(meT.isFloat() && ceT.isFloat() ){
+		P->type = meT > ceT ? meT : ceT;
         }
     else{
             //Error
@@ -316,16 +298,16 @@ ShiftExpression * create_shift_expression(std::string op, ShiftExpression *se, A
     P->op2=ade;
     P->op=op;
 
-    Types adeT = ade->getType();
-    Types seT = se->getType();
+    Type adeT = ade->type;
+    Type seT = se->type;
 
     if(op == "<<" || op == ">>"){
-        if(adeT.typeFamily == 0 && seT.typeFamily == 0){
-            P->typeIndex = adeT.index;
+        if(adeT.isInt() == 0 && seT.isInt() == 0){
+            P->type = seT;
         }
         else{
             //Operands are not integer type
-            std::cerr << "Undefined operation of " << op << " on operands of type " << adeT.name << " and " << se->name << "\n";
+            std::cerr << "Undefined operation of " << op << " on operands of type " << adeT.name << " and " << seT.name << "\n";
             exit(0);
         }
     }
@@ -344,11 +326,11 @@ RelationalExpression * create_relational_expression(std::string op, RelationalEx
     P->op1=re;
     P->op2=se;
     P->op=op;
-    Types reT = re->getType();
-    Types seT = se->getType();
+    Type reT = re->type;
+    Type seT = se->type;
     if(op == "<=" || op == ">=" || op==">" || op=="<"){
-        if(reT.typeFamily <2 && seT.typeFamily <2){
-            P->typeIndex = U_CHAR_T;
+        if( ( reT.isInt()  || reT.isFloat() ) && ( seT.isInt() || reT.isFloat() ) ) {
+            P->type = Type("bool", U_CHAR_T, 0);
         }
         else{
             std::cerr << "Undefined operation of " << op << " on operands of type " << reT.name << " and " << seT.name << "\n";
@@ -370,9 +352,10 @@ EqualityExpression * create_equality_expression(std::string op,EqualityExpressio
     Types reT = re->getType();
     Types eqT = eq->getType();
     if(op == "==" || op == "!=" ){
-        if(reT.typeFamily <2 && eqT.typeFamily <2){
-            P->typeIndex = U_CHAR_T;
+        if( ( reT.isInt()  || reT.isFloat() ) && ( seT.isInt() || reT.isFloat() ) ) {
+            P->type = Type("bool", U_CHAR_T, 0);
         }
+        
         else{
             std::cerr << "Undefined operation of " << op << " on operands of type " << reT.name << " and " << eqT.name << "\n";
             exit(0);
