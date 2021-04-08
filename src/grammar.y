@@ -48,7 +48,7 @@
 %token <node> XOR_ASSIGN OR_ASSIGN TYPE_NAME
 
 %token <value> TYPEDEF EXTERN STATIC AUTO REGISTER
-%token <value> UNSIGNED SIGNED CHAR SHORT INT LONG FLOAT DOUBLE VOID
+%token <value> SIGNED UNSIGNED CHAR SHORT LONG INT FLOAT DOUBLE VOID
 %token <value> CONST VOLATILE
 %token <value> STRUCT UNION ENUM ELLIPSIS
 
@@ -110,6 +110,7 @@
 %%
 
 primary_expression
+<<<<<<< HEAD
 	: IDENTIFIER		{ $$ = create_primary_identifier($1); } 
 	| CONSTANT		{ $$ = create_primary_constant($1); }
 	| STRING_LITERAL	{ $$ = create_primary_stringliteral($1); } 
@@ -119,8 +120,10 @@ primary_expression
 postfix_expression
 	: primary_expression	{ $$ = $1; } 
 	| postfix_expression '[' expression ']'	{ $$ = create_postfix_expr_arr( ARRAY, $1, $3 ); } 
+/*	| postfix_expression IDENTIFER '(' ')'	{ $$ = create_non_term("FUNCTION CALL", $1 ); } */
 	| IDENTIFIER '(' ')'	{ $$ = create_postfix_expr_fun( FUNCTION, $1 ); } 
 	| IDENTIFIER '(' argument_expression_list ')'	{ } 
+/*	| postfix_expression '(' argument_expression_list ')'	{ create_non_term("FUNCTION CALL ARGS", $1, $3 ); } */
 	| postfix_expression '.' IDENTIFIER	{ $$ = create_non_term(".", $1, $3); } 
 	| postfix_expression PTR_OP IDENTIFIER	{ $$ = create_non_term("->", $1, $3); } 
 	| postfix_expression INC_OP	{ $$ = create_non_term("POST INCREMENT", $1); } 
@@ -248,8 +251,8 @@ constant_expression
 	;
 
 declaration
-	: declaration_specifiers ';'			  { $$ = new_declaration( $1, NULL ); }
-	| declaration_specifiers init_declarator_list ';' { $$ = new_declaration( $1, $2 ); }
+	: declaration_specifiers ';'			  { $$ = new_declaration( $1, NULL );}
+	| declaration_specifiers init_declarator_list ';' {$$ = new_declaration( $1, $2 );}
 	;
 
 /* These are types */
@@ -328,7 +331,7 @@ struct_declarator_list
 	;
 
 struct_declarator
-	:  declarator	 { $$ = verify_struct_declarator( $1 ); }
+	:  declarator	 { $$ = $1; }
 /*	|  ':' constant_expression	 { $$ = create_non_term(":", $2); }
 	|  declarator ':' constant_expression	 { $$ = create_non_term(":", $1, $3); } */
 	;
@@ -362,7 +365,8 @@ declarator
 direct_declarator
 	:  IDENTIFIER	 					 { $$ = create_dir_declarator_id( ID , $1 ); }
 	|  '(' declarator ')'	 				 { $$ = create_dir_declarator_dec( DECLARATOR, $2 ); }
-	|  direct_declarator '[' constant_expression ']'	 { $$ = create_dir_declarator_arr( ARRAY, $1, $3 ); }
+	/*|  direct_declarator '[' constant_expression ']'	 { $$ = create_dir_declarator_arr( ARRAY, $1, $3 ); }*/
+	|  direct_declarator '[' CONSTANT ']'	 { $$ = create_dir_declarator_arr( ARRAY, $1, $3 ); }
 	|  direct_declarator '[' ']'	 			 { $$ = create_dir_declarator_arr( ARRAY, $1, NULL ); }
 	|  direct_declarator '(' parameter_type_list ')'	 { $$ = create_dir_declarator_fun( FUNCTION, $1, $3 ); }
 	|  direct_declarator '(' ')'				 { $$ = create_dir_declarator_fun( FUNCTION, $1, NULL ); }
@@ -415,7 +419,8 @@ abstract_declarator
 direct_abstract_declarator
 	:  '(' abstract_declarator ')'					{ $$ = create_direct_abstract_declarator( ABSTRACT, $2 ); }
 	|  '[' ']'							{ $$ = create_direct_abstract_declarator( SQUARE ); } 
-	|  '[' constant_expression ']'	 				{ $$ = create_direct_abstract_declarator( SQUARE, NULL, $2 ); } 
+	/*|  '[' constant_expression ']'	 				{ $$ = create_direct_abstract_declarator( SQUARE, NULL, $2 ); } */
+	|  '[' CONSTANT ']'	 				{ $$ = create_direct_abstract_declarator( SQUARE, NULL, $2 ); } 
 	|  direct_abstract_declarator '[' ']'				{ $$ = create_direct_abstract_declarator( SQUARE, $1 ); } 
 	|  direct_abstract_declarator '[' constant_expression ']'	{ $$ = create_direct_abstract_declarator( SQUARE, $1, $3 ); } 
 	|  '(' ')'	 						{ $$ = create_direct_abstract_declarator( ROUND ); } 

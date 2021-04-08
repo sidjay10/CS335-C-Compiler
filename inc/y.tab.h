@@ -76,12 +76,12 @@ extern int yydebug;
     STATIC = 286,
     AUTO = 287,
     REGISTER = 288,
-    CHAR = 289,
-    SHORT = 290,
-    INT = 291,
-    LONG = 292,
-    SIGNED = 293,
-    UNSIGNED = 294,
+    SIGNED = 289,
+    UNSIGNED = 290,
+    CHAR = 291,
+    SHORT = 292,
+    LONG = 293,
+    INT = 294,
     FLOAT = 295,
     DOUBLE = 296,
     VOID = 297,
@@ -137,12 +137,12 @@ extern int yydebug;
 #define STATIC 286
 #define AUTO 287
 #define REGISTER 288
-#define CHAR 289
-#define SHORT 290
-#define INT 291
-#define LONG 292
-#define SIGNED 293
-#define UNSIGNED 294
+#define SIGNED 289
+#define UNSIGNED 290
+#define CHAR 291
+#define SHORT 292
+#define LONG 293
+#define INT 294
 #define FLOAT 295
 #define DOUBLE 296
 #define VOID 297

@@ -17,6 +17,8 @@ class CastExpression;
 
 //SXXX:TODO Add all primitive types by default 
 
+
+#if 0
 class Types {
   public:
     int sc;
@@ -133,8 +135,40 @@ class Types {
     }
 };
 
+#endif
+
 std::vector<Types> GlobalTypeMap;
 
+class Types;
+
+class Identifier;
+
+class StructDeclarationList;
+class StructDefinition {
+  public:
+    std::map<std::string, Types *> members;
+    int un_or_st;
+    StructDefinition();
+    size_t get_size();
+};
+
+StructDefinition *create_struct_definition( int un_or_st,
+                                            StructDeclarationList *sdl );
+
+class Types {
+  public:
+    int index;
+    std::string name;
+    size_t size;
+    bool is_primitive;
+    bool is_struct;
+    bool is_union;
+    int pointer_level;
+    StructDefinition *struct_definition;
+};
+
+
+class ParameterTypeList;
 
 class Type {
 	std::string name;
@@ -462,11 +496,10 @@ PostfixExpression* create_postfix_expr_struct(PostfixExpression * pe,  Identifie
 PostfixExpression* create_postfix_expr_pointer(PostfixExpression* pe, Identifier *id);
 PostfixExpression *create_postfix_expr_ido(std::string op, PostfixExpression * pe);
 
-
 class SymTabEntry {
   public:
     std::string name;
-    int typeIndex;
+    int type_index;
     int level;
 
     // TODO: This needs to be expanded
@@ -499,6 +532,7 @@ class GlobalSymbolTable : public SymbolTable {
     std::map<std::string, SymTabEntry *> sym_table;
     void add_symbol( DeclarationSpecifiers *declaration_specifiers,
                      Declarator *declarator );
+    SymTabEntry *get_symbol_from_table( std::string name );
 };
 
 class LocalSymbolTable : public SymbolTable {
@@ -594,7 +628,7 @@ class TypeQualifierList : public Non_Terminal {
 TypeQualifierList *create_type_qualifier_list( TYPE_QUALIFIER type );
 TypeQualifierList *add_to_type_qualifier_list( TypeQualifierList *tql,
                                                TYPE_QUALIFIER type );
-
+void is_Valid( TypeQualifierList *ts );
 class Pointer : public Non_Terminal {
   public:
     TypeQualifierList *type_qualifier_list;
@@ -624,8 +658,6 @@ Declarator *add_initializer_to_declarator( Declarator *declarator,
 
 Declarator *create_declarator( Pointer *pointer,
                                DirectDeclarator *direct_declarator );
-
-Declarator *verify_struct_declarator( Declarator *declarator );
 
 typedef enum direct_declartor_enum {
     ID,
@@ -687,11 +719,10 @@ class DeclarationSpecifiers : public Non_Terminal {
     std::vector<STORAGE_CLASS> storage_class;
     std::vector<TypeSpecifier *> type_specifier;
     std::vector<TYPE_QUALIFIER> type_qualifier;
-
     int isValid(); // Type Checking
-
     DeclarationSpecifiers();
 };
+void is_Valid( DeclarationSpecifiers *ds );
 
 DeclarationSpecifiers *new_storage_class( STORAGE_CLASS sc );
 DeclarationSpecifiers *new_type_specifier( TypeSpecifier *ts );
@@ -839,6 +870,7 @@ class StructDeclaration : public Non_Terminal {
 
     StructDeclaration( SpecifierQualifierList *sq_list_,
                        DeclaratorList *declarator_list_ );
+    void add_to_struct_definition( StructDefinition * );
 };
 
 StructDeclaration *
@@ -856,7 +888,7 @@ create_struct_declaration_list( StructDeclaration *struct_declaration );
 StructDeclarationList *
 add_to_struct_declaration_list( StructDeclarationList *struct_declaration_list,
                                 StructDeclaration *struct_declaration );
-
+void verify_struct_declarator( StructDeclarationList *st );
 class Enumerator : public Non_Terminal {
   public:
     Identifier *id;
