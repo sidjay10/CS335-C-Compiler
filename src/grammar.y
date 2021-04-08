@@ -327,7 +327,7 @@ struct_declarator_list
 	;
 
 struct_declarator
-	:  declarator	 { $$ = verify_struct_declarator( $1 ); }
+	:  declarator	 { $$ = $1; }
 /*	|  ':' constant_expression	 { $$ = create_non_term(":", $2); }
 	|  declarator ':' constant_expression	 { $$ = create_non_term(":", $1, $3); } */
 	;

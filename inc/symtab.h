@@ -119,7 +119,7 @@ Declarator *add_initializer_to_declarator( Declarator *declarator,
 Declarator *create_declarator( Pointer *pointer,
                                DirectDeclarator *direct_declarator );
 
-Declarator *verify_struct_declarator( Declarator *declarator );
+
 
 typedef enum direct_declartor_enum {
     ID,
@@ -347,7 +347,7 @@ create_struct_declaration_list( StructDeclaration *struct_declaration );
 StructDeclarationList *
 add_to_struct_declaration_list( StructDeclarationList *struct_declaration_list,
                                 StructDeclaration *struct_declaration );
-
+void verify_struct_declarator( StructDeclarationList *st );
 class Enumerator : public Non_Terminal {
   public:
     Identifier *id;

@@ -129,7 +129,7 @@ void is_Valid(DeclarationSpecifiers *ds){
         else err+=1;
         }
 
-    std::vector<int> ty;
+    std::vector<TYPE_SPECIFIER> ty;
     
     for(int i=0; i < ds->type_specifier.size(); i++)
     ty.push_back(ds->type_specifier.at(i)->type);
@@ -266,6 +266,48 @@ Declarator *add_initializer_to_declarator( Declarator *declarator, Node *ie ) {
     declarator->add_child( create_non_term( "=", id, ie ) );
     return declarator;
 }
+//##############################################################################
+//############################## STRUCT VERIFY ################################
+//##############################################################################
+
+void verify_struct_declarator( StructDeclarationList *st) {
+    int err;
+    if (st!=NULL){
+        //std::cout<<st->struct_declaration_list.size();
+        for(int i=0; i < st->struct_declaration_list.size(); i++){
+            std::vector<TypeSpecifier *> ts=st->struct_declaration_list.at(i)->sq_list->type_specifiers;
+            std::vector<TYPE_QUALIFIER> tq=st->struct_declaration_list.at(i)->sq_list->type_qualifiers;
+            err=0;
+            std::vector<TYPE_SPECIFIER> ty;
+            for(int i=0; i < ts.size(); i++)
+            ty.push_back(ts.at(i)->type);
+            std::sort(ty.begin(),ty.end());
+            
+            if(ty.size()==3){
+                if ((ty.at(0)==UNSIGNED || ty.at(0)==SIGNED) && (ty.at(1)==SHORT || ty.at(1)==LONG) && ty.at(2)==INT) {}
+                else err+=2;
+                }
+            else if (ty.size()==2){
+                if ((ty.at(0)==UNSIGNED || ty.at(0)==SIGNED) && (ty.at(1)==SHORT || ty.at(1)==LONG || ty.at(1)==INT || ty.at(1)==CHAR)) {}
+                else if ((ty.at(0)==SHORT || ty.at(0)==LONG) && ty.at(1)==INT) {}
+                else if (ty.at(0)==LONG && ty.at(1)==DOUBLE) {}
+                else err+=2;
+                }
+            else if (ty.size()==1) 
+                if (ty.at(0)==SHORT || ty.at(0)==LONG || ty.at(0)==INT || ty.at(0)==CHAR || ty.at(0)==FLOAT||ty.at(0)==DOUBLE || ty.at(0)==STRUCT ||ty.at(0)==UNION || ty.at(0)==ENUM){}
+            else err+=2;
+
+            for(int i=0; i < tq.size(); i++){
+                if(tq.at(i)==CONST||tq.at(i)==VOLATILE) {}
+                else {err+=4;break;}
+                }
+    if (err&2) std::cout << "Error in type specifier struct";
+    if (err&4) std::cout << "Error in type qualifier struct";
+    }
+   //std::cout<<"done2 ";
+    }
+}
+
 
 //##############################################################################
 //############################ DIRECT DECLARATOR ###############################
@@ -565,6 +607,8 @@ create_type_specifier( TYPE_SPECIFIER type, Identifier *id,
     }
     ts->name = ss.str();
     ts->add_children( id, struct_declaration_list );
+    //std::cout<<"done ";
+    verify_struct_declarator(struct_declaration_list);
     return ts;
 }
 
@@ -628,10 +672,7 @@ create_struct_declaration( SpecifierQualifierList *sq_list,
     return sd;
 }
 
-Declarator *verify_struct_declarator( Declarator *declarator ) {
-    // TODO: Fill this in
-    return declarator;
-}
+
 
 //##############################################################################
 //######################### SPECIFIER QUALIFIER LIST ###########################
