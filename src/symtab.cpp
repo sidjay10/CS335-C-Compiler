@@ -56,7 +56,7 @@ StructDefinition *create_struct_definition( int un_or_st,
 //############################# EXPRESSION #####################################
 //##############################################################################
 
-// Object creation Wrapper
+// Object creation Wrappers
 
 // 1.Primary Expression
 PrimaryExpression *create_primary_identifier( Identifier *a ) {
@@ -72,44 +72,31 @@ PrimaryExpression *create_primary_identifier( Identifier *a ) {
             exit( 0 );
         }
     }
-    P->typeIndex = ste->typeIndex;
-    P->Cval = nullptr;
-    P->Sval = nullptr;
-    P->op1 = nullptr;
-
+    P->type = ste->type;
     return P;
 }
 
 PrimaryExpression *create_primary_constant( Constant *a ) {
     PrimaryExpression *P = new PrimaryExpression();
-    P->isTerminal = 2;
-    P->Ival = nullptr;
+    P->isTerminal=2;
     P->Cval = a;
-    P->typeIndex = a->getConstantType();
-    P->Sval = nullptr;
-    P->op1 = nullptr;
-
+    P->type = a->getConstantType();
+    
     return P;
 }
 PrimaryExpression *create_primary_stringliteral( StringLiteral *a ) {
     PrimaryExpression *P = new PrimaryExpression();
-    P->isTerminal = 3;
-    P->Ival = nullptr;
-    P->Cval = nullptr;
+    P->isTerminal=3;
     P->Sval = a;
-    P->typeIndex = GlobalTypeMap[PrimitiveTypes::CHAR_T].getPointerTypeIndex();
-    P->op1 = nullptr;
-
+    P->type = GlobalTypeMap[PrimitiveTypes::CHAR_T];
+    P->type.ptr_level = 1;
     return P;
 }
 PrimaryExpression *create_primary_expression( TopLevelExpression *a ) {
     PrimaryExpression *P = new PrimaryExpression();
-    P->isTerminal = 0;
-    P->Ival = nullptr;
-    P->Cval = nullptr;
-    P->Sval = nullptr;
+    P->isTerminal=0;
     P->op1 = a;
-    P->typeIndex = a->typeIndex;
+    P->type = a->type;
 
     return P;
 }
@@ -118,9 +105,8 @@ PrimaryExpression *create_primary_expression( TopLevelExpression *a ) {
 ArgumentExprList *
 create_argument_expr_assignement( AssignmentExpression *ase ) {
     ArgumentExprList *P = new ArgumentExprList();
-    P->op1 = nullptr;
-    P->op2 = ase;
-    // ArguementExprList does not have any type as it is a composite entity
+    P->op2=ase;
+    //ArguementExprList does not have any type as it is a composite entity
 
     return P;
 }
@@ -137,34 +123,34 @@ ArgumentExprList *create_argument_expr_list( ArgumentExprList *ae_list,
 PostfixExpression *create_postfix_expr_arr( PostfixExpression *pe,
                                             Expression *e ) {
     PostfixExpression *P = new PostfixExpression();
-    P->pe_type = PostfixExpressionTypes::ARRAY;
-    Types peT = pe->getType();
-    Types eT = e->getType();
-    if ( peT.isArrayType() && eT.typeFamily == 0 ) {
-        /// XXX: TODO API to get ArrayType
-        P->typeIndex = peT.getArrayType().index;
-    } else {
-        // Tried to access a non-array
-        std::cerr << "Subscripted value " << pe->name
-                  << " is neither array nor pointer"
+    P->pe = pe;
+    P->exp = e;
+    Types peT = GlobalTypeMap[pe->type.typeIndex];
+
+    if(pe->type.ptr_level == 1){
+        if(e->type.isInt()){
+            P->type = pe->type;
+            P->type.ptr_level = 0;
+        }
+        else{
+            //Error
+            std::cerr << "Array subscript is not an integer";
+            exit(0);
+        }
     }
-    // Set others to null
 
     return P;
 }
 
 PostfixExpression *create_postfix_expr_voidfun( Identifier *fi ) {
     PostfixExpression *P = new PostfixExpression();
-    P->pe_type = PostfixExpressionTypes::FUNCTION;
-    // Lookup Function type from symbol table - should be void
-
+    //Lookup Function type from symbol table - should be void 
     return P;
 }
 
 PostfixExpression *create_postfix_expr_fun( Identifier *fi,
                                             ArgumentExprList *ae ) {
     PostfixExpression *P = new PostfixExpression();
-    P->pe_type = PostfixExpressionTypes::FUNCTION;
     // Here, we need to check two things:
     // 1. whether ArguementExprList matches with Function signature from lookup
     // of symbol table table
@@ -176,42 +162,81 @@ PostfixExpression *create_postfix_expr_struct( std::string access_op,
                                                PostfixExpression *pe,
                                                Identifier *i ) {
     PostfixExpression *P = new PostfixExpression();
-    // Struct lookup - use struct array to check if Identifier i is present in
-    // struct
-    Types peT = pe->getType();
-    if ( access_op == "." ) {
-        // if(check if peT is struct)
-        // if(i is present in struct)
-        // P->typeIndex = i->typeIndex;
-        // else
-        // Error
-        // std::cerr << "Element" << i->value << " not present in struct"
-    } else if ( access_op == "->" ) {
-        // if(check if peT is struct pointer)
-        // if(i is present in struct)
+    Types peT = GlobalTypeMap[pe->type.typeIndex];
+    if(access_op == "."){
+        if(peT.is_struct && pe->type.ptr_level == 0){
+            // whether i exists in Struct
+            Type *iType = peT.struct_definition->get_member(i);
+            if(iType == nullptr){
+                //Error
+                std::cerr << "";
+            }
+            else {
+                P->type = *iType;
+            }
+        }
+        else{
+            //Error
+        }
     }
-    // else
-    // Error
-    // std::cerr << "Expression is not struct"
-
+    else if(access_op == "->"){
+        if(peT.is_struct && pe->type.ptr_level == 1){
+             // whether i exists in Struct*
+            Type *iType = peT.struct_definition->get_member(i);
+            if(iType == nullptr){
+                //Error
+                std::cerr << "";
+            }
+            else {
+                P->type = *iType;
+            }
+        }
+        else{
+            //Error
+        }
+    }
     return P;
 }
-// Unary Expression
 
-UnaryExpression *create_unary_expression_ue( std::string u_op,
-                                             UnaryExpression *ue ) {
+PostfixExpression *create_postfix_expr_ido(std::string op, PostfixExpression * pe){
+    PostfixExpression *P = new PostfixExpression();
+    P->pe = pe;
+    P->op = op;
+    if(op == "++" || op == "--"){
+        if(pe->type.isInt() || pe->type.isFloat() || pe->type.isPointer()){
+            P->type = pe->type;
+
+        }
+        else{
+            //Error postfix operator
+            std::cerr << "Postfix operator " << op << " cannot be applied to type";
+            exit(0);
+        }
+    }
+    else{
+        //This should not have reached
+        std::cerr << "Parse error";
+        exit(0);
+    }
+    
+}
+
+// Unary Expression
+UnaryExpression *create_unary_expression_ue(std::string u_op, UnaryExpression *ue){
     UnaryExpression *U = new UnaryExpression();
     U->op1 = ue;
     U->op = u_op;
-    Types ueT = ue->getType();
-    if ( u_op == "++" || u_op == "--" ) {
-        // INC_OP, DEC_OP
-        if ( ueT.isPrimitive() ) {
-            U->typeIndex = ue->typeIndex;
-        } else {
-            // Incorrect type throw error
+    Type ueT = ue->type;
+    if(u_op == "++" || u_op == "--"){
+        //INC_OP, DEC_OP
+        if (ueT.isInt() || ueT.isFloat() || ueT.isPointer()){
+            U->type = ue->type;
+        }
+        else{
+            //Incorrect type throw error
             delete U;
-            exit( 0 );
+            std::cerr << "Prefix operator " << op << " cannot be applied to type " << ue->type.name;
+            exit(0);
         }
     } else if ( u_op == "sizeof" ) {
         // SizeOf
@@ -267,12 +292,11 @@ UnaryExpression *create_unary_expression_cast( std::string u_op,
 }
 
 // Cast Expression
-CastExpression *create_caste_expression_typename( Node *n,
-                                                  CastExpression *ce ) {
-    // XXX: TODO Implement
-    CastExpression *P = new CastExpression();
-    P->op1 = ce;
-
+CastExpression * create_caste_expression_typename(Node *n, CastExpression* ce){
+    //XXX: TODO Implement
+    CastExpression * P = new CastExpression();
+    P->op1=ce;
+    
     return P;
 }
 
@@ -313,7 +337,7 @@ create_multiplicative_expression( std::string op, MultiplicativeExpression *me,
             P->type.make_unsigned();
         } else {
             // Error
-            std::cerr << "Invalid Operands to binary % having type " << meT.name
+            std::cerr << "Invalid Operands to binary %% having type " << meT.name
                       << " and " << ceT.name << "\n";
             exit( 0 );
         }
@@ -342,6 +366,18 @@ AdditiveExpression *create_additive_expression( std::string op,
                 ( meT.isInt() && ceT.isFloat() ) ) {
         P->type = meT.isFloat() ? meT : ceT;
     }
+    else if(meT.isPointer && ((meT.isFloat()  && adeT.isInt() ) || (meT.isInt() && adeT.isFloat() ))){
+		P->type = meT.isFloat() ? meT : adeT;
+    }
+    else if(meT.isFloat() && adeT.isFloat() ){
+		P->type = meT.typeIndex > adeT.typeIndex ? meT : ceT;
+    }
+    else{
+            //Error
+            std::cerr << "Undefined operation * for operands of type " << meT.name << " and " << adeT.name << "\n";
+            exit(0);
+        }
+    return P;
 
     else if ( meT.isFloat() && ceT.isFloat() ) {
         P->type = meT > ceT ? meT : ceT;
@@ -466,7 +502,6 @@ AndExpression *create_and_expression( std::string op, AndExpression *an,
     }
 }
 
-// Exclusiveor
 ExclusiveorExpression *
 create_exclusive_or_expression( std::string op, ExclusiveorExpression *ex,
                                 AndExpression *an ) {
@@ -497,7 +532,6 @@ create_exclusive_or_expression( std::string op, ExclusiveorExpression *ex,
     }
 }
 
-// Inclusiveor
 InclusiveorExpression *
 create_inclusive_or_expression( std::string op, InclusiveorExpression *ie,
                                 ExclusiveorExpression *ex ) {
@@ -619,32 +653,26 @@ create_conditional_expression( std::string op, Logical_orExpression *lo,
 
 // AssignmentExpression
 
-AssignmentExpression *
-create_assignment_expression( std::string op, UnaryExpression *ue,
-                              AssignmentExpression *ase ) {
-    AssignmentExpression *P = new AssignmentExpression();
-    P->op1 = ue;
-    P->op2 = ase;
-    P->op = op;
-    Types ueT = ue->getType();
-    Types aseT = ase->getType();
-    if ( op == "=" ) {
-        if ( ueT.typeFamily < 2 && aseT.typeFamily < 2 ) {
+AssignmentExpression * create_assignment_expression(std::string op,UnaryExpression * ue,  AssignmentExpression * ase){
+    AssignmentExpression * P = new AssignmentExpression();
+    P->op1=  ue;
+    P->op2= ase;
+    P->op= op;
+    Types ue = ue->type;
+    Types aseT = ase->type;
+    if(op=="="){
+        if( (uet.isIntorFloat())&&(aset.isIntorFloat())){
             // int and/or flot
-            if ( ueT.index != aseT.index ) {
-                std::cout << "Warning: operation " << op << " between "
-                          << ueT.name << " and " << aseT.name;
+            if(ueT.typeIndex != aseT.typeIndex){
+                std::cout<<"Warning: operation "<<op<<" between "<<ueT.name<<" and "<<aseT.name;
+
             }
-            P->typeIndex = ueT.index;
-        } else if ( ueT.typeFamily == aseT.typeFamily && ueT.typeFamily == 2 ) {
+            P->type=ueT;
+        }
+        else if(ueT.ptr_level>0 && aseT.ptr_level>0 && ueT.ptr_level == aseT.ptr_level){
             /// meed the types of pointers
-            if ( ueT.index == aseT.index ) {
-                P->typeIndex = ueT.index;
-            } else {
-                std::cerr << "Undefined operation of " << op
-                          << " on operands of type " << ueT.name << " and "
-                          << aseT.name << "\n";
-                exit( 0 );
+            if(ueT.typeIndex==aseT.typeIndex){
+                P->type = uet;
             }
         } else {
             std::cerr << "Undefined operation of " << op
@@ -652,22 +680,23 @@ create_assignment_expression( std::string op, UnaryExpression *ue,
                       << aseT.name << "\n";
             exit( 0 );
         }
-    } else if ( op == "*=" || op == "/=" || op == "+=" || op == "-=" ) {
-        if ( ueT.isPrimitive() && aseT.isPrimitive() ) {
+    }
+    else if(op=="*=" || op=="/=" || op =="+=" || op=="-="){
+        if( (uet.isIntorFloat())&&(aset.isIntorFloat())){
             // int and/or flot
-            if ( ueT.index != aseT.index ) {
-                std::cout << "Warning: operation " << op << " between "
-                          << ueT.name << " and " << aseT.name << "\n";
+            if(ueT.typeIndex != aseT.typeIndex){
+                std::cout<<"Warning: operation "<<op<<" between "<<ueT.name<<" and "<<aseT.name<<"\n";
+
             }
-            P->typeIndex = ueT.index;
-        } else {
-            std::cerr << "Undefined operation of " << op
-                      << " on operands of type " << ueT.name << " and "
-                      << aseT.name << "\n";
-            exit( 0 );
+            P->type=ueT;
         }
-    } else if ( op == "%=" ) {
-        if ( ueT.typeFamily == 0 && aseT.typeFamily == 0 ) {
+        else{
+            std::cerr << "Undefined operation of " << op << " on operands of type " << ueT.name << " and " << aseT.name << "\n";
+            exit(0);
+        }
+    }
+    else if(op=="%="){
+        if((uet.isInt()&&aset.isInt()){
             P->typeIndex = PrimitiveTypes::U_INT_T;
         } else {
             // Error
@@ -675,32 +704,29 @@ create_assignment_expression( std::string op, UnaryExpression *ue,
                       << " and " << ceT.name << "\n";
             exit( 0 );
         }
-    } else if ( op == "<<=" || op == ">>=" ) {
-        if ( ueT.typeFamily == 0 && aseT.typeFamily == 0 ) {
-            P->typeIndex = ueT.index;
-        } else {
-            // Operands are not integer type
-            std::cerr << "Undefined operation of " << op
-                      << " on operands of type " << adeT.name << " and "
-                      << se->name << "\n";
-            exit( 0 );
+        else{
+            //Error
+            std::cerr << "Invalid Operands "<< op <<"having type " << ueT.name << " and " << ceT.name << "\n";
+            exit(0);
         }
-    } else if ( op == "&=" || op == "|=" && op == "^=" ) {
-        if ( ueT.typeFamily == 0 && aseT.typeFamily == 0 ) {
+    }
+    else if(op=="<<=" || op==">>="){
+        if(uet.isInt())&&aset.isInt()){
+            P->type = ueT;
+        }
+        else{
+            //Operands are not integer type
+            std::cerr << "Undefined operation of " << op << " on operands of type " << adeT.name << " and " << se->name << "\n";
+            exit(0);
+        }
+    }
+    else if(op=="&=" || op=="|=" && op=="^="){
+        if(ueT.isInt()&& aseT.isInt()){
             // int family
-            P->typeIndex = ueT.index > aseT.index ? ueT.index : aseT.index;
-            if ( !( anT.isUnsigned() && exT.isUnsigned() ) ) {
-                // As a safety we upgrade unsigned type to corresponding
-                // signed type
-                if ( P->typeIndex == PrimitiveTypes::U_CHAR_T ) {
-                    P->typeIndex = PrimitiveTypes::CHAR_T;
-                } else if ( P->typeIndex == PrimitiveTypes::U_SHORT_T ) {
-                    P->typeIndex = PrimitiveTypes::SHORT_T;
-                } else if ( P->typeIndex == PrimitiveTypes::U_INT_T ) {
-                    P->typeIndex = PrimitiveTypes::INT_T;
-                } else if ( P->typeIndex == PrimitiveTypes::UL_INT_T ) {
-                    P->typeIndex = PrimitiveTypes::L_INT_T;
-                }
+            P->type=ueT;
+            if(!(anT.isUnsigned() && exT.isUnsigned())){
+                //As a safety we upgrade unsigned type to corresponding signed type
+                P->type().make_signed();
             }
         } else {
             std::cerr << "Undefined operation of " << op
@@ -708,10 +734,13 @@ create_assignment_expression( std::string op, UnaryExpression *ue,
                       << anT.name << "\n";
             exit( 0 );
         }
-    } else {
-        std::cerr << "Incorrect logical or expression. Something went "
-                     "wrong\n";
-        exit( 0 );
+        else{
+            std::cerr << "Undefined operation of " << op << " on operands of type " << exT.name << " and " << anT.name << "\n";
+        }
+    }
+    else{
+        std::cerr << "Incorrect logical or expression. Something went wrong\n";
+        exit(0);
     }
 }
 
@@ -731,16 +760,6 @@ TopLevelExpression *create_toplevel_expression( TopLevelExpression *te,
 //################################ POINTER #####################################
 //##############################################################################
 void is_Valid( TypeQualifierList *ts ) {
-    for ( unsigned int i = 0; i < ts->type_qualifier_list.size(); i++ ) {
-        if ( ts->type_qualifier_list.at( i ) == CONST ||
-             ts->type_qualifier_list.at( i ) == VOLATILE ) {
-        } else {
-            std::cout << "Error in pointer type qualfier pointer";
-            break;
-        }
-    }
-}
-
 Pointer::Pointer() : Non_Terminal( "pointer" ){};
 
 Pointer::Pointer( TypeQualifierList *type_list, Pointer *pointer_ )
@@ -756,7 +775,6 @@ Pointer *create_pointer( TypeQualifierList *type_list, Pointer *pointer ) {
     Pointer *p = new Pointer( type_list, pointer );
     p->add_children( type_list, pointer );
     is_Valid( type_list );
-    return p;
 }
 
 //##############################################################################
@@ -805,111 +823,66 @@ Declaration ::Declaration( DeclarationSpecifiers *declaration_specifiers_,
       declaration_specifiers( declaration_specifiers_ ),
       init_declarator_list( init_declarator_list_ ){};
 
-Declaration *new_declaration( DeclarationSpecifiers *declaration_specifiers,
-                              DeclaratorList *init_declarator_list ) {
-    Declaration *d =
-        new Declaration( declaration_specifiers, init_declarator_list );
-    d->add_children( declaration_specifiers, init_declarator_list );
-
-    int tc = 0, sc = 0, tq = 0, ind = 0, typeF = 0, pL = 0, nd = 0, s = 0,
-        uD = 0;
-    int err = 0;
-    if ( declaration_specifiers->storage_class.size() == 1 ) {
-        if ( declaration_specifiers->storage_class.at( 0 ) == TYPEDEF )
-            sc = 1;
-        else
-            err += 1;
-    }
+void set_index(DeclarationSpecifiers *ds)
+{   
+    int err=0;
+    
+    if(ds->storage_class.size()==1){
+        if(declaration_specifiers->storage_class.at(0)==TYPEDEF) {}
+        else err+=1;
+        }
 
     std::vector<TYPE_SPECIFIER> ty;
-    for ( int i = 0; i < declaration_specifiers->type_specifier.size(); i++ )
-        ty.push_back( declaration_specifiers->type_specifier.at( i )->type );
+    for(int i=0; i < ds->type_specifier.size(); i++)
+    ty.push_back(ds->type_specifier.at(i)->type);
 
     std::sort( ty.begin(), ty.end() );
 
-    if ( ty.size() == 3 ) {
-        if ( ty.at( 0 ) == UNSIGNED && ty.at( 1 ) == INT &&
-             ty.at( 2 ) == LONG ) {
-            tc = 8;
-            ind = 8;
-        } else if ( ty.at( 0 ) == SIGNED && ty.at( 1 ) == INT &&
-                    ty.at( 2 ) == LONG ) {
-            tc = 9;
-            ind = 9;
-        } else
-            err += 2;
-    } else if ( ty.size() == 2 ) {
-        if ( ty.at( 0 ) == UNSIGNED && ty.at( 1 ) == CHAR ) {
-            tc = 0;
-            ind = 0;
-        } else if ( ty.at( 0 ) == SIGNED && ty.at( 1 ) == CHAR ) {
-            tc = 1;
-            ind = 1;
-        } else if ( ty.at( 0 ) == UNSIGNED && ty.at( 1 ) == SHORT ) {
-            tc = 2;
-            ind = 2;
-        } else if ( ty.at( 0 ) == SIGNED && ty.at( 1 ) == SHORT ) {
-            tc = 3;
-            ind = 3;
-        } else if ( ty.at( 0 ) == UNSIGNED && ty.at( 1 ) == INT ) {
-            tc = 4;
-            ind = 4;
-        } else if ( ty.at( 0 ) == SIGNED && ty.at( 1 ) == INT ) {
-            tc = 5;
-            ind = 5;
-        } else if ( ty.at( 0 ) == UNSIGNED && ty.at( 1 ) == LONG ) {
-            tc = 6;
-            ind = 6;
-        } else if ( ty.at( 0 ) == SIGNED && ty.at( 1 ) == LONG ) {
-            tc = 7;
-            ind = 7;
-        } else if ( ty.at( 0 ) == FLOAT && ty.at( 1 ) == DOUBLE ) {
-            tc = 12;
-            ind = 12;
-            typeF = 1;
-        } else
-            err += 2;
-    } else if ( ty.size() == 1 ) {
-        if ( ty.at( 0 ) == FLOAT ) {
-            tc = 10;
-            ind = 10;
-            typeF = 1;
-        } else if ( ty.at( 0 ) == DOUBLE ) {
-            tc = 11;
-            ind = 11;
-            typeF = 1;
-        } else
-            err += 2;
-    }
-    for ( int i = 0; i < declaration_specifiers->type_qualifier.size(); i++ ) {
-        if ( declaration_specifiers->type_qualifier.at( i ) == CONST ) {
-            tq += 1;
-        } else if ( declaration_specifiers->type_qualifier.at( i ) ==
-                    VOLATILE ) {
-            tq += 2;
-        } else {
-            err += 4;
-            break;
+    Type t=new Temp(0,0);
+      if(ty.size()==3){
+        if (ty.at(0)==UNSIGNED  && ty.at(1)==INT && ty.at(2)==LONG) {t.typeIndex=8;}
+        else if (ty.at(0)==SIGNED  && ty.at(1)==INT&& ty.at(2)==LONG) {t.typeIndex=9;}
+        else err+=2;
         }
-    }
-    if ( err & 1 ) {
-        std::cerr << "Error in strorage class declarator";
-        exit( 0 );
-    }
-    if ( err & 2 ) {
-        std::cerr << "Error in type specifier declarator";
-        exit( 0 );
-    }
-    if ( err & 4 ) {
-        std::cerr << "Error in type qualifier declarator";
-        exit( 0 );
-    }
-    // To take care: const, pointer, struct , enum, | size to be added.
-    Types t = new Types( tc, sc, tq, ind, typeF, pL, nd, s, uD );
-    d->type = get_index( t );
-    is_Valid( declaration_specifiers );
-    return d;
-}
+    else if (ty.size()==2){
+        if (ty.at(0)==UNSIGNED && ty.at(1)==CHAR) {t.typeIndex=0;}
+        else if (ty.at(0)==SIGNED && ty.at(1)==CHAR) {t.typeIndex=1;}
+        else if (ty.at(0)==UNSIGNED && ty.at(1)==SHORT) {t.typeIndex=2;}
+        else if (ty.at(0)==SIGNED && ty.at(1)==SHORT) {t.typeIndex=3;}
+        else if (ty.at(0)==UNSIGNED && ty.at(1)==INT) {t.typeIndex=4;}
+        else if (ty.at(0)==SIGNED && ty.at(1)==INT) {t.typeIndex=5;}
+        else if (ty.at(0)==UNSIGNED && ty.at(1)==LONG) {t.typeIndex=6;}
+        else if (ty.at(0)==SIGNED && ty.at(1)==LONG) {t.typeIndex=7;}
+        else if (ty.at(0)==FLOAT && ty.at(1)==DOUBLE) {t.typeIndex=12;}
+        else err+=2;
+        }
+    else if (ty.size()==1) {
+        if (ty.at(0)==FLOAT){t.typeIndex=10}
+        else if (ty.at(0)==DOUBLE){t.typeIndex=11}
+        else err+=2;
+    }   
+    for(int i=0; i < ds->type_qualifier.size(); i++){
+        if(ds->type_qualifier.at(i)==CONST){type.is_const=true;}
+        else if(ds->type_qualifier.at(i)==VOLATILE){}
+        else {err+=4;break;}
+        }
+    if (err&1) {std::cerr << "Error in strorage class declarator";exit(0);}
+    if (err&2) {std::cerr << "Error in type specifier declarator";exit(0);}
+    if (err&4) {std::cerr << "Error in type qualifier declarator";exit(0);}
+    //To take care:  pointer | size to be added.
+ 
+}get_
+
+
+
+
+Declaration *new_declaration( DeclarationSpecifiers *declaration_specifiers,
+                              DeclaratorList *init_declarator_list ) {
+    Declaration *d =
+        new Declaration( declaration_specifiers, init_declarator_lis
+    set_index(declaration_specifiers);t );
+},sc,tq,ind,typeF,pL,nd,s,uD);
+    d->type=get_index(t);
 
 void Declaration::add_to_symbol_table( LocalSymbolTable &sym_tab ) {
 
@@ -948,71 +921,7 @@ DeclarationSpecifiers ::DeclarationSpecifiers()
 
 void is_Valid( DeclarationSpecifiers *ds ) {
     int err = 0;
-    if ( ds->storage_class.size() == 1 ) {
-        if ( ds->storage_class.at( 0 ) == TYPEDEF ) {
-            err = 0;
-        } else {
-            err += 1;
-        }
-    }
-
-    std::vector<TYPE_SPECIFIER> ty;
-
-    for ( unsigned int i = 0; i < ds->type_specifier.size(); i++ ) {
-        ty.push_back( ds->type_specifier.at( i )->type );
-    }
-    std::sort( ty.begin(), ty.end() );
-
-    if ( ty.size() == 3 ) {
-        if ( ( ty.at( 0 ) == UNSIGNED || ty.at( 0 ) == SIGNED ) &&
-             ( ty.at( 1 ) == SHORT || ty.at( 1 ) == LONG ) &&
-             ty.at( 2 ) == INT ) {
-        } else {
-            err += 2;
-        }
-    } else if ( ty.size() == 2 ) {
-        if ( ( ty.at( 0 ) == UNSIGNED || ty.at( 0 ) == SIGNED ) &&
-             ( ty.at( 1 ) == SHORT || ty.at( 1 ) == LONG || ty.at( 1 ) == INT ||
-               ty.at( 1 ) == CHAR ) ) {
-        } else if ( ( ty.at( 0 ) == SHORT || ty.at( 0 ) == LONG ) &&
-                    ty.at( 1 ) == INT ) {
-        } else if ( ty.at( 0 ) == LONG && ty.at( 1 ) == DOUBLE ) {
-        } else {
-            err += 2;
-        }
-    } else if ( ty.size() == 1 ) {
-        if ( ty.at( 0 ) == SHORT || ty.at( 0 ) == LONG || ty.at( 0 ) == INT ||
-             ty.at( 0 ) == CHAR || ty.at( 0 ) == FLOAT ||
-             ty.at( 0 ) == DOUBLE || ty.at( 0 ) == STRUCT ||
-             ty.at( 0 ) == UNION || ty.at( 0 ) == ENUM ) {
-        } else {
-            err += 2;
-        }
-    }
-    for ( unsigned int i = 0; i < ds->type_qualifier.size(); i++ ) {
-        if ( ds->type_qualifier.at( i ) == CONST ||
-             ds->type_qualifier.at( i ) == VOLATILE ) {
-        } else {
-            err += 4;
-            break;
-        }
-    }
-    // for(int i=0; i < ds->type_qualifier.size(); i++)
-    // std::cout << ds->type_qualifier.at(i) << ' ';
-    if ( err & 1 ) {
-        {
-            std::cout << "Error in strorage class declarator\n";
-        }
-        if ( err & 2 ) {
-            std::cout << "Error in type specifier declarator\n";
-        }
-        if ( err & 4 ) {
-            std::cout << "Error in type qualifier declarator\n";
-        }
-    }
-}
-
-DeclarationSpecifiers *new_storage_class( STORAGE_CLASS sc ) {
+eclarationSpecifiers *new_storage_class( STORAGE_CLASS sc ) {
     DeclarationSpecifiers *ds = new DeclarationSpecifiers();
     ds->storage_class.push_back( sc );
     return ds;

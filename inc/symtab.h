@@ -6,7 +6,7 @@
 #include <map>
 #include <string>
 
-enum PrimitiveTypes {U_CHAR_T = 0, CHAR_T = 1, U_SHORT_T = 2, SHORT_T = 3, U_INT_T = 4, INT_T=5, U_LONG_T=6, LONG_T=7, U_INT_LONG_T=8, INT_LONG_T=9, FLOAT_T=10, DOUBLE_T=11, LONG_DOUBLE_T=12 VOID_T=13};
+enum PrimitiveTypes {U_CHAR_T = 0, CHAR_T = 1, U_SHORT_T = 2, SHORT_T = 3, U_INT_T = 4, INT_T=5, U_LONG_T=6, LONG_T=7, U_INT_LONG_T=8, INT_LONG_T=9, FLOAT_T=10, DOUBLE_T=11, LONG_DOUBLE_T=12, VOID_T=13};
 
 // All class declarations
 class StructDefinition;
@@ -34,8 +34,7 @@ class Types {
     */
     int typeFamily;
     
-    //Variable for pointers
-    int pointerLevel;
+
     
 	  //Variable for arrays
     /* ndarray = 0 => not an array, else it is level of array */
@@ -137,7 +136,7 @@ class Types {
 
 #endif
 
-std::vector<Types> GlobalTypeMap;
+std::vector<Types> GlobalTypesMap;
 
 class Types;
 
@@ -146,10 +145,12 @@ class Identifier;
 class StructDeclarationList;
 class StructDefinition {
   public:
-    std::map<std::string, Types *> members;
+    std::map<std::string, Type> members;
     int un_or_st;
     StructDefinition();
     size_t get_size();
+
+    Type *get_member(Identifier *i);
 };
 
 StructDefinition *create_struct_definition( int un_or_st,
@@ -163,27 +164,85 @@ class Types {
     bool is_primitive;
     bool is_struct;
     bool is_union;
-    int pointer_level;
     StructDefinition *struct_definition;
 };
 
 
 class ParameterTypeList;
 
+std::vector<Type> GlobalTypeMap;
+
 class Type {
-	std::string name;
-	int typeIndex;
-	int ptr_level;
+  public:
+	  int typeIndex;
+	  int ptr_level; 
+    bool is_const;
+    
+	  Type(int index, int level){
+      typeIndex = index;
+      ptr_level = level;
+    }	
 
-	Type();	
-	bool isInt();
-	bool isFloat();
-	bool isUnsigned();
-	void make_signed();
-	void make_unsigned();
+    std::string get_name(){
+      return GlobalTypeMap[typeIndex].name;
+    }
 
+	  bool isInt(){
+      if(typeIndex >= 0 && typeIndex <= 9 ){
+        if(ptr_level == 0){
+          return true;
+        }
+        else{
+          return false;
+        }
+      }
+      else{
+        return false;
+      }
+    }
+	  bool isFloat(){
+      if(typeIndex >= 10 && typeIndex<=12 && ptr_level==0)
+        return true;
+      else
+        return false;
+    };
+    bool isIntorFloat(){
+      if(typeIndex <=12 && ptr_level==0)
+        return true;
+      else
+        return false;
+    }
+    bool isUnsigned(){
+      if(typeIndex == 0 || typeIndex == 2 || typeIndex == 4 || typeIndex == 6){
+        return true;
+      }
+      else{
+        return false;
+      }
+    }
+
+    bool isPointer(){
+      if(ptr_level){
+        return true;
+      }
+      else{
+        return false;
+      }
+    }
+    
+	  void make_signed(){
+    if(typeIndex == 0 || typeIndex == 2 || typeIndex == 4 || typeIndex == 6){
+      typeIndex+=1;
+      }
+    }
+
+	  void make_unsigned(){
+    if(typeIndex == 1 || typeIndex == 3 || typeIndex == 5 || typeIndex == 7){
+      typeIndex-=1;
+      }
+    }
 };
-int get_index(Types t)
+int get_index(Types t);
 
 class Expression : public Non_Terminal {
 	public:
@@ -191,13 +250,6 @@ class Expression : public Non_Terminal {
 	  /* Change this late */
 	  int num_opearands;
 	  // Expression( Types * type, int num_op );
-
-
-
-    Types getType(){
-      Types t; // Lookup using typeIndex 
-      return t;
-    }
   
   Expression();
 };
@@ -218,8 +270,13 @@ class PrimaryExpression : public Expression {
   Constant *Cval;
   Expression *op1;
 
-  PrimaryExpression();
-  Types *evaluate_type();
+  PrimaryExpression(){
+    isTerminal = 0;
+    Ival = nullptr;
+    Sval = nullptr;
+    Cval = nullptr;
+    op1 = nullptr;
+  }
 
 };
 
@@ -235,10 +292,13 @@ PrimaryExpression *create_primary_expression(TopLevelExpression *a);
 
 class ArgumentExprList: public Expression{
   public :
-  Expression *op1; // This will be null in case of root object
-  Expression *op2;
-  Types * evaluate_type(); // XXX: TODO: Do we need type checking here?
-  ArgumentExprList();
+    Expression *op1; // This will be null in case of root object
+    Expression *op2;
+    
+    ArgumentExprList(){
+      op1 = nullptr;
+      op2 = nullptr;
+    };
 };
 
 //Grammar warppers for ArguementExpressionList
@@ -252,28 +312,11 @@ class UnaryExpression: public Expression{
   public:
     Expression *op1;
     std::string op;
-    Types * evaluate_type();
 
-    UnaryExpression();
-
-  /// XXX: TODO
-  UnaryExpression(std::string u_op, Expression *e){
-    if(u_op == "++"){
-      //Set Something
-        /// XXX : Should we type check in the constructor itself?
-        // if(dynamic_cast<UnaryExpression *>(e) != nullptr)
+    UnaryExpression(){
+      op1 = nullptr;
+      op = "";
     }
-    else if(u_op == "--"){
-      //Set something
-    }
-    else if(u_op == "sizeof"){
-      //Set something
-    }
-    else{
-      //ERROR
-    }
-    op1 = e;
-  }
 
 };
 
@@ -477,31 +520,33 @@ class ConstantExpression : public Expression{
 
 
 //-------------------------------------------------
-enum PostfixExpressionTypes {ARRAY,FUNCTION, STRUCT, INC, DEC };
-
 class PostfixExpression : public Expression {
 	public:
-    PostfixExpressionTypes pe_type;
 	  PostfixExpression * pe;
 	  Expression *exp;
 	  Identifier *id;
 	  ArgumentExprList * ae_list;
-	  PostfixExpression();
+    std::string op;
+	  
+    PostfixExpression(){
+      pe = nullptr;
+      exp = nullptr;
+      id = nullptr;
+      ae_list = nullptr;
+      op = "";
+    };
 };
 
 PostfixExpression* create_postfix_expr_arr(PostfixExpression * pe,  Expression * exp);
 PostfixExpression* create_postfix_expr_voidfun();
 PostfixExpression* create_postfix_expr_fun(PostfixExpression * pe,  ArgumentExprList * ae_list);
 PostfixExpression* create_postfix_expr_struct(PostfixExpression * pe,  Identifier * id);
-PostfixExpression* create_postfix_expr_pointer(PostfixExpression* pe, Identifier *id);
 PostfixExpression *create_postfix_expr_ido(std::string op, PostfixExpression * pe);
 
 class SymTabEntry {
   public:
     std::string name;
-    int type_index;
-    int level;
-
+    Type type;
     // TODO: This needs to be expanded
     SymTabEntry( std::string name );
 };
@@ -509,7 +554,6 @@ class SymTabEntry {
 class FuncEnt : public SymTabEntry {
   public:
     std::string args;
-
     FuncEnt( std::string name, std::string type, std::string args );
 };
 
@@ -566,7 +610,8 @@ class Constant : public Terminal {
   public:
     Constant (const char *name);
 
-    int getConstantType(){
+    Type getConstantType(){
+      Type retT(0, 0);
       int length = value.length(); 
       if(name == "CONSTANT HEX" || name == "CONSTANT INT"){
           int islong=0,isunsigned=0;
@@ -576,35 +621,47 @@ class Constant : public Terminal {
             if(value[i]=='u' || value[i]=='U')
               isunsigned=1;
             if(islong && isunsigned)
-              return UL_INT_T;
+              retT.typeIndex = PrimitiveTypes::U_INT_LONG_T;
+              return retT;
           }
-          if(islong)
-            return L_INT_T;
-          if(isunsigned)
-            return U_INT_T;
-          return INT_T;
+          if(islong){
+            retT.typeIndex = PrimitiveTypes::INT_LONG_T;
+            return retT;
+          }
+          if(isunsigned){
+            retT.typeIndex = PrimitiveTypes::U_INT_T;
+            return retT;
+          }
+          retT.typeIndex = PrimitiveTypes::INT_T;
+          return retT;
         //loop over value to get unsigned etc and return typeIndex
       }
       else if(name == "CONSTANT FLOAT"){
         int isfloat=0;
         for(int i=0;i<length;i++){
-          if(value[i]=='f' || value[i]=='F')
-            return FLOAT_T;
+          if(value[i]=='f' || value[i]=='F'){
+            retT.typeIndex = PrimitiveTypes::FLOAT_T;
+            return retT;
+          }
         }
-        return DOUBLE_T;
+        retT.typeIndex = PrimitiveTypes::DOUBLE_T;
+        return retT;
         //loop over value to get float
       }
       else if(name == "CONSANT EXP"){
         //loop over value to get if long or double
         int islong=0;
         for(int i=0;i<length;i++){
-          if(value[i]=='f' || value[i]=='F')
-            return FLOAT_T;
+          if(value[i]=='f' || value[i]=='F'){
+            retT.typeIndex = PrimitiveTypes::FLOAT_T;
+            return retT;
+          }
         }
-        return LONG_T;
+        retT.typeIndex = PrimitiveTypes::LONG_T;
+        return retT;
       }
       else{
-        return 0;
+        return retT;
       }
     }
 };
@@ -713,12 +770,14 @@ add_to_init_declarator_list( DeclaratorList *init_declarator_list,
 
 typedef int STORAGE_CLASS;
 class TypeSpecifier;
-
+void set_index(DeclarationSpecifiers *ds)
 class DeclarationSpecifiers : public Non_Terminal {
   public:
     std::vector<STORAGE_CLASS> storage_class;
     std::vector<TypeSpecifier *> type_specifier;
     std::vector<TYPE_QUALIFIER> type_qualifier;
+    int type_index;
+    bool is_const;
     int isValid(); // Type Checking
     DeclarationSpecifiers();
 };
@@ -740,7 +799,6 @@ class Declaration : public Non_Terminal {
     DeclarationSpecifiers *declaration_specifiers;
     DeclaratorList *init_declarator_list;
     int type;
-
     Declaration( DeclarationSpecifiers *declaration_specifiers_,
                  DeclaratorList *init_declarator_list_ );
     void add_to_symbol_table( LocalSymbolTable &sym_tab );
@@ -788,7 +846,7 @@ typedef enum {
 
 class DirectAbstractDeclarator : public Non_Terminal {
   public:
-    DIRECT_ABSTRACT_DECLARATOR_TYPE type;Type
+    DIRECT_ABSTRACT_DECLARATOR_TYPE type;
     AbstractDeclarator *abstract_declarator;
     Node *const_expr;
     DirectAbstractDeclarator *direct_abstract_declarator;
