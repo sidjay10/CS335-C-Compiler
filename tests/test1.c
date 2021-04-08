@@ -2,7 +2,7 @@
 //
 void quick_sort (long int *data, long int n) 
     {
-        long int i, j, p, t;
+        long i, j, p, t;
         if (n < 2)
             return;
         p = data[n / 2];
@@ -23,10 +23,10 @@ void quick_sort (long int *data, long int n)
     }
     
 int main(void) {
-        long int t; scanf("%ld",&t);
+        long t; scanf("%ld",&t);
         while(t--)
         {
-            long int c[3],k; 
+            long c[3],k; 
             scanf("%lld%lld%lld",&c[0],&c[1],&c[2]);
             quick_sort(c,3);
             scanf("%lld",&k);

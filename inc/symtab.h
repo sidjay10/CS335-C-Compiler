@@ -7,29 +7,37 @@
 #include <string>
 
 enum PrimitiveTypes {
-    char_t,
-    uchar_t,
-    short_t,
-    ushort_t,
-    int_t,
-    uint_t,
-    lint_t,
-    ulint_t,
-    float_t,
-    double_t
+    U_CHAR_T = 0,
+    CHAR_T = 1,
+    U_SHORT_T = 2,
+    SHORT_T = 3,
+    U_INT_T = 4,
+    INT_T = 5,
+    U_LONG_T = 6,
+    LONG_T = 7,
+    FLOAT_T = 8,
+    DOUBLE_T = 9,
+    LONG_DOUBLE_T = 10,
+    VOID_T = 11
 };
 
+std::string primitive_type_name( PrimitiveTypes type );
+size_t primitive_type_size( PrimitiveTypes type );
+void setup_primitive_types();
+
 class Types;
+class Type;
 
 class Identifier;
 
 class StructDeclarationList;
 class StructDefinition {
   public:
-    std::map<std::string, Types *> members;
+    std::map<std::string, Type> members;
     int un_or_st;
     StructDefinition();
     size_t get_size();
+    Type *get_member( Identifier *id );
 };
 
 StructDefinition *create_struct_definition( int un_or_st,
@@ -43,11 +51,32 @@ class Types {
     bool is_primitive;
     bool is_struct;
     bool is_union;
-    int pointer_level;
     StructDefinition *struct_definition;
 };
 
+class Type {
+  public:
+    int typeIndex;
+    int ptr_level;
+
+    Type();
+
+    Type( int idx, int p_lvli, bool is_con );
+    bool is_const;
+    bool isPrimitive();
+    std::string get_name();
+    bool isInt();
+    bool isFloat();
+    bool isIntorFloat();
+    bool isUnsigned();
+    bool isPointer();
+    void make_signed();
+    void make_unsigned();
+};
+
 extern std::vector<Types *> type_specifiers;
+
+int add_to_defined_types( Types *typ );
 
 class ParameterTypeList;
 
@@ -93,8 +122,8 @@ is_pointer); PostfixExpression * create_postfix_expr_ido( PostfixExpressionTypes
 class SymTabEntry {
   public:
     std::string name;
-    int type_index;
     int level;
+    Type type;
 
     // TODO: This needs to be expanded
     SymTabEntry( std::string name );
@@ -192,6 +221,7 @@ class Declarator : public Non_Terminal {
 
     Declarator();
     Declarator( Pointer *p, DirectDeclarator *dd );
+    int get_pointer_level();
 };
 Declarator *add_initializer_to_declarator( Declarator *declarator,
                                            Node *init_expr );
@@ -259,7 +289,10 @@ class DeclarationSpecifiers : public Non_Terminal {
     std::vector<STORAGE_CLASS> storage_class;
     std::vector<TypeSpecifier *> type_specifier;
     std::vector<TYPE_QUALIFIER> type_qualifier;
-    bool isValid(); // Type Checking
+    bool is_const;
+    int type_index;
+
+    void create_type(); // Type Checking
 
     DeclarationSpecifiers();
 };
@@ -391,6 +424,11 @@ class SpecifierQualifierList : public Non_Terminal {
     std::vector<TypeSpecifier *> type_specifiers;
     std::vector<TYPE_QUALIFIER> type_qualifiers;
 
+    bool is_const;
+    int type_index;
+
+    void create_type(); // Type Checking
+
     SpecifierQualifierList();
 };
 
@@ -456,6 +494,7 @@ class TypeSpecifier : public Non_Terminal {
     Identifier *id;
     StructDeclarationList *struct_declaration_list;
     EnumeratorList *enumerator_list;
+    int type_index;
 
     TypeSpecifier( TYPE_SPECIFIER typ );
     TypeSpecifier( TYPE_SPECIFIER type, Identifier *Id,

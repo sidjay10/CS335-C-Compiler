@@ -1,6 +1,7 @@
 struct node {
    int data;
-   int float key;
+  // int float key;
+   int key;
    struct node *next;
 };
 
