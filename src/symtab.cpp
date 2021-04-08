@@ -11,6 +11,7 @@
 #include <y.tab.h>
 #include <iostream>
 #include <vector>
+#include <utility>
 #include <iterator>
 
 LocalSymbolTable local_symbol_table;
@@ -33,8 +34,7 @@ size_t StructDefinition::get_size() {
     return size;
 }
 
-StructDefinition *create_struct_definition( int un_or_st,
-                                            StructDeclarationList *sdl ) {
+StructDefinition *create_struct_definition( int un_or_st, StructDeclarationList *sdl ) {
     StructDefinition *sd = new StructDefinition();
     sd->un_or_st = un_or_st;
     std::cout << "struct {\n";
@@ -42,12 +42,12 @@ StructDefinition *create_struct_definition( int un_or_st,
           it != sdl->struct_declaration_list.end(); it++ ) {
         // TODO: Complete this
 
-        std::vector<Declarator *> &dl =
+        std::vector<Declarator *> dl =
             ( *it )->declarator_list->declarator_list;
 
         for ( auto jt = dl.begin(); jt != dl.end(); jt++ ) {
 
-            sd->members.insert( {( *jt )->id->value, nullptr} );
+            sd->members.insert(std::make_pair((*jt)->id->value, Type(-1,0,0)));
             std::cout << "  " << ( *jt )->id->value << "\n";
         }
     }
@@ -779,6 +779,8 @@ TopLevelExpression *create_toplevel_expression( TopLevelExpression *te, Assignme
                              Pointer * pointer ) {
         Pointer *p = new Pointer( type_list, pointer );
         p->add_children( type_list, pointer );
+
+        return p;
     }
 
     //##############################################################################
@@ -801,10 +803,8 @@ TopLevelExpression *create_toplevel_expression( TopLevelExpression *te, Assignme
         return tql;
     }
 
-Declaration ::Declaration(DeclarationSpecifiers *declaration_specifiers_, DeclaratorList *init_declarator_list_ )
-    : Non_Terminal( "declaration" ),
-      declaration_specifiers( declaration_specifiers_ ),
-      init_declarator_list( init_declarator_list_ ){};
+// Declaration ::Declaration(DeclarationSpecifiers *declaration_specifiers_, DeclaratorList *init_declarator_list_ )
+//     : Non_Terminal( "declaration" ), declaration_specifiers( declaration_specifiers_ ), init_declarator_list( init_declarator_list_ ){};
 
 int get_index(Type t){
     bool k=true;
@@ -934,35 +934,9 @@ void Declaration::add_to_symbol_table( LocalSymbolTable &sym_tab ) {
     //####################################
     //##############################################################################
 
-    Declaration ::Declaration( DeclarationSpecifiers * declaration_specifiers_,
-                               DeclaratorList * init_declarator_list_ )
-        : Non_Terminal( "declaration" ),
-          declaration_specifiers( declaration_specifiers_ ),
-          init_declarator_list( init_declarator_list_ ){};
+    Declaration ::Declaration( DeclarationSpecifiers * declaration_specifiers_, DeclaratorList * init_declarator_list_ )
+        : Non_Terminal( "declaration" ), declaration_specifiers( declaration_specifiers_ ), init_declarator_list( init_declarator_list_ ){};
 
-
-        Declaration *new_declaration( DeclarationSpecifiers * declaration_specifiers,
-                         DeclaratorList * init_declarator_list ) {
-            Declaration *d = new Declaration(declaration_specifiers, init_declarator_list );
-            return d;
-        }
-
-    void Declaration::add_to_symbol_table( LocalSymbolTable & sym_tab ) {
-
-        if ( init_declarator_list == nullptr )
-            return;
-        std::vector<Declarator *> &dec = init_declarator_list->declarator_list;
-
-        for ( auto i = dec.begin(); i != dec.end(); i++ ) {
-            for ( int i = 0; i < sym_tab.current_level; i++ ) {
-                std::cout << "  ";
-            }
-            SymTabEntry *e = new SymTabEntry( ( *i )->id->value );
-            sym_tab.add_to_table( e );
-            std::cout << ( *i )->id->value << " " << sym_tab.current_level
-                      << "\n";
-        }
-    };
 
     void Declaration::add_to_symbol_table( GlobalSymbolTable & sym_tab ) {
 
@@ -1748,7 +1722,5 @@ void Declaration::add_to_symbol_table( LocalSymbolTable &sym_tab ) {
         //########################### SYMBOL TABLE ENTRY
         //##############################
         //##############################################################################
-
-        SymTabEntry::SymTabEntry( std::string name ) : name( name ){};
 
         //##############################################################################

@@ -625,8 +625,11 @@ class SymTabEntry {
   public:
     std::string name;
     Type type;
+    int level;
     // TODO: This needs to be expanded
-    SymTabEntry( std::string name );
+    SymTabEntry( std::string name_parameter){
+      name=name_parameter;
+    }
 };
 
 class FuncEnt : public SymTabEntry {

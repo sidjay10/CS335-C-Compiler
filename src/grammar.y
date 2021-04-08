@@ -113,7 +113,7 @@ primary_expression
 	: IDENTIFIER		{ $$ = create_primary_identifier($1); } 
 	| CONSTANT		{ $$ = create_primary_constant($1); }
 	| STRING_LITERAL	{ $$ = create_primary_stringliteral($1); } 
-	| '(' expression ')'	{ $$ = $2; } 
+	| '(' expression ')'	{ $$ = create_primary_expression($2); } 
 	;
 
 postfix_expression
