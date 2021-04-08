@@ -6,7 +6,22 @@
 #include <map>
 #include <string>
 
-enum PrimitiveTypes {U_CHAR_T = 0, CHAR_T = 1, U_SHORT_T = 2, SHORT_T = 3, U_INT_T = 4, INT_T=5, U_LONG_T=6, LONG_T=7, U_INT_LONG_T=8, INT_LONG_T=9, FLOAT_T=10, DOUBLE_T=11, LONG_DOUBLE_T=12, VOID_T=13};
+enum PrimitiveTypes {
+    U_CHAR_T = 0,
+    CHAR_T = 1,
+    U_SHORT_T = 2,
+    SHORT_T = 3,
+    U_INT_T = 4,
+    INT_T = 5,
+    U_LONG_T = 6,
+    LONG_T = 7,
+    U_INT_LONG_T = 8,
+    INT_LONG_T = 9,
+    FLOAT_T = 10,
+    DOUBLE_T = 11,
+    LONG_DOUBLE_T = 12,
+    VOID_T = 13
+};
 
 // All class declarations
 class StructDefinition;
@@ -16,9 +31,7 @@ class CastExpression;
 class Constant;
 class StringLiteral;
 
-
-//SXXX:TODO Add all primitive types by default 
-
+// SXXX:TODO Add all primitive types by default
 
 #if 0
 class Types {
@@ -138,7 +151,6 @@ class Types {
 
 #endif
 
-
 class Types;
 class Type;
 
@@ -154,7 +166,7 @@ class StructDefinition {
     StructDefinition();
     size_t get_size();
 
-    Type *get_member(Identifier *i);
+    Type *get_member( Identifier *i );
 };
 
 StructDefinition *create_struct_definition( int un_or_st,
@@ -171,381 +183,377 @@ class Types {
     StructDefinition *struct_definition;
 };
 
-
 class ParameterTypeList;
 
 std::vector<Type> GlobalTypeMap;
 
 class Type {
   public:
-	  int typeIndex;
-	  int ptr_level; 
+    int typeIndex;
+    int ptr_level;
     bool is_const;
-    
-	  Type(int index, int level){
-      typeIndex = index;
-      ptr_level = level;
-    }	
 
-    std::string get_name(){
-      return GlobalTypeMap[typeIndex].name;
+    Type( int index, int level ) {
+        typeIndex = index;
+        ptr_level = level;
     }
 
-	  bool isInt(){
-      if(typeIndex >= 0 && typeIndex <= 9 ){
-        if(ptr_level == 0){
-          return true;
+    std::string get_name() { return GlobalTypeMap[typeIndex].name; }
+
+    bool isInt() {
+        if ( typeIndex >= 0 && typeIndex <= 9 ) {
+            if ( ptr_level == 0 ) {
+                return true;
+            } else {
+                return false;
+            }
+        } else {
+            return false;
         }
-        else{
-          return false;
-        }
-      }
-      else{
-        return false;
-      }
     }
-	  bool isFloat(){
-      if(typeIndex >= 10 && typeIndex<=12 && ptr_level==0)
-        return true;
-      else
-        return false;
+    bool isFloat() {
+        if ( typeIndex >= 10 && typeIndex <= 12 && ptr_level == 0 )
+            return true;
+        else
+            return false;
     };
-    bool isIntorFloat(){
-      if(typeIndex <=12 && ptr_level==0)
-        return true;
-      else
-        return false;
+    bool isIntorFloat() {
+        if ( typeIndex <= 12 && ptr_level == 0 )
+            return true;
+        else
+            return false;
     }
-    bool isUnsigned(){
-      if(typeIndex == 0 || typeIndex == 2 || typeIndex == 4 || typeIndex == 6){
-        return true;
-      }
-      else{
-        return false;
-      }
-    }
-
-    bool isPointer(){
-      if(ptr_level){
-        return true;
-      }
-      else{
-        return false;
-      }
-    }
-    
-	  void make_signed(){
-    if(typeIndex == 0 || typeIndex == 2 || typeIndex == 4 || typeIndex == 6){
-      typeIndex+=1;
-      }
+    bool isUnsigned() {
+        if ( typeIndex == 0 || typeIndex == 2 || typeIndex == 4 ||
+             typeIndex == 6 ) {
+            return true;
+        } else {
+            return false;
+        }
     }
 
-	  void make_unsigned(){
-    if(typeIndex == 1 || typeIndex == 3 || typeIndex == 5 || typeIndex == 7){
-      typeIndex-=1;
-      }
+    bool isPointer() {
+        if ( ptr_level ) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    void make_signed() {
+        if ( typeIndex == 0 || typeIndex == 2 || typeIndex == 4 ||
+             typeIndex == 6 ) {
+            typeIndex += 1;
+        }
+    }
+
+    void make_unsigned() {
+        if ( typeIndex == 1 || typeIndex == 3 || typeIndex == 5 ||
+             typeIndex == 7 ) {
+            typeIndex -= 1;
+        }
     }
 };
-int get_index(Types t);
+int get_index( Types t );
 
 class Expression : public Non_Terminal {
-	public:
-    	Type type;
-	  /* Change this late */
-	  int num_opearands;
-	  // Expression( Types * type, int num_op );
-  
-  Expression();
-};
+  public:
+    Type type;
+    /* Change this late */
+    int num_opearands;
+    // Expression( Types * type, int num_op );
 
+    Expression();
+};
 
 //-------------------------------------------------
 class PrimaryExpression : public Expression {
-	/**
-    isTerminal = 0 when ( Expression )
-    isTerminal = 1 when IDENTIFIER
-    isTerminal = 2 when CONSTANT
-    isTerminal = 3 when STRING_LITERAL
-  */
- public :
-  int isTerminal;
-  Identifier *Ival;
-  StringLiteral *Sval;
-  Constant *Cval;
-  Expression *op1;
+    /**
+isTerminal = 0 when ( Expression )
+isTerminal = 1 when IDENTIFIER
+isTerminal = 2 when CONSTANT
+isTerminal = 3 when STRING_LITERAL
+*/
+  public:
+    int isTerminal;
+    Identifier *Ival;
+    StringLiteral *Sval;
+    Constant *Cval;
+    Expression *op1;
 
-  PrimaryExpression(){
-    isTerminal = 0;
-    Ival = nullptr;
-    Sval = nullptr;
-    Cval = nullptr;
-    op1 = nullptr;
-  }
-
+    PrimaryExpression() {
+        isTerminal = 0;
+        Ival = nullptr;
+        Sval = nullptr;
+        Cval = nullptr;
+        op1 = nullptr;
+    }
 };
 
-//Grammar warppers for PrimaryExpression
-PrimaryExpression *create_primary_identifier(Identifier *a);
-PrimaryExpression *create_primary_constant(Constant *a);
-PrimaryExpression *create_primary_stringliteral(StringLiteral *a);
-PrimaryExpression *create_primary_expression(TopLevelExpression *a);
-
-
+// Grammar warppers for PrimaryExpression
+PrimaryExpression *create_primary_identifier( Identifier *a );
+PrimaryExpression *create_primary_constant( Constant *a );
+PrimaryExpression *create_primary_stringliteral( StringLiteral *a );
+PrimaryExpression *create_primary_expression( TopLevelExpression *a );
 
 //-------------------------------------------------
 
-class ArgumentExprList: public Expression{
-  public :
+class ArgumentExprList : public Expression {
+  public:
     Expression *op1; // This will be null in case of root object
     Expression *op2;
-    
-    ArgumentExprList(){
-      op1 = nullptr;
-      op2 = nullptr;
+
+    ArgumentExprList() {
+        op1 = nullptr;
+        op2 = nullptr;
     };
 };
 
-//Grammar warppers for ArguementExpressionList
-ArgumentExprList * create_argument_expr_assignement(AssignmentExpression *ase);
-ArgumentExprList * create_argument_expr_list(ArgumentExprList *ae_list, AssignmentExpression *ase);
-
-
+// Grammar warppers for ArguementExpressionList
+ArgumentExprList *create_argument_expr_assignement( AssignmentExpression *ase );
+ArgumentExprList *create_argument_expr_list( ArgumentExprList *ae_list,
+                                             AssignmentExpression *ase );
 
 //-------------------------------------------------
-class UnaryExpression: public Expression{
+class UnaryExpression : public Expression {
   public:
     Expression *op1;
     std::string op;
 
-    UnaryExpression(){
-      op1 = nullptr;
-      op = "";
+    UnaryExpression() {
+        op1 = nullptr;
+        op = "";
     }
-
 };
 
-//Grammar warppers for UnaryExpression
-UnaryExpression * create_unary_expression_ue(std::string u_op, UnaryExpression* ue); // INC_OP, DEC_OP, SIZEOF
-UnaryExpression * create_unary_expression_cast(std::string u_op, CastExpression* ce); 
-UnaryExpression * create_unary_expression_typename();
-
+// Grammar warppers for UnaryExpression
+UnaryExpression *
+create_unary_expression_ue( std::string u_op,
+                            UnaryExpression *ue ); // INC_OP, DEC_OP, SIZEOF
+UnaryExpression *create_unary_expression_cast( std::string u_op,
+                                               CastExpression *ce );
+UnaryExpression *create_unary_expression_typename();
 
 //-------------------------------------------------
-class CastExpression : public Expression{
-  public :
-    Expression * op1;
+class CastExpression : public Expression {
+  public:
+    Expression *op1;
     /**
       Index of Type casted to in GlobalTypes
       -1 if there is no casting
     */
-    int typeCast; 
-    Types * evaluate_type();
-  CastExpression();
+    int typeCast;
+    Types *evaluate_type();
+    CastExpression();
 };
 // NEED TO DO LATER
-CastExpression * create_caste_expression_typename(CastExpression* ce); // type_name wala add krna hai
-
-
-//-------------------------------------------------
-class MultiplicativeExpression : public Expression{
-  public :
-  Expression * op1;
-  Expression * op2;
-  std::string op;
-  Types * evaluate_type();
-  MultiplicativeExpression();
-};
-MultiplicativeExpression * create_multiplicative_expression(std::string op,MultiplicativeExpression *me, CastExpression *ce);
-
+CastExpression *create_caste_expression_typename(
+    CastExpression *ce ); // type_name wala add krna hai
 
 //-------------------------------------------------
-class AdditiveExpression : public Expression{
-    public :
+class MultiplicativeExpression : public Expression {
+  public:
     Expression *op1;
     Expression *op2;
     std::string op;
-    Types * evaluate_type();
+    Types *evaluate_type();
+    MultiplicativeExpression();
+};
+MultiplicativeExpression *
+create_multiplicative_expression( std::string op, MultiplicativeExpression *me,
+                                  CastExpression *ce );
+
+//-------------------------------------------------
+class AdditiveExpression : public Expression {
+  public:
+    Expression *op1;
+    Expression *op2;
+    std::string op;
+    Types *evaluate_type();
     AdditiveExpression();
 };
-AdditiveExpression * create_additive_expression(std::string op,AdditiveExpression * ade, MultiplicativeExpression *me);
-
-
+AdditiveExpression *create_additive_expression( std::string op,
+                                                AdditiveExpression *ade,
+                                                MultiplicativeExpression *me );
 
 //-------------------------------------------------
-class ShiftExpression : public Expression{
-  public  :
+class ShiftExpression : public Expression {
+  public:
     Expression *op1;
     Expression *op2;
     std::string op;
-    Types * evaluate_type();
+    Types *evaluate_type();
     ShiftExpression();
-    
 };
 
-ShiftExpression * create_shift_expression(std::string op,ShiftExpression *se, AdditiveExpression *ade);
-
-
+ShiftExpression *create_shift_expression( std::string op, ShiftExpression *se,
+                                          AdditiveExpression *ade );
 
 //-------------------------------------------------
-class RelationalExpression : public Expression{
-    public :
+class RelationalExpression : public Expression {
+  public:
     Expression *op1;
     Expression *op2;
     std::string op;
-    Types * evaluate_type();
+    Types *evaluate_type();
     RelationalExpression();
 };
-RelationalExpression * create_relational_expression(std::string op, RelationalExpression *re, ShiftExpression *se);
-
+RelationalExpression *create_relational_expression( std::string op,
+                                                    RelationalExpression *re,
+                                                    ShiftExpression *se );
 
 //-------------------------------------------------
-class EqualityExpression : public Expression{
-    public :
+class EqualityExpression : public Expression {
+  public:
     Expression *op1;
     Expression *op2;
     std::string op;
-    Types * evaluate_type();
+    Types *evaluate_type();
     EqualityExpression();
 };
-EqualityExpression * create_equality_expression(std::string op,EqualityExpression *eq, RelationalExpression *re);
-
-
+EqualityExpression *create_equality_expression( std::string op,
+                                                EqualityExpression *eq,
+                                                RelationalExpression *re );
 
 //-------------------------------------------------
-class AndExpression : public Expression{
-    public :
+class AndExpression : public Expression {
+  public:
     Expression *op1;
     Expression *op2;
     std::string op;
-    Types * evaluate_type();
+    Types *evaluate_type();
     AndExpression();
-}; 
-AndExpression * create_and_expression(std::string op,AndExpression * an,EqualityExpression * eq);
-
-
+};
+AndExpression *create_and_expression( std::string op, AndExpression *an,
+                                      EqualityExpression *eq );
 
 //-------------------------------------------------
-class ExclusiveorExpression : public Expression{
-    public :
+class ExclusiveorExpression : public Expression {
+  public:
     Expression *op1;
     Expression *op2;
     std::string op;
-    Types * evaluate_type();
+    Types *evaluate_type();
     ExclusiveorExpression();
 };
-ExclusiveorExpression * create_exclusive_or_expression(std::string op,ExclusiveorExpression * ex,AndExpression * an);
-
-
+ExclusiveorExpression *
+create_exclusive_or_expression( std::string op, ExclusiveorExpression *ex,
+                                AndExpression *an );
 
 //-------------------------------------------------
-class InclusiveorExpression : public Expression{
-  public :
+class InclusiveorExpression : public Expression {
+  public:
     Expression *op1;
     Expression *op2;
     std::string op;
-    Types * evaluate_type();
+    Types *evaluate_type();
     InclusiveorExpression();
 };
-InclusiveorExpression * create_inclusive_or_expression(std::string op,InclusiveorExpression * ie, ExclusiveorExpression *ex); 
- 
-
+InclusiveorExpression *
+create_inclusive_or_expression( std::string op, InclusiveorExpression *ie,
+                                ExclusiveorExpression *ex );
 
 //-------------------------------------------------
-class Logical_andExpression : public Expression{
-  public :
+class Logical_andExpression : public Expression {
+  public:
     Expression *op1;
     Expression *op2;
     std::string op;
-    Types * evaluate_type();
+    Types *evaluate_type();
     Logical_andExpression();
 };
-Logical_andExpression * creat_logical_and_expression(std::string op,Logical_andExpression * la, InclusiveorExpression *ie);
-
-
+Logical_andExpression *
+creat_logical_and_expression( std::string op, Logical_andExpression *la,
+                              InclusiveorExpression *ie );
 
 //-------------------------------------------------
-class Logical_orExpression : public Expression{
-    public :
+class Logical_orExpression : public Expression {
+  public:
     Expression *op1;
     Expression *op2;
     std::string op;
-    Types * evaluate_type();
+    Types *evaluate_type();
     Logical_orExpression();
 };
-Logical_orExpression * creat_logical_or_expression(std::string op,Logical_orExpression * lo, Logical_andExpression *la);
-
-
+Logical_orExpression *creat_logical_or_expression( std::string op,
+                                                   Logical_orExpression *lo,
+                                                   Logical_andExpression *la );
 
 //-------------------------------------------------
-class ConditionalExpression : public Expression{
+class ConditionalExpression : public Expression {
   public:
     Expression *op1;
     Expression *op2;
     Expression *op3;
     std::string op;
-    Types * evaluate_type();
+    Types *evaluate_type();
     ConditionalExpression();
 };
-ConditionalExpression * create_conditional_expression(std::string op,Logical_orExpression *lo,TopLevelExpression * te, ConditionalExpression * coe);
-
-
+ConditionalExpression *
+create_conditional_expression( std::string op, Logical_orExpression *lo,
+                               TopLevelExpression *te,
+                               ConditionalExpression *coe );
 
 //-------------------------------------------------
-class AssignmentExpression : public Expression{
-  public: 
+class AssignmentExpression : public Expression {
+  public:
     Expression *op1;
     Expression *op2;
     std::string op;
     Types *evaluate_type();
     AssignmentExpression();
-
 };
 
-AssignmentExpression * create_assignment_expression(std::string op,UnaryExpression * ue,  AssignmentExpression * ase); // can change string to node* later for assignment operator
-
-
-//-------------------------------------------------
-class TopLevelExpression : public Expression{
-  public :
-  Expression *op1;
-  Expression *op2;
-  Types * evaluate_type();
-  TopLevelExpression();
-}; 
-TopLevelExpression * create_toplevel_expression(TopLevelExpression *te, AssignmentExpression *ase);
-
+AssignmentExpression *create_assignment_expression(
+    std::string op, UnaryExpression *ue,
+    AssignmentExpression
+        *ase ); // can change string to node* later for assignment operator
 
 //-------------------------------------------------
-class ConstantExpression : public Expression{
+class TopLevelExpression : public Expression {
   public:
     Expression *op1;
-    Types * evaluate_type();
+    Expression *op2;
+    Types *evaluate_type();
+    TopLevelExpression();
 };
+TopLevelExpression *create_toplevel_expression( TopLevelExpression *te,
+                                                AssignmentExpression *ase );
 
+//-------------------------------------------------
+class ConstantExpression : public Expression {
+  public:
+    Expression *op1;
+    Types *evaluate_type();
+};
 
 //-------------------------------------------------
 class PostfixExpression : public Expression {
-	public:
-	  PostfixExpression * pe;
-	  Expression *exp;
-	  Identifier *id;
-	  ArgumentExprList * ae_list;
+  public:
+    PostfixExpression *pe;
+    Expression *exp;
+    Identifier *id;
+    ArgumentExprList *ae_list;
     std::string op;
-	  
-    PostfixExpression(){
-      pe = nullptr;
-      exp = nullptr;
-      id = nullptr;
-      ae_list = nullptr;
-      op = "";
+
+    PostfixExpression() {
+        pe = nullptr;
+        exp = nullptr;
+        id = nullptr;
+        ae_list = nullptr;
+        op = "";
     };
 };
 
-PostfixExpression* create_postfix_expr_arr(PostfixExpression * pe,  Expression * exp);
-PostfixExpression* create_postfix_expr_voidfun();
-PostfixExpression* create_postfix_expr_fun(PostfixExpression * pe,  ArgumentExprList * ae_list);
-PostfixExpression* create_postfix_expr_struct(PostfixExpression * pe,  Identifier * id);
-PostfixExpression *create_postfix_expr_ido(std::string op, PostfixExpression * pe);
+PostfixExpression *create_postfix_expr_arr( PostfixExpression *pe,
+                                            Expression *exp );
+PostfixExpression *create_postfix_expr_voidfun();
+PostfixExpression *create_postfix_expr_fun( PostfixExpression *pe,
+                                            ArgumentExprList *ae_list );
+PostfixExpression *create_postfix_expr_struct( PostfixExpression *pe,
+                                               Identifier *id );
+PostfixExpression *create_postfix_expr_ido( std::string op,
+                                            PostfixExpression *pe );
 
 class SymTabEntry {
   public:
@@ -606,73 +614,68 @@ typedef int TYPE_QUALIFIER;
 class Identifier : public Terminal {
   public:
     Identifier( const char *name );
-    
-    
 };
 
 class Constant : public Terminal {
   public:
-    Constant (const char *name);
+    Constant( const char *name );
 
-    Type getConstantType(){
-      Type retT(0, 0);
-      int length = value.length(); 
-      if(name == "CONSTANT HEX" || name == "CONSTANT INT"){
-          int islong=0,isunsigned=0;
-          for(int i=0;i<length;i++){
-            if(value[i]=='l' || value[i]=='L')
-              islong=1;
-            if(value[i]=='u' || value[i]=='U')
-              isunsigned=1;
-            if(islong && isunsigned)
-              retT.typeIndex = PrimitiveTypes::U_INT_LONG_T;
-              return retT;
-          }
-          if(islong){
-            retT.typeIndex = PrimitiveTypes::INT_LONG_T;
+    Type getConstantType() {
+        Type retT( 0, 0 );
+        int length = value.length();
+        if ( name == "CONSTANT HEX" || name == "CONSTANT INT" ) {
+            int islong = 0, isunsigned = 0;
+            for ( int i = 0; i < length; i++ ) {
+                if ( value[i] == 'l' || value[i] == 'L' )
+                    islong = 1;
+                if ( value[i] == 'u' || value[i] == 'U' )
+                    isunsigned = 1;
+                if ( islong && isunsigned )
+                    retT.typeIndex = PrimitiveTypes::U_INT_LONG_T;
+                return retT;
+            }
+            if ( islong ) {
+                retT.typeIndex = PrimitiveTypes::INT_LONG_T;
+                return retT;
+            }
+            if ( isunsigned ) {
+                retT.typeIndex = PrimitiveTypes::U_INT_T;
+                return retT;
+            }
+            retT.typeIndex = PrimitiveTypes::INT_T;
             return retT;
-          }
-          if(isunsigned){
-            retT.typeIndex = PrimitiveTypes::U_INT_T;
+            // loop over value to get unsigned etc and return typeIndex
+        } else if ( name == "CONSTANT FLOAT" ) {
+            int isfloat = 0;
+            for ( int i = 0; i < length; i++ ) {
+                if ( value[i] == 'f' || value[i] == 'F' ) {
+                    retT.typeIndex = PrimitiveTypes::FLOAT_T;
+                    return retT;
+                }
+            }
+            retT.typeIndex = PrimitiveTypes::DOUBLE_T;
             return retT;
-          }
-          retT.typeIndex = PrimitiveTypes::INT_T;
-          return retT;
-        //loop over value to get unsigned etc and return typeIndex
-      }
-      else if(name == "CONSTANT FLOAT"){
-        int isfloat=0;
-        for(int i=0;i<length;i++){
-          if(value[i]=='f' || value[i]=='F'){
-            retT.typeIndex = PrimitiveTypes::FLOAT_T;
+            // loop over value to get float
+        } else if ( name == "CONSANT EXP" ) {
+            // loop over value to get if long or double
+            int islong = 0;
+            for ( int i = 0; i < length; i++ ) {
+                if ( value[i] == 'f' || value[i] == 'F' ) {
+                    retT.typeIndex = PrimitiveTypes::FLOAT_T;
+                    return retT;
+                }
+            }
+            retT.typeIndex = PrimitiveTypes::LONG_T;
             return retT;
-          }
+        } else {
+            return retT;
         }
-        retT.typeIndex = PrimitiveTypes::DOUBLE_T;
-        return retT;
-        //loop over value to get float
-      }
-      else if(name == "CONSANT EXP"){
-        //loop over value to get if long or double
-        int islong=0;
-        for(int i=0;i<length;i++){
-          if(value[i]=='f' || value[i]=='F'){
-            retT.typeIndex = PrimitiveTypes::FLOAT_T;
-            return retT;
-          }
-        }
-        retT.typeIndex = PrimitiveTypes::LONG_T;
-        return retT;
-      }
-      else{
-        return retT;
-      }
     }
 };
 
 class StringLiteral : public Terminal {
   public:
-    StringLiteral(const char *name);
+    StringLiteral( const char *name );
 };
 
 class TypeQualifierList : public Non_Terminal {
@@ -774,7 +777,7 @@ add_to_init_declarator_list( DeclaratorList *init_declarator_list,
 
 typedef int STORAGE_CLASS;
 class TypeSpecifier;
-void set_index(DeclarationSpecifiers *ds);
+void set_index( DeclarationSpecifiers *ds );
 class DeclarationSpecifiers : public Non_Terminal {
   public:
     std::vector<STORAGE_CLASS> storage_class;
