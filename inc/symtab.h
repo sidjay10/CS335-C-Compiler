@@ -123,12 +123,19 @@ class Types {
     else{
       return false;
     }
-  bool is_Present(Types t)
-  //to be written
   }
+  bool operator==(const Types & obj2) const
+    {
+        if(this->tq == obj2.tq && this->sc == obj2.sc && this->typeFamily==obj2.typeFamily && this->pointerLevel == obj2.pointerLevel && this->ndarray==obj2.ndarray && this->userDefined==obj2.userDefined)
+            return true;
+        else
+            return false;
+    }
 };
 
 std::vector<Types> GlobalTypeMap;
+
+int get_index(Types t)
 
 class Expression : public Non_Terminal {
 	public:
@@ -435,11 +442,12 @@ class PostfixExpression : public Expression {
 	  PostfixExpression();
 };
 
-PostfixExpression *create_postfix_expr_arr(PostfixExpression * pe,  Expression * exp);
-PostfixExpression *create_postfix_fun();
-PostfixExpression *create_postfix_expr_fun(PostfixExpression * pe,  ArgumentExprList * ae_list);
-PostfixExpression *create_postfix_expr_str( PostfixExpressionTypes * type, PostfixExpression * pe,  Identifier * id, bool is_pointer);
-PostfixExpression *create_postfix_expr_ido( PostfixExpressionTypes * type, PostfixExpression * pe,  bool is_inc );
+PostfixExpression* create_postfix_expr_arr(PostfixExpression * pe,  Expression * exp);
+PostfixExpression* create_postfix_expr_voidfun();
+PostfixExpression* create_postfix_expr_fun(PostfixExpression * pe,  ArgumentExprList * ae_list);
+PostfixExpression* create_postfix_expr_struct(PostfixExpression * pe,  Identifier * id);
+PostfixExpression* create_postfix_expr_pointer(PostfixExpression* pe, Identifier *id);
+PostfixExpression *create_postfix_expr_ido(std::string op, PostfixExpression * pe);
 
 
 class SymTabEntry {
