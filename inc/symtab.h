@@ -191,13 +191,14 @@ class Type {
     int ptr_level;
     bool is_const;
 
-    Type( int index, int level ) {
+    Type( int index, int level, bool c ) {
         typeIndex = index;
         ptr_level = level;
+        is_const= c;
     }
-    
+
     bool isPrimitive(){
-      if(typeIndex >= 0 ** typeIndex <= 12){
+      if(typeIndex >= 0 && typeIndex <= 12){
         return true;
       }
       else{
@@ -206,11 +207,10 @@ class Type {
     }
 
     std::string get_name(){
-      return GlobalTypeMap[typeIndex].name;
+      return GlobalTypesMap[typeIndex].name;
     }
 
-    std::string get_name() { return GlobalTypeMap[typeIndex].name; }
-
+    std::string get_name() { return GlobalTypesMap[typeIndex].name; }
     bool isInt() {
         if ( typeIndex >= 0 && typeIndex <= 9 ) {
             if ( ptr_level == 0 ) {
@@ -354,8 +354,11 @@ class CastExpression : public Expression {
       -1 if there is no casting
     */
     int typeCast;
-    Types *evaluate_type();
-    CastExpression();
+    
+    CastExpression(){
+      op1 = nullptr;
+      typeCast = -1;
+    };
 };
 // NEED TO DO LATER
 CastExpression *create_caste_expression_typename(
@@ -367,8 +370,12 @@ class MultiplicativeExpression : public Expression {
     Expression *op1;
     Expression *op2;
     std::string op;
-    Types *evaluate_type();
-    MultiplicativeExpression();
+    
+    MultiplicativeExpression(){
+      op1 = nullptr;
+      op2 = nullptr;
+      op = "";
+    };
 };
 MultiplicativeExpression *
 create_multiplicative_expression( std::string op, MultiplicativeExpression *me,
@@ -380,8 +387,12 @@ class AdditiveExpression : public Expression {
     Expression *op1;
     Expression *op2;
     std::string op;
-    Types *evaluate_type();
-    AdditiveExpression();
+    
+    AdditiveExpression(){
+      op1 = nullptr;
+      op2 = nullptr;
+      op = "";
+    };
 };
 AdditiveExpression *create_additive_expression( std::string op,
                                                 AdditiveExpression *ade,
@@ -393,8 +404,12 @@ class ShiftExpression : public Expression {
     Expression *op1;
     Expression *op2;
     std::string op;
-    Types *evaluate_type();
-    ShiftExpression();
+    
+    ShiftExpression(){
+      op1 = nullptr;
+      op2 = nullptr;
+      op = "";
+    };
 };
 
 ShiftExpression *create_shift_expression( std::string op, ShiftExpression *se,
@@ -406,8 +421,12 @@ class RelationalExpression : public Expression {
     Expression *op1;
     Expression *op2;
     std::string op;
-    Types *evaluate_type();
-    RelationalExpression();
+    
+    RelationalExpression(){
+      op1 = nullptr;
+      op2 = nullptr;
+      op = "";
+    };
 };
 RelationalExpression *create_relational_expression( std::string op,
                                                     RelationalExpression *re,
@@ -419,8 +438,12 @@ class EqualityExpression : public Expression {
     Expression *op1;
     Expression *op2;
     std::string op;
-    Types *evaluate_type();
-    EqualityExpression();
+    
+    EqualityExpression(){
+      op1 = nullptr;
+      op2 = nullptr;
+      op = "";
+    };
 };
 EqualityExpression *create_equality_expression( std::string op,
                                                 EqualityExpression *eq,
@@ -432,8 +455,12 @@ class AndExpression : public Expression {
     Expression *op1;
     Expression *op2;
     std::string op;
-    Types *evaluate_type();
-    AndExpression();
+    
+    AndExpression(){
+      op1 = nullptr;
+      op2 = nullptr;
+      op = "";
+    };
 };
 AndExpression *create_and_expression( std::string op, AndExpression *an,
                                       EqualityExpression *eq );
@@ -444,8 +471,12 @@ class ExclusiveorExpression : public Expression {
     Expression *op1;
     Expression *op2;
     std::string op;
-    Types *evaluate_type();
-    ExclusiveorExpression();
+    
+    ExclusiveorExpression(){
+      op1 = nullptr;
+      op2 = nullptr;
+      op = "";
+    };
 };
 ExclusiveorExpression *
 create_exclusive_or_expression( std::string op, ExclusiveorExpression *ex,
@@ -457,8 +488,12 @@ class InclusiveorExpression : public Expression {
     Expression *op1;
     Expression *op2;
     std::string op;
-    Types *evaluate_type();
-    InclusiveorExpression();
+
+    InclusiveorExpression(){
+      op1 = nullptr;
+      op2 = nullptr;
+      op = "";
+    }
 };
 InclusiveorExpression *
 create_inclusive_or_expression( std::string op, InclusiveorExpression *ie,
@@ -470,8 +505,12 @@ class Logical_andExpression : public Expression {
     Expression *op1;
     Expression *op2;
     std::string op;
-    Types *evaluate_type();
-    Logical_andExpression();
+    
+    Logical_andExpression(){
+      op1= nullptr;
+      op2 = nullptr;
+      op = "";
+    };
 };
 Logical_andExpression *
 creat_logical_and_expression( std::string op, Logical_andExpression *la,
@@ -483,8 +522,12 @@ class Logical_orExpression : public Expression {
     Expression *op1;
     Expression *op2;
     std::string op;
-    Types *evaluate_type();
-    Logical_orExpression();
+    
+    Logical_orExpression(){
+      op1 = nullptr;
+      op2 = nullptr;
+      op = "";
+    };
 };
 Logical_orExpression *creat_logical_or_expression( std::string op,
                                                    Logical_orExpression *lo,
@@ -497,8 +540,13 @@ class ConditionalExpression : public Expression {
     Expression *op2;
     Expression *op3;
     std::string op;
-    Types *evaluate_type();
-    ConditionalExpression();
+    
+    ConditionalExpression(){
+      op1 = nullptr;
+      op2 = nullptr;
+      op3 = nullptr;
+      op = "";
+    };
 };
 ConditionalExpression *
 create_conditional_expression( std::string op, Logical_orExpression *lo,
@@ -511,8 +559,12 @@ class AssignmentExpression : public Expression {
     Expression *op1;
     Expression *op2;
     std::string op;
-    Types *evaluate_type();
-    AssignmentExpression();
+
+    AssignmentExpression(){
+      op1 = nullptr;
+      op2 = nullptr;
+      op = "";
+    }
 };
 
 AssignmentExpression *create_assignment_expression(
@@ -525,8 +577,11 @@ class TopLevelExpression : public Expression {
   public:
     Expression *op1;
     Expression *op2;
-    Types *evaluate_type();
-    TopLevelExpression();
+    
+    TopLevelExpression(){
+      op1 = nullptr;
+      op2 = nullptr;
+    };
 };
 TopLevelExpression *create_toplevel_expression( TopLevelExpression *te,
                                                 AssignmentExpression *ase );
@@ -535,7 +590,7 @@ TopLevelExpression *create_toplevel_expression( TopLevelExpression *te,
 class ConstantExpression : public Expression {
   public:
     Expression *op1;
-    Types *evaluate_type();
+    
 };
 
 //-------------------------------------------------
@@ -632,7 +687,7 @@ class Constant : public Terminal {
     Constant( const char *name );
 
     Type getConstantType() {
-        Type retT( 0, 0 );
+        Type retT( 0, 0, false );
         int length = value.length();
         if ( name == "CONSTANT HEX" || name == "CONSTANT INT" ) {
             int islong = 0, isunsigned = 0;
@@ -724,10 +779,11 @@ class Declarator : public Non_Terminal {
     Pointer *pointer;
     DirectDeclarator *direct_declarator;
     Node *init_expr;
-
+    int get_pointer_level();
     Declarator();
     Declarator( Pointer *p, DirectDeclarator *dd );
 };
+
 Declarator *add_initializer_to_declarator( Declarator *declarator,
                                            Node *init_expr );
 
@@ -788,7 +844,9 @@ add_to_init_declarator_list( DeclaratorList *init_declarator_list,
 
 typedef int STORAGE_CLASS;
 class TypeSpecifier;
-void set_index( DeclarationSpecifiers *ds );
+int get_index(Type t);
+int set_index( DeclarationSpecifiers *ds );
+
 class DeclarationSpecifiers : public Non_Terminal {
   public:
     std::vector<STORAGE_CLASS> storage_class;
@@ -796,10 +854,8 @@ class DeclarationSpecifiers : public Non_Terminal {
     std::vector<TYPE_QUALIFIER> type_qualifier;
     int type_index;
     bool is_const;
-    int isValid(); // Type Checking
     DeclarationSpecifiers();
 };
-void is_Valid( DeclarationSpecifiers *ds );
 
 DeclarationSpecifiers *new_storage_class( STORAGE_CLASS sc );
 DeclarationSpecifiers *new_type_specifier( TypeSpecifier *ts );
@@ -848,9 +904,8 @@ class FunctionDefinition : public Non_Terminal {
                         Declarator *declarator_, Node *compound_statement_ );
 };
 
-FunctionDefinition *
-create_function_defintion( DeclarationSpecifiers *declaration_specifiers,
-                           Declarator *declarator, Node *compound_statement );
+FunctionDefinition* create_function_defintion( DeclarationSpecifiers *declaration_specifiers, Declarator *declarator, Node *compound_statement );
+int isValid(); // Type Checking         ;
 
 class AbstractDeclarator;
 
