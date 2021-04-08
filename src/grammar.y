@@ -3,6 +3,7 @@
 	#include <stdio.h>
 	#include <ast.h>
 	#include <symtab.h>
+	#include <expression.h>
 	void yyerror(const char *s);	
 	extern "C" int yylex();
 	extern Node * root; 

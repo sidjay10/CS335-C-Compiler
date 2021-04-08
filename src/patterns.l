@@ -10,7 +10,9 @@ IS			(u|U|l|L)*
 #include "scanner.h"
 #include "ast.h"
 #include "symtab.h"
+#include "expression.h"
 #include "y.tab.h"
+
 
 extern "C" int yylex();
 

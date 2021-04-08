@@ -45,10 +45,10 @@ extern int yydebug;
 # define YYTOKENTYPE
   enum yytokentype
   {
-    CONSTANT = 258,
-    STRING_LITERAL = 259,
-    SIZEOF = 260,
-    IDENTIFIER = 261,
+    SIZEOF = 258,
+    IDENTIFIER = 259,
+    CONSTANT = 260,
+    STRING_LITERAL = 261,
     PTR_OP = 262,
     INC_OP = 263,
     DEC_OP = 264,
@@ -106,10 +106,10 @@ extern int yydebug;
   };
 #endif
 /* Tokens.  */
-#define CONSTANT 258
-#define STRING_LITERAL 259
-#define SIZEOF 260
-#define IDENTIFIER 261
+#define SIZEOF 258
+#define IDENTIFIER 259
+#define CONSTANT 260
+#define STRING_LITERAL 261
 #define PTR_OP 262
 #define INC_OP 263
 #define DEC_OP 264
@@ -170,7 +170,7 @@ extern int yydebug;
 
 union YYSTYPE
 {
-#line 13 "src/grammar.y" /* yacc.c:1909  */
+#line 14 "src/grammar.y" /* yacc.c:1909  */
 
 	Node * node;
 	int value;
@@ -194,8 +194,28 @@ union YYSTYPE
 	ParameterDeclaration * parameter_declaration;
 	DirectAbstractDeclarator * direct_abstract_declarator;
 	AbstractDeclarator * abstract_declarator;
+	Constant *constant;
+	StringLiteral *string_literal;
+	TopLevelExpression* top_level_expression;
+	AssignmentExpression* assignment_expression;
+	ArgumentExprList* argument_expression_list;
+	PostfixExpression* postfix_expression;
+	UnaryExpression* unary_expression;
+	CastExpression* cast_expression;
+	MultiplicativeExpression* multiplicative_expression;
+	AdditiveExpression* additive_expression;
+	ShiftExpression* shift_expression;
+	RelationalExpression* relational_expression;
+	EqualityExpression* equality_expression;
+	AndExpression* and_expression;
+	ExclusiveorExpression* exclusive_or_expression;
+	InclusiveorExpression* inclusive_or_expression;
+	Logical_andExpression* logical_and_expression;
+	Logical_orExpression* logical_or_expression;
+	ConditionalExpression* conditional_expression;
+	Expression* expression;
 
-#line 199 "y.tab.h" /* yacc.c:1909  */
+#line 219 "y.tab.h" /* yacc.c:1909  */
 };
 
 typedef union YYSTYPE YYSTYPE;

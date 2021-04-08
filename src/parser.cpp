@@ -2,9 +2,9 @@
 #include <string>
 #include <sstream>
 #include <iostream>
-
 #include <ast.h>
 #include <symtab.h>
+#include <expression.h>
 #include <scanner.h>
 #include <y.tab.h>
 
