@@ -33,6 +33,26 @@
 	ParameterDeclaration * parameter_declaration;
 	DirectAbstractDeclarator * direct_abstract_declarator;
 	AbstractDeclarator * abstract_declarator;
+	Constant *constant;
+	StringLiteral *string_literal;
+	TopLevelExpression* top_level_expression;
+	AssignmentExpression* assignment_expression;
+	ArgumentExprList* argument_expression_list;
+	PostfixExpression* postfix_expression;
+	UnaryExpression* unary_expression;
+	CastExpression* cast_expression;
+	MultiplicativeExpression* multiplicative_expression;
+	AdditiveExpression* additive_expression;
+	ShiftExpression* shift_expression;
+	RelationalExpression* relational_expression;
+	EqualityExpression* equality_expression;
+	AndExpression* and_expression;
+	ExclusiveorExpression* exclusive_or_expression;
+	InclusiveorExpression* inclusive_or_expression;
+	Logical_andExpression* logical_and_expression;
+	Logical_orExpression* logical_or_expression;
+	ConditionalExpression* conditional_expression;
+	Expression* expression;
 }
 
 
@@ -40,8 +60,29 @@
 %token <node> '(' ')' '[' ']' '.' ',' '+' '-' '!' '&' '*' '~' '/' '%'
 %token <node> '<' '>' '^' '|' ':' '?' '=' ';' '{' '}'
 
-%token <node> CONSTANT STRING_LITERAL SIZEOF
+%token <node> SIZEOF
 %token <identifier> IDENTIFIER
+%token <constant> CONSTANT
+%token <string_literal> STRING_LITERAL
+%type <expression> expression
+%type <expression> assignment_expression
+%type <expression> logical_and_expression
+%type <expression> logical_or_expression 
+%type <expression> unary_expression
+%type <expression> cast_expression
+%type <expression> relational_expression
+%type <expression> shift_expression 
+%type <expression> inclusive_or_expression 
+%type <expression> exclusive_or_expression
+%type <expression> additive_expression
+%type <expression> argument_expression_list
+%type <expression> multiplicative_expression
+%type <expression> and_expression
+%type <expression> equality_expression  
+%type <expression> conditional_expression
+%type <expression> postfix_expression
+%type <expression> primary_expression
+
 %token <node> PTR_OP INC_OP DEC_OP LEFT_OP RIGHT_OP LE_OP GE_OP EQ_OP NE_OP
 %token <node> AND_OP OR_OP MUL_ASSIGN DIV_ASSIGN MOD_ASSIGN ADD_ASSIGN
 %token <node> SUB_ASSIGN LEFT_ASSIGN RIGHT_ASSIGN AND_ASSIGN
@@ -54,11 +95,7 @@
 
 %token <node> CASE DEFAULT IF ELSE SWITCH WHILE DO FOR GOTO CONTINUE BREAK RETURN
 
-
-%type <node> primary_expression postfix_expression expression argument_expression_list unary_expression cast_expression
-%type <node> conditional_expression multiplicative_expression additive_expression shift_expression relational_expression
-%type <node> equality_expression and_expression exclusive_or_expression inclusive_or_expression logical_or_expression logical_and_expression
-%type <node> assignment_expression constant_expression
+%type <node> constant_expression
 %type <node> unary_operator assignment_operator
 %type <declaration> declaration 
 %type <init_declarator_list> init_declarator_list  
@@ -118,10 +155,10 @@ primary_expression
 
 postfix_expression
 	: primary_expression	{ $$ = $1; } 
-	| postfix_expression '[' expression ']'	{ $$ = create_postfix_expr_arr( ARRAY, $1, $3 ); } 
+	| postfix_expression '[' expression ']'	{ $$ = create_postfix_expr_arr( $1, $3 ); } 
 /*	| postfix_expression '(' ')'	{ $$ = create_non_term("FUNCTION CALL", $1 ); } */
-	| IDENTIFIER '(' ')'	{ $$ = create_postfix_expr_voidfun( FUNCTION, $1 ); } 
-	| IDENTIFIER '(' argument_expression_list ')'	{ $$ = create_postfix_expr_fun($1, $2); } 
+	| IDENTIFIER '(' ')'	{ $$ = create_postfix_expr_voidfun( $1 ); } 
+	| IDENTIFIER '(' argument_expression_list ')'	{ $$ = create_postfix_expr_fun($1, $3); } 
 /*	| postfix_expression '(' argument_expression_list ')'	{ create_non_term("FUNCTION CALL ARGS", $1, $3 ); } */
 	| postfix_expression '.' IDENTIFIER	{ $$ = create_postfix_expr_struct(".", $1, $3); } 
 	| postfix_expression PTR_OP IDENTIFIER	{ $$ = create_postfix_expr_struct("->", $1, $3); } 
@@ -140,7 +177,7 @@ unary_expression
 	| DEC_OP unary_expression		{ $$ = create_unary_expression_ue("--", $2); } 
 	| unary_operator cast_expression	{ $$=create_unary_expression_cast($1,$2); } 
 	| SIZEOF unary_expression		{ $$ = create_unary_expression_ue("sizeof", $2); } 
-	| SIZEOF '(' type_name ')'		{ $$ = create_non_term("SIZEOF type_name", $3); } 
+	| SIZEOF '(' type_name ')'		{ $$ = create_unary_expression_typename("SIZEOF type_name", $3); } 
 	;
 
 unary_operator

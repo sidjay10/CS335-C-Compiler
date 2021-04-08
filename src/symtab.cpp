@@ -62,7 +62,7 @@ StructDefinition *create_struct_definition( int un_or_st, StructDeclarationList 
 // Object creation Wrappers
 
 // 1.Primary Expression
-PrimaryExpression *create_primary_identifier( Identifier *a ) {
+Expression *create_primary_identifier( Identifier *a ) {
     PrimaryExpression *P = new PrimaryExpression();
     P->isTerminal = 1;
     P->Ival = a;
@@ -82,7 +82,7 @@ PrimaryExpression *create_primary_identifier( Identifier *a ) {
     return P;
 }
 
-PrimaryExpression *create_primary_constant( Constant *a ) {
+Expression *create_primary_constant( Constant *a ) {
     PrimaryExpression *P = new PrimaryExpression();
     P->isTerminal = 2;
     P->Cval = a;
@@ -93,7 +93,7 @@ PrimaryExpression *create_primary_constant( Constant *a ) {
 
     return P;
 }
-PrimaryExpression *create_primary_stringliteral( StringLiteral *a ) {
+Expression *create_primary_stringliteral( StringLiteral *a ) {
     PrimaryExpression *P = new PrimaryExpression();
     P->isTerminal = 3;
     P->Sval = a;
@@ -104,7 +104,7 @@ PrimaryExpression *create_primary_stringliteral( StringLiteral *a ) {
     P->add_child(a);
     return P;
 }
-PrimaryExpression *create_primary_expression( TopLevelExpression *a ) {
+Expression *create_primary_expression( Expression *a ) {
     PrimaryExpression *P = new PrimaryExpression();
     P->isTerminal = 0;
     P->op1 = a;
@@ -117,8 +117,7 @@ PrimaryExpression *create_primary_expression( TopLevelExpression *a ) {
 }
 
 // 2. ArguementExpressionList
-ArgumentExprList *
-create_argument_expr_assignement( AssignmentExpression *ase ) {
+Expression *create_argument_expr_assignement( Expression *ase ) {
     ArgumentExprList *P = new ArgumentExprList();
     P->op2 = ase;
     // ArguementExprList does not have any type as it is a composite entity
@@ -127,8 +126,8 @@ create_argument_expr_assignement( AssignmentExpression *ase ) {
     
     return P;
 }
-ArgumentExprList *create_argument_expr_list( ArgumentExprList *ae_list,
-                                             AssignmentExpression *ase ) {
+Expression *create_argument_expr_list( Expression *ae_list,
+                                             Expression *ase ) {
     ArgumentExprList *P = new ArgumentExprList();
     P->op1 = ae_list;
     P->op2 = ase;
@@ -139,10 +138,14 @@ ArgumentExprList *create_argument_expr_list( ArgumentExprList *ae_list,
 }
 
 // PostFix Expression
-PostfixExpression *create_postfix_expr_arr( PostfixExpression *pe,
+Expression *create_postfix_expr_arr( Expression *pe,
                                             Expression *e ) {
     PostfixExpression *P = new PostfixExpression();
-    P->pe = pe;
+    if(dynamic_cast<PostfixExpression *>(pe)){
+        P->pe = dynamic_cast<PostfixExpression *>(pe);
+    }
+    else
+        P->pe = nullptr;
     P->exp = e;
     Types peT = GlobalTypesMap[pe->type.typeIndex];
 
@@ -162,7 +165,7 @@ PostfixExpression *create_postfix_expr_arr( PostfixExpression *pe,
     return P;
 }
 
-PostfixExpression *create_postfix_expr_voidfun( Identifier *fi ) {
+Expression *create_postfix_expr_voidfun( Identifier *fi ) {
     PostfixExpression *P = new PostfixExpression();
     // Lookup Function type from symbol table - should be void
        
@@ -172,8 +175,8 @@ PostfixExpression *create_postfix_expr_voidfun( Identifier *fi ) {
     return P;
 }
 
-PostfixExpression *create_postfix_expr_fun( Identifier *fi,
-                                            ArgumentExprList *ae ) {
+Expression *create_postfix_expr_fun( Identifier *fi,
+                                            Expression *ae ) {
     PostfixExpression *P = new PostfixExpression();
     // Here, we need to check two things:
     // 1. whether ArguementExprList matches with Function signature from lookup
@@ -185,8 +188,8 @@ PostfixExpression *create_postfix_expr_fun( Identifier *fi,
     return P;
 }
 
-PostfixExpression *create_postfix_expr_struct( std::string access_op,
-                                               PostfixExpression *pe,
+Expression *create_postfix_expr_struct( std::string access_op,
+                                               Expression *pe,
                                                Identifier *i ) {
     PostfixExpression *P = new PostfixExpression();
     Types peT = GlobalTypesMap[pe->type.typeIndex];
@@ -196,7 +199,7 @@ PostfixExpression *create_postfix_expr_struct( std::string access_op,
             Type *iType = peT.struct_definition->get_member( i );
             if ( iType == nullptr ) {
                 // Error
-                std::cerr << "";
+                std::cerr << "Error";
             } else {
                 P->type = *iType;
             }
@@ -209,7 +212,7 @@ PostfixExpression *create_postfix_expr_struct( std::string access_op,
             Type *iType = peT.struct_definition->get_member( i );
             if ( iType == nullptr ) {
                 // Error
-                std::cerr << "";
+                std::cerr << "Error";
             } else {
                 P->type = *iType;
             }
@@ -223,10 +226,15 @@ PostfixExpression *create_postfix_expr_struct( std::string access_op,
     return P;
 }
 
-PostfixExpression *create_postfix_expr_ido( std::string op,
-                                            PostfixExpression *pe ) {
+Expression *create_postfix_expr_ido( std::string op,
+                                            Expression *pe ) {
     PostfixExpression *P = new PostfixExpression();
-    P->pe = pe;
+    if(dynamic_cast<PostfixExpression *>(pe)){
+        P->pe = dynamic_cast<PostfixExpression *>(pe);
+    }
+    else{
+        P->pe = nullptr;
+    }
     P->op = op;
     if ( op == "++" || op == "--" ) {
         if ( pe->type.isInt() || pe->type.isFloat() || pe->type.isPointer() ) {
@@ -253,8 +261,8 @@ PostfixExpression *create_postfix_expr_ido( std::string op,
 }
 
 // Unary Expression
-UnaryExpression *create_unary_expression_ue( std::string u_op,
-                                             UnaryExpression *ue ) {
+Expression *create_unary_expression_ue( std::string u_op,
+                                             Expression *ue ) {
     UnaryExpression *U = new UnaryExpression();
     U->op1 = ue;
     U->op = u_op;
@@ -288,8 +296,8 @@ UnaryExpression *create_unary_expression_ue( std::string u_op,
 
 // & (int) (x)
 // &(x) -> pointer value of x
-UnaryExpression *create_unary_expression_cast( Node *n_op,
-                                               CastExpression *ce ) {
+Expression *create_unary_expression_cast( Node *n_op,
+                                               Expression *ce ) {
     UnaryExpression *U = new UnaryExpression();
     Non_Terminal * nt_op = dynamic_cast<Non_Terminal *>(n_op);
     std::string u_op = nt_op->name;
@@ -339,9 +347,20 @@ UnaryExpression *create_unary_expression_cast( Node *n_op,
     return U;
 }
 
+Expression *create_unary_expression_typename(std::string u_op, Node *t_name){
+    UnaryExpression *U = new UnaryExpression();
+    ///XXX:TODO Handle
+    
+    Node * n_op = create_non_term((u_op).c_str());
+    U->name = u_op;
+    U->add_children(n_op, t_name);
+
+    return U;
+}
+
 // Cast Expression
-CastExpression *create_cast_expression_typename( Node *n,
-                                                  CastExpression *ce ) {
+Expression *create_cast_expression_typename( Node *n,
+                                                  Expression *ce ) {
     // XXX: TODO Implement
     CastExpression *P = new CastExpression();
     P->op1 = ce;
@@ -353,9 +372,9 @@ CastExpression *create_cast_expression_typename( Node *n,
 }
 
 // Multiplicative Expression
-MultiplicativeExpression *
-create_multiplicative_expression( std::string op, MultiplicativeExpression *me,
-                                  CastExpression *ce ) {
+Expression *
+create_multiplicative_expression( std::string op, Expression *me,
+                                  Expression *ce ) {
     MultiplicativeExpression *P = new MultiplicativeExpression();
     P->op1 = me;
     P->op2 = ce;
@@ -403,9 +422,9 @@ create_multiplicative_expression( std::string op, MultiplicativeExpression *me,
 
 // TODO : Add Pointer Support
 // Additive Expression
-AdditiveExpression *create_additive_expression( std::string op,
-                                                AdditiveExpression *ade,
-                                                MultiplicativeExpression *me ) {
+Expression *create_additive_expression( std::string op,
+                                                Expression *ade,
+                                                Expression *me ) {
     AdditiveExpression *P = new AdditiveExpression();
     P->op1 = ade;
     P->op2 = me;
@@ -443,8 +462,8 @@ AdditiveExpression *create_additive_expression( std::string op,
 }
 // Shift Expression
 
-ShiftExpression *create_shift_expression( std::string op, ShiftExpression *se,
-                                          AdditiveExpression *ade ) {
+Expression *create_shift_expression( std::string op, Expression *se,
+                                          Expression *ade ) {
     ShiftExpression *P = new ShiftExpression();
     P->op1 = se;
     P->op2 = ade;
@@ -477,9 +496,9 @@ ShiftExpression *create_shift_expression( std::string op, ShiftExpression *se,
 
 // Relation Expression
 
-RelationalExpression *create_relational_expression( std::string op,
-                                                    RelationalExpression *re,
-                                                    ShiftExpression *se ) {
+Expression *create_relational_expression( std::string op,
+                                                    Expression *re,
+                                                    Expression *se ) {
     RelationalExpression *P = new RelationalExpression();
     P->op1 = re;
     P->op2 = se;
@@ -508,9 +527,9 @@ RelationalExpression *create_relational_expression( std::string op,
 }
 
 // Equality Expression
-EqualityExpression *create_equality_expression( std::string op,
-                                                EqualityExpression *eq,
-                                                RelationalExpression *re ) {
+Expression *create_equality_expression( std::string op,
+                                                Expression *eq,
+                                                Expression *re ) {
     EqualityExpression *P = new EqualityExpression();
     P->op1 = eq;
     P->op2 = re;
@@ -541,8 +560,8 @@ EqualityExpression *create_equality_expression( std::string op,
 }
 
 // And Expression
-AndExpression *create_and_expression( std::string op, AndExpression *an,
-                                      EqualityExpression *eq ) {
+Expression *create_and_expression( std::string op, Expression *an,
+                                      Expression *eq ) {
     AndExpression *P = new AndExpression();
     P->op1 = an;
     P->op2 = eq;
@@ -574,9 +593,9 @@ AndExpression *create_and_expression( std::string op, AndExpression *an,
     return P;
 }
 
-ExclusiveorExpression *
-create_exclusive_or_expression( std::string op, ExclusiveorExpression *ex,
-                                AndExpression *an ) {
+Expression *
+create_exclusive_or_expression( std::string op, Expression *ex,
+                                Expression *an ) {
     ExclusiveorExpression *P = new ExclusiveorExpression();
     P->op1 = ex;
     P->op2 = an;
@@ -609,7 +628,7 @@ create_exclusive_or_expression( std::string op, ExclusiveorExpression *ex,
     return P;
 }
 
-InclusiveorExpression* create_inclusive_or_expression( std::string op, InclusiveorExpression *ie, ExclusiveorExpression *ex ) {
+Expression* create_inclusive_or_expression( std::string op, Expression *ie, Expression *ex ) {
     InclusiveorExpression *P = new InclusiveorExpression();
     P->op1 = ie;
     P->op2 = ex;
@@ -643,9 +662,9 @@ InclusiveorExpression* create_inclusive_or_expression( std::string op, Inclusive
 }
 
 // Logical And
-Logical_andExpression *
-creat_logical_and_expression( std::string op, Logical_andExpression *la,
-                              InclusiveorExpression *ie ) {
+Expression *
+create_logical_and_expression( std::string op, Expression *la,
+                              Expression *ie ) {
     Logical_andExpression *P = new Logical_andExpression();
     P->op1 = la;
     P->op2 = ie;
@@ -676,9 +695,9 @@ creat_logical_and_expression( std::string op, Logical_andExpression *la,
 }
 
 // Logical or
-Logical_orExpression *
-create_logical_or_expression( std::string op, Logical_orExpression *lo,
-                              Logical_andExpression *la ) {
+Expression *
+create_logical_or_expression( std::string op, Expression *lo,
+                              Expression *la ) {
     Logical_orExpression *P = new Logical_orExpression();
     P->op1 = lo;
     P->op2 = la;
@@ -708,10 +727,10 @@ create_logical_or_expression( std::string op, Logical_orExpression *lo,
 
 // Conditional
 
-ConditionalExpression *
-create_conditional_expression( std::string op, Logical_orExpression *lo,
-                               TopLevelExpression *te,
-                               ConditionalExpression *coe ) {
+Expression *
+create_conditional_expression( std::string op, Expression *lo,
+                               Expression *te,
+                               Expression *coe ) {
     ConditionalExpression *P = new ConditionalExpression();
     P->op1 = lo;
     P->op2 = te;
@@ -744,7 +763,7 @@ create_conditional_expression( std::string op, Logical_orExpression *lo,
 
 // AssignmentExpression
 
-AssignmentExpression *create_assignment_expression( UnaryExpression *ue, Node *n_op, AssignmentExpression *ase ) {
+Expression *create_assignment_expression( Expression *ue, Node *n_op, Expression *ase ) {
     AssignmentExpression *P = new AssignmentExpression();
     Non_Terminal * nt_op = dynamic_cast<Non_Terminal *>(n_op);
     std::string op = nt_op->name;
@@ -841,7 +860,7 @@ AssignmentExpression *create_assignment_expression( UnaryExpression *ue, Node *n
 
 // TopLevelExpression
 
-TopLevelExpression *create_toplevel_expression( TopLevelExpression *te, AssignmentExpression *ase ) {
+Expression *create_toplevel_expression( Expression *te, Expression *ase ) {
     TopLevelExpression *P = new TopLevelExpression();
     P->op1 = te;
     P->op2 = ase;
@@ -1461,7 +1480,43 @@ void Declaration::add_to_symbol_table( LocalSymbolTable &sym_tab ) {
             ts->name = ss.str();
             return ts;
         }
+       void verify_struct_declarator( StructDeclarationList *st) {
+            int err;
+            if (st!=NULL){
+                //std::cout<<st->struct_declaration_list.size();
+                for(int i=0; i < st->struct_declaration_list.size(); i++){
+                    std::vector<TypeSpecifier *> ts=st->struct_declaration_list.at(i)->sq_list->type_specifiers;
+                    std::vector<TYPE_QUALIFIER> tq=st->struct_declaration_list.at(i)->sq_list->type_qualifiers;
+                    err=0;
+                    std::vector<TYPE_SPECIFIER> ty;
+                    for(int i=0; i < ts.size(); i++)
+                    ty.push_back(ts.at(i)->type);
+                    std::sort(ty.begin(),ty.end());
+                    
+                    if(ty.size()==3){
+                        if ((ty.at(0)==UNSIGNED || ty.at(0)==SIGNED) && (ty.at(1)==SHORT || ty.at(1)==LONG) && ty.at(2)==INT) {}
+                        else err+=2;
+                        }
+                    else if (ty.size()==2){
+                        if ((ty.at(0)==UNSIGNED || ty.at(0)==SIGNED) && (ty.at(1)==SHORT || ty.at(1)==LONG || ty.at(1)==INT || ty.at(1)==CHAR)) {}
+                        else if ((ty.at(0)==SHORT || ty.at(0)==LONG) && ty.at(1)==INT) {}
+                        else if (ty.at(0)==LONG && ty.at(1)==DOUBLE) {}
+                        else err+=2;
+                        }
+                    else if (ty.size()==1) 
+                        if (ty.at(0)==SHORT || ty.at(0)==LONG || ty.at(0)==INT || ty.at(0)==CHAR || ty.at(0)==FLOAT||ty.at(0)==DOUBLE || ty.at(0)==STRUCT ||ty.at(0)==UNION || ty.at(0)==ENUM){}
+                    else err+=2;
 
+                    for(int i=0; i < tq.size(); i++){
+                        if(tq.at(i)==CONST||tq.at(i)==VOLATILE) {}
+                        else {err+=4;break;}
+                        }
+            if (err&2) std::cout << "Error in type specifier struct";
+            if (err&4) std::cout << "Error in type qualifier struct";
+            }
+        //std::cout<<"done2 ";
+            }
+        }
         TypeSpecifier *create_type_specifier(
             TYPE_SPECIFIER type, Identifier * id,
             StructDeclarationList * struct_declaration_list ) {
