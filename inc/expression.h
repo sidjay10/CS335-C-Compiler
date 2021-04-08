@@ -16,9 +16,6 @@ class Constant;
 class StringLiteral;
 class TopLevelExpression;
 
-
-
-
 class Expression : public Non_Terminal {
   public:
     Type type;
@@ -26,7 +23,7 @@ class Expression : public Non_Terminal {
     int num_opearands;
     // Expression( Types * type, int num_op );
 
-    Expression() : Non_Terminal("") {};
+    Expression() : Non_Terminal( "" ){};
 };
 
 // Expression::Expression(){}
@@ -76,8 +73,7 @@ class ArgumentExprList : public Expression {
 
 // Grammar warppers for ArguementExpressionList
 Expression *create_argument_expr_assignement( Expression *ase );
-Expression *create_argument_expr_list( Expression *ae_list,
-                                            Expression *ase );
+Expression *create_argument_expr_list( Expression *ae_list, Expression *ase );
 
 //-------------------------------------------------
 class UnaryExpression : public Expression {
@@ -92,11 +88,11 @@ class UnaryExpression : public Expression {
 };
 
 // Grammar warppers for UnaryExpression
-Expression *create_unary_expression_ue( std::string u_op,
-                  Expression *ue ); // INC_OP, DEC_OP, SIZEOF
-Expression *create_unary_expression_cast( Node *n_op,
-                                               Expression *ce );
-Expression *create_unary_expression_typename(std::string u_op, Node *t_name);
+Expression *
+create_unary_expression_ue( std::string u_op,
+                            Expression *ue ); // INC_OP, DEC_OP, SIZEOF
+Expression *create_unary_expression_cast( Node *n_op, Expression *ce );
+Expression *create_unary_expression_typename( std::string u_op, Node *t_name );
 
 //-------------------------------------------------
 class CastExpression : public Expression {
@@ -107,14 +103,15 @@ class CastExpression : public Expression {
       -1 if there is no casting
     */
     int typeCast;
-    
-    CastExpression(){
-      op1 = nullptr;
-      typeCast = -1;
+
+    CastExpression() {
+        op1 = nullptr;
+        typeCast = -1;
     };
 };
 // NEED TO DO LATER
-Expression *create_cast_expression_typename(Node *n,
+Expression *create_cast_expression_typename(
+    Node *n,
     Expression *ce ); // type_name wala add krna hai
 
 //-------------------------------------------------
@@ -123,15 +120,15 @@ class MultiplicativeExpression : public Expression {
     Expression *op1;
     Expression *op2;
     std::string op;
-    
-    MultiplicativeExpression(){
-      op1 = nullptr;
-      op2 = nullptr;
-      op = "";
+
+    MultiplicativeExpression() {
+        op1 = nullptr;
+        op2 = nullptr;
+        op = "";
     };
 };
 Expression *create_multiplicative_expression( std::string op, Expression *me,
-                                  Expression *ce );
+                                              Expression *ce );
 
 //-------------------------------------------------
 class AdditiveExpression : public Expression {
@@ -139,16 +136,15 @@ class AdditiveExpression : public Expression {
     Expression *op1;
     Expression *op2;
     std::string op;
-    
-    AdditiveExpression(){
-      op1 = nullptr;
-      op2 = nullptr;
-      op = "";
+
+    AdditiveExpression() {
+        op1 = nullptr;
+        op2 = nullptr;
+        op = "";
     };
 };
-Expression *create_additive_expression( std::string op,
-                                                Expression *ade,
-                                                Expression *me );
+Expression *create_additive_expression( std::string op, Expression *ade,
+                                        Expression *me );
 
 //-------------------------------------------------
 class ShiftExpression : public Expression {
@@ -156,16 +152,16 @@ class ShiftExpression : public Expression {
     Expression *op1;
     Expression *op2;
     std::string op;
-    
-    ShiftExpression(){
-      op1 = nullptr;
-      op2 = nullptr;
-      op = "";
+
+    ShiftExpression() {
+        op1 = nullptr;
+        op2 = nullptr;
+        op = "";
     };
 };
 
 Expression *create_shift_expression( std::string op, Expression *se,
-                                          Expression *ade );
+                                     Expression *ade );
 
 //-------------------------------------------------
 class RelationalExpression : public Expression {
@@ -173,16 +169,15 @@ class RelationalExpression : public Expression {
     Expression *op1;
     Expression *op2;
     std::string op;
-    
-    RelationalExpression(){
-      op1 = nullptr;
-      op2 = nullptr;
-      op = "";
+
+    RelationalExpression() {
+        op1 = nullptr;
+        op2 = nullptr;
+        op = "";
     };
 };
-Expression *create_relational_expression( std::string op,
-                                                    Expression *re,
-                                                    Expression *se );
+Expression *create_relational_expression( std::string op, Expression *re,
+                                          Expression *se );
 
 //-------------------------------------------------
 class EqualityExpression : public Expression {
@@ -190,16 +185,15 @@ class EqualityExpression : public Expression {
     Expression *op1;
     Expression *op2;
     std::string op;
-    
-    EqualityExpression(){
-      op1 = nullptr;
-      op2 = nullptr;
-      op = "";
+
+    EqualityExpression() {
+        op1 = nullptr;
+        op2 = nullptr;
+        op = "";
     };
 };
-Expression *create_equality_expression( std::string op,
-                                                Expression *eq,
-                                                Expression *re );
+Expression *create_equality_expression( std::string op, Expression *eq,
+                                        Expression *re );
 
 //-------------------------------------------------
 class AndExpression : public Expression {
@@ -207,15 +201,15 @@ class AndExpression : public Expression {
     Expression *op1;
     Expression *op2;
     std::string op;
-    
-    AndExpression(){
-      op1 = nullptr;
-      op2 = nullptr;
-      op = "";
+
+    AndExpression() {
+        op1 = nullptr;
+        op2 = nullptr;
+        op = "";
     };
 };
 Expression *create_and_expression( std::string op, Expression *an,
-                                      Expression *eq );
+                                   Expression *eq );
 
 //-------------------------------------------------
 class ExclusiveorExpression : public Expression {
@@ -223,15 +217,15 @@ class ExclusiveorExpression : public Expression {
     Expression *op1;
     Expression *op2;
     std::string op;
-    
-    ExclusiveorExpression(){
-      op1 = nullptr;
-      op2 = nullptr;
-      op = "";
+
+    ExclusiveorExpression() {
+        op1 = nullptr;
+        op2 = nullptr;
+        op = "";
     };
 };
-Expression * create_exclusive_or_expression( std::string op, Expression *ex,
-                                Expression *an );
+Expression *create_exclusive_or_expression( std::string op, Expression *ex,
+                                            Expression *an );
 
 //-------------------------------------------------
 class InclusiveorExpression : public Expression {
@@ -240,14 +234,14 @@ class InclusiveorExpression : public Expression {
     Expression *op2;
     std::string op;
 
-    InclusiveorExpression(){
-      op1 = nullptr;
-      op2 = nullptr;
-      op = "";
+    InclusiveorExpression() {
+        op1 = nullptr;
+        op2 = nullptr;
+        op = "";
     }
 };
 Expression *create_inclusive_or_expression( std::string op, Expression *ie,
-                                Expression *ex );
+                                            Expression *ex );
 
 //-------------------------------------------------
 class Logical_andExpression : public Expression {
@@ -255,15 +249,15 @@ class Logical_andExpression : public Expression {
     Expression *op1;
     Expression *op2;
     std::string op;
-    
-    Logical_andExpression(){
-      op1= nullptr;
-      op2 = nullptr;
-      op = "";
+
+    Logical_andExpression() {
+        op1 = nullptr;
+        op2 = nullptr;
+        op = "";
     };
 };
 Expression *create_logical_and_expression( std::string op, Expression *la,
-                              Expression *ie );
+                                           Expression *ie );
 
 //-------------------------------------------------
 class Logical_orExpression : public Expression {
@@ -271,16 +265,15 @@ class Logical_orExpression : public Expression {
     Expression *op1;
     Expression *op2;
     std::string op;
-    
-    Logical_orExpression(){
-      op1 = nullptr;
-      op2 = nullptr;
-      op = "";
+
+    Logical_orExpression() {
+        op1 = nullptr;
+        op2 = nullptr;
+        op = "";
     };
 };
-Expression *create_logical_or_expression( std::string op,
-                                                   Expression *lo,
-                                                   Expression *la );
+Expression *create_logical_or_expression( std::string op, Expression *lo,
+                                          Expression *la );
 
 //-------------------------------------------------
 class ConditionalExpression : public Expression {
@@ -289,17 +282,16 @@ class ConditionalExpression : public Expression {
     Expression *op2;
     Expression *op3;
     std::string op;
-    
-    ConditionalExpression(){
-      op1 = nullptr;
-      op2 = nullptr;
-      op3 = nullptr;
-      op = "";
+
+    ConditionalExpression() {
+        op1 = nullptr;
+        op2 = nullptr;
+        op3 = nullptr;
+        op = "";
     };
 };
 Expression *create_conditional_expression( std::string op, Expression *lo,
-                               Expression *te,
-                               Expression *coe );
+                                           Expression *te, Expression *coe );
 
 //-------------------------------------------------
 class AssignmentExpression : public Expression {
@@ -308,36 +300,35 @@ class AssignmentExpression : public Expression {
     Expression *op2;
     std::string op;
 
-    AssignmentExpression(){
-      op1 = nullptr;
-      op2 = nullptr;
-      op = "";
+    AssignmentExpression() {
+        op1 = nullptr;
+        op2 = nullptr;
+        op = "";
     }
 };
 
 Expression *create_assignment_expression(
-    Expression *ue, Node* n_op, 
-    Expression *ase ); // can change string to node* later for assignment operator
+    Expression *ue, Node *n_op,
+    Expression
+        *ase ); // can change string to node* later for assignment operator
 
 //-------------------------------------------------
 class TopLevelExpression : public Expression {
   public:
     Expression *op1;
     Expression *op2;
-    
-    TopLevelExpression(){
-      op1 = nullptr;
-      op2 = nullptr;
+
+    TopLevelExpression() {
+        op1 = nullptr;
+        op2 = nullptr;
     };
 };
-Expression *create_toplevel_expression( Expression *te,
-                                                Expression *ase );
+Expression *create_toplevel_expression( Expression *te, Expression *ase );
 
 //-------------------------------------------------
 class ConstantExpression : public Expression {
   public:
     Expression *op1;
-    
 };
 
 //-------------------------------------------------
@@ -420,13 +411,10 @@ class StringLiteral : public Terminal {
     StringLiteral( const char *name );
 };
 
-Expression *create_postfix_expr_arr( Expression *pe,
-                                            Expression *exp );
-Expression *create_postfix_expr_voidfun(Identifier *fi );
-Expression *create_postfix_expr_fun( Identifier *fi,
-                                            Expression *ae );
-Expression *create_postfix_expr_struct(std::string access_op, Expression *pe,
-                                               Identifier *id );
-Expression *create_postfix_expr_ido( std::string op,
-                                            Expression *pe );
+Expression *create_postfix_expr_arr( Expression *pe, Expression *exp );
+Expression *create_postfix_expr_voidfun( Identifier *fi );
+Expression *create_postfix_expr_fun( Identifier *fi, Expression *ae );
+Expression *create_postfix_expr_struct( std::string access_op, Expression *pe,
+                                        Identifier *id );
+Expression *create_postfix_expr_ido( std::string op, Expression *pe );
 #endif

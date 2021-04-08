@@ -16,6 +16,7 @@ Node * root = NULL;
 TOKEN_DATA token_data;
 
 static std::ofstream dot_file;
+std::ofstream sym_file;
 
 int main(int argc, char *argv[]) {
   FILE *fh;
@@ -35,7 +36,10 @@ int main(int argc, char *argv[]) {
 
   	// std::ofstream outfile(argv[3]);
   	dot_file.open(argv[3]); // = outfile;
+	sym_file.open("symtab.csv");
 
+
+	sym_file << "Scope,Function Name, Symbol Name, Symbol Type, Symbol Level\n";
 	std::stringstream ss;
 	ss << "digraph G {\n";
 	ss << "\tordering=out\n";

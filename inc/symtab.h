@@ -5,6 +5,7 @@
 #include <deque>
 #include <map>
 #include <string>
+#include <sstream>
 
 enum PrimitiveTypes {
     U_CHAR_T = 0,
@@ -20,7 +21,6 @@ enum PrimitiveTypes {
     LONG_DOUBLE_T = 10,
     VOID_T = 11
 };
-
 
 extern int line_num;
 // All class declarations
@@ -65,6 +65,8 @@ class Types {
     bool is_struct;
     bool is_union;
     StructDefinition *struct_definition;
+
+    friend bool operator==( Type &obj1, Type &obj2 );
 };
 
 class Type {
@@ -85,6 +87,7 @@ class Type {
     bool isPointer();
     void make_signed();
     void make_unsigned();
+    int get_size();
 };
 
 extern std::vector<Types *> type_specifiers;
@@ -93,7 +96,8 @@ int add_to_defined_types( Types *typ );
 
 class ParameterTypeList;
 
-
+extern std::ofstream sym_file;
+void write_to_symtab_file( std::string s );
 
 class SymTabEntry {
   public:
@@ -102,7 +106,7 @@ class SymTabEntry {
     Type type;
 
     // TODO: This needs to be expanded
-    SymTabEntry( std::string name_parameter);
+    SymTabEntry( std::string name_parameter );
 };
 
 class FuncEnt : public SymTabEntry {
@@ -119,6 +123,7 @@ class SymbolTable {
   public:
     SymbolTable();
 
+    std::stringstream ss;
     virtual SymTabEntry *get_symbol_from_table( std::string name );
     void delete_from_table( SymTabEntry *symbol );
     void print_table();
@@ -130,6 +135,7 @@ class GlobalSymbolTable : public SymbolTable {
     std::map<std::string, SymTabEntry *> sym_table;
     void add_symbol( DeclarationSpecifiers *declaration_specifiers,
                      Declarator *declarator );
+    void add_to_table( SymTabEntry *symbol, bool redef );
     SymTabEntry *get_symbol_from_table( std::string name );
 };
 
@@ -258,7 +264,7 @@ add_to_init_declarator_list( DeclaratorList *init_declarator_list,
 
 typedef int STORAGE_CLASS;
 class TypeSpecifier;
-int get_index(Type t);
+int get_index( Type t );
 int set_index( DeclarationSpecifiers *ds );
 
 class DeclarationSpecifiers : public Non_Terminal {
@@ -321,11 +327,12 @@ class FunctionDefinition : public Non_Terminal {
                         Declarator *declarator_, Node *compound_statement_ );
 };
 
-FunctionDefinition* create_function_defintion( DeclarationSpecifiers *declaration_specifiers, Declarator *declarator, Node *compound_statement );
+FunctionDefinition *
+create_function_defintion( DeclarationSpecifiers *declaration_specifiers,
+                           Declarator *declarator, Node *compound_statement );
 
-FunctionDefinition *    
-add_stmt_to_function_definition( FunctionDefinition * fd, Node * compound_stmt );
-
+FunctionDefinition *add_stmt_to_function_definition( FunctionDefinition *fd,
+                                                     Node *compound_stmt );
 
 int isValid(); // Type Checking         ;
 

@@ -13,7 +13,6 @@
 #include <utility>
 #include <iterator>
 
-
 //##############################################################################
 //############################# EXPRESSION #####################################
 //##############################################################################
@@ -37,7 +36,7 @@ Expression *create_primary_identifier( Identifier *a ) {
 
     P->type = ste->type;
     P->name = "primary_expression";
-    P->add_child(a);
+    P->add_child( a );
     return P;
 }
 
@@ -48,7 +47,7 @@ Expression *create_primary_constant( Constant *a ) {
     P->type = a->getConstantType();
 
     P->name = "primary_expression";
-    P->add_child(a);
+    P->add_child( a );
 
     return P;
 }
@@ -60,7 +59,7 @@ Expression *create_primary_stringliteral( StringLiteral *a ) {
     P->type.ptr_level = 1;
 
     P->name = "primary_expression";
-    P->add_child(a);
+    P->add_child( a );
     return P;
 }
 Expression *create_primary_expression( Expression *a ) {
@@ -70,7 +69,7 @@ Expression *create_primary_expression( Expression *a ) {
     P->type = a->type;
 
     P->name = "primary_expression";
-    P->add_child(a);
+    P->add_child( a );
 
     return P;
 }
@@ -81,29 +80,26 @@ Expression *create_argument_expr_assignement( Expression *ase ) {
     P->op2 = ase;
     // ArguementExprList does not have any type as it is a composite entity
     P->name = "assignment_expression";
-    P->add_child(ase);
-    
+    P->add_child( ase );
+
     return P;
 }
-Expression *create_argument_expr_list( Expression *ae_list,
-                                             Expression *ase ) {
+Expression *create_argument_expr_list( Expression *ae_list, Expression *ase ) {
     ArgumentExprList *P = new ArgumentExprList();
     P->op1 = ae_list;
     P->op2 = ase;
-    
-    P->name="assignment_expression_list";
-    P->add_children(ae_list,ase);
+
+    P->name = "assignment_expression_list";
+    P->add_children( ae_list, ase );
     return P;
 }
 
 // PostFix Expression
-Expression *create_postfix_expr_arr( Expression *pe,
-                                            Expression *e ) {
+Expression *create_postfix_expr_arr( Expression *pe, Expression *e ) {
     PostfixExpression *P = new PostfixExpression();
-    if(dynamic_cast<PostfixExpression *>(pe)){
-        P->pe = dynamic_cast<PostfixExpression *>(pe);
-    }
-    else
+    if ( dynamic_cast<PostfixExpression *>( pe ) ) {
+        P->pe = dynamic_cast<PostfixExpression *>( pe );
+    } else
         P->pe = nullptr;
     P->exp = e;
     Types peT = defined_types[pe->type.typeIndex];
@@ -120,36 +116,34 @@ Expression *create_postfix_expr_arr( Expression *pe,
     }
 
     P->name = "ARRAY ACCESS";
-    P->add_children(pe, e);
+    P->add_children( pe, e );
     return P;
 }
 
 Expression *create_postfix_expr_voidfun( Identifier *fi ) {
     PostfixExpression *P = new PostfixExpression();
     // Lookup Function type from symbol table - should be void
-       
+
     P->name = "FUNCTION CALL";
-    P->add_child(fi);
+    P->add_child( fi );
 
     return P;
 }
 
-Expression *create_postfix_expr_fun( Identifier *fi,
-                                            Expression *ae ) {
+Expression *create_postfix_expr_fun( Identifier *fi, Expression *ae ) {
     PostfixExpression *P = new PostfixExpression();
     // Here, we need to check two things:
     // 1. whether ArguementExprList matches with Function signature from lookup
     // of symbol table table
 
     P->name = "FUNCTION CALL";
-    P->add_children(fi,ae);
+    P->add_children( fi, ae );
 
     return P;
 }
 
-Expression *create_postfix_expr_struct( std::string access_op,
-                                               Expression *pe,
-                                               Identifier *i ) {
+Expression *create_postfix_expr_struct( std::string access_op, Expression *pe,
+                                        Identifier *i ) {
     PostfixExpression *P = new PostfixExpression();
     Types peT = defined_types[pe->type.typeIndex];
     if ( access_op == "." ) {
@@ -163,7 +157,8 @@ Expression *create_postfix_expr_struct( std::string access_op,
                 P->type = *iType;
             }
         } else {
-            std::cerr<<"Operand Error";exit(0);
+            std::cerr << "Operand Error";
+            exit( 0 );
         }
     } else if ( access_op == "->" ) {
         if ( peT.is_struct && pe->type.ptr_level == 1 ) {
@@ -176,22 +171,21 @@ Expression *create_postfix_expr_struct( std::string access_op,
                 P->type = *iType;
             }
         } else {
-            std::cerr<<"Operand Error";exit(0);
+            std::cerr << "Operand Error";
+            exit( 0 );
         }
     }
 
     P->name = access_op;
-    P->add_children(pe, i);
+    P->add_children( pe, i );
     return P;
 }
 
-Expression *create_postfix_expr_ido( std::string op,
-                                            Expression *pe ) {
+Expression *create_postfix_expr_ido( std::string op, Expression *pe ) {
     PostfixExpression *P = new PostfixExpression();
-    if(dynamic_cast<PostfixExpression *>(pe)){
-        P->pe = dynamic_cast<PostfixExpression *>(pe);
-    }
-    else{
+    if ( dynamic_cast<PostfixExpression *>( pe ) ) {
+        P->pe = dynamic_cast<PostfixExpression *>( pe );
+    } else {
         P->pe = nullptr;
     }
     P->op = op;
@@ -210,18 +204,17 @@ Expression *create_postfix_expr_ido( std::string op,
         std::cerr << "Parse error";
         exit( 0 );
     }
-    if(op == "++")
+    if ( op == "++" )
         P->name = "POST INCREMENT";
     else
         P->name = "POST DECREMENT";
-    
-    P->add_child(pe);
+
+    P->add_child( pe );
     return P;
 }
 
 // Unary Expression
-Expression *create_unary_expression_ue( std::string u_op,
-                                             Expression *ue ) {
+Expression *create_unary_expression_ue( std::string u_op, Expression *ue ) {
     UnaryExpression *U = new UnaryExpression();
     U->op1 = ue;
     U->op = u_op;
@@ -233,39 +226,38 @@ Expression *create_unary_expression_ue( std::string u_op,
         } else {
             // Incorrect type throw error
             delete U;
-            std::cerr << "Prefix operator " << u_op << " cannot be applied to type " << ue->type.get_name();
-            exit(0);
+            std::cerr << "Prefix operator " << u_op
+                      << " cannot be applied to type " << ue->type.get_name();
+            exit( 0 );
         }
-    }
-    else if(u_op == "sizeof"){
-        //SizeOf
+    } else if ( u_op == "sizeof" ) {
+        // SizeOf
         U->type.typeIndex = PrimitiveTypes::U_INT_T;
         U->type.ptr_level = 0;
         U->type.is_const = false;
-    }
-    else{
-        //Raise Error
+    } else {
+        // Raise Error
         std::cerr << "Error parsing Unary Expression.\n";
-        exit(0);
+        exit( 0 );
     }
     U->name = 'unary_expression';
-    U->add_child(ue);
+    U->add_child( ue );
     return U;
 }
 
 // & (int) (x)
 // &(x) -> pointer value of x
-Expression *create_unary_expression_cast( Node *n_op,
-                                               Expression *ce ) {
+Expression *create_unary_expression_cast( Node *n_op, Expression *ce ) {
     UnaryExpression *U = new UnaryExpression();
-    Non_Terminal * nt_op = dynamic_cast<Non_Terminal *>(n_op);
+    Non_Terminal *nt_op = dynamic_cast<Non_Terminal *>( n_op );
     std::string u_op = nt_op->name;
     U->op = u_op;
     U->op1 = ce;
     Type ceT = ce->type;
-    if (u_op == "&"){
-        // ce->op1 should be of type IDENTIFIER because we dont support function pointers
-        ///XXX:: TODO implement getPointerTypeIndex()
+    if ( u_op == "&" ) {
+        // ce->op1 should be of type IDENTIFIER because we dont support function
+        // pointers
+        /// XXX:: TODO implement getPointerTypeIndex()
         U->type = ce->type;
         U->type.ptr_level++;
         // else{
@@ -274,66 +266,63 @@ Expression *create_unary_expression_cast( Node *n_op,
         //     delete U;
         //     exit(0);
         // }
-    }
-    else if(u_op == "*"){
-        if(ce->type.ptr_level > 0){
+    } else if ( u_op == "*" ) {
+        if ( ce->type.ptr_level > 0 ) {
             U->type = ce->type;
-            U->type.ptr_level--;            
-        }
-        else{
-            //Error because of dereference of non-pointer type
+            U->type.ptr_level--;
+        } else {
+            // Error because of dereference of non-pointer type
             delete U;
-            std::cerr << "Error : Invalid dereference of type " << ce->type.get_name();
-            exit(0);
+            std::cerr << "Error : Invalid dereference of type "
+                      << ce->type.get_name();
+            exit( 0 );
         }
-    } else if ( u_op == "-" || u_op == "+" || u_op == "!" || u_op == "-") {
-        if(ce->type.isIntorFloat()){
-            U->type = ce->type;    
-        }
-        else{
-            //Throw Error
-            std::cerr << "Invalid use of unary operator " << u_op << " on type " << ce->type.get_name();
-            exit(0);
+    } else if ( u_op == "-" || u_op == "+" || u_op == "!" || u_op == "-" ) {
+        if ( ce->type.isIntorFloat() ) {
+            U->type = ce->type;
+        } else {
+            // Throw Error
+            std::cerr << "Invalid use of unary operator " << u_op << " on type "
+                      << ce->type.get_name();
+            exit( 0 );
         }
     } else {
         // Throw Error
         std::cerr << "Parse error, invalid unary operator";
-        exit(0);
+        exit( 0 );
     }
-    
+
     U->name = "unary_expression";
-    U->add_children(n_op, ce);
+    U->add_children( n_op, ce );
     return U;
 }
 
-Expression *create_unary_expression_typename(std::string u_op, Node *t_name){
+Expression *create_unary_expression_typename( std::string u_op, Node *t_name ) {
     UnaryExpression *U = new UnaryExpression();
-    ///XXX:TODO Handle
-    
-    Node * n_op = create_non_term((u_op).c_str());
+    /// XXX:TODO Handle
+
+    Node *n_op = create_non_term( ( u_op ).c_str() );
     U->name = u_op;
-    U->add_children(n_op, t_name);
+    U->add_children( n_op, t_name );
 
     return U;
 }
 
 // Cast Expression
-Expression *create_cast_expression_typename( Node *n,
-                                                  Expression *ce ) {
+Expression *create_cast_expression_typename( Node *n, Expression *ce ) {
     // XXX: TODO Implement
     CastExpression *P = new CastExpression();
     P->op1 = ce;
     P->type = ce->type;
-    
-    P->name="caste_expression";
-    P->add_children(n,ce);
+
+    P->name = "caste_expression";
+    P->add_children( n, ce );
     return P;
 }
 
 // Multiplicative Expression
-Expression *
-create_multiplicative_expression( std::string op, Expression *me,
-                                  Expression *ce ) {
+Expression *create_multiplicative_expression( std::string op, Expression *me,
+                                              Expression *ce ) {
     MultiplicativeExpression *P = new MultiplicativeExpression();
     P->op1 = me;
     P->op2 = ce;
@@ -372,18 +361,17 @@ create_multiplicative_expression( std::string op, Expression *me,
             exit( 0 );
         }
     }
-    
-    P->name="multiplicative expression";
-    Node * n_op = create_non_term((op).c_str());
-    P->add_children(me, n_op, ce);
+
+    P->name = "multiplicative expression";
+    Node *n_op = create_non_term( ( op ).c_str() );
+    P->add_children( me, n_op, ce );
     return P;
 }
 
 // TODO : Add Pointer Support
 // Additive Expression
-Expression *create_additive_expression( std::string op,
-                                                Expression *ade,
-                                                Expression *me ) {
+Expression *create_additive_expression( std::string op, Expression *ade,
+                                        Expression *me ) {
     AdditiveExpression *P = new AdditiveExpression();
     P->op1 = ade;
     P->op2 = me;
@@ -401,28 +389,27 @@ Expression *create_additive_expression( std::string op,
                 ( meT.isInt() && adeT.isFloat() ) ) {
         P->type = meT.isFloat() ? meT : adeT;
     } else if ( meT.isPointer() && ( ( meT.isFloat() && adeT.isInt() ) ||
-                                   ( meT.isInt() && adeT.isFloat() ) ) ) {
+                                     ( meT.isInt() && adeT.isFloat() ) ) ) {
         P->type = meT.isFloat() ? meT : adeT;
     } else if ( meT.isFloat() && adeT.isFloat() ) {
         P->type = meT.typeIndex > adeT.typeIndex ? meT : adeT;
     } else {
         // Error
-        std::cerr << "Undefined operation * for operands of type " << meT.get_name()
-                  << " and " << adeT.get_name() << "\n";
+        std::cerr << "Undefined operation * for operands of type "
+                  << meT.get_name() << " and " << adeT.get_name() << "\n";
         exit( 0 );
     }
 
-    P->name="additive_expression";
-    Node * n_op = create_non_term((op).c_str());
-    P->add_children(ade, n_op, me);
-    
-    return P;
+    P->name = "additive_expression";
+    Node *n_op = create_non_term( ( op ).c_str() );
+    P->add_children( ade, n_op, me );
 
+    return P;
 }
 // Shift Expression
 
 Expression *create_shift_expression( std::string op, Expression *se,
-                                          Expression *ade ) {
+                                     Expression *ade ) {
     ShiftExpression *P = new ShiftExpression();
     P->op1 = se;
     P->op2 = ade;
@@ -446,18 +433,17 @@ Expression *create_shift_expression( std::string op, Expression *se,
         std::cerr << "Incorrect shift expression. Something went wrong\n";
         exit( 0 );
     }
-    
-    P->name="shift_expression";
-    Node * n_op = create_non_term((op).c_str());
-    P->add_children(se, n_op, ade);
+
+    P->name = "shift_expression";
+    Node *n_op = create_non_term( ( op ).c_str() );
+    P->add_children( se, n_op, ade );
     return P;
 }
 
 // Relation Expression
 
-Expression *create_relational_expression( std::string op,
-                                                    Expression *re,
-                                                    Expression *se ) {
+Expression *create_relational_expression( std::string op, Expression *re,
+                                          Expression *se ) {
     RelationalExpression *P = new RelationalExpression();
     P->op1 = re;
     P->op2 = se;
@@ -467,7 +453,7 @@ Expression *create_relational_expression( std::string op,
     if ( op == "<=" || op == ">=" || op == ">" || op == "<" ) {
         if ( ( reT.isInt() || reT.isFloat() ) &&
              ( seT.isInt() || reT.isFloat() ) ) {
-            P->type = Type( U_CHAR_T, 0,0 );
+            P->type = Type( U_CHAR_T, 0, 0 );
         } else {
             std::cerr << "Undefined operation of " << op
                       << " on operands of type " << reT.get_name() << " and "
@@ -478,27 +464,26 @@ Expression *create_relational_expression( std::string op,
         std::cerr << "Incorrect relation expression. Something went wrong\n";
         exit( 0 );
     }
-    
-    P->name="relational_expression";
-    Node * n_op = create_non_term((op).c_str());
-    P->add_children(re,n_op, se);
+
+    P->name = "relational_expression";
+    Node *n_op = create_non_term( ( op ).c_str() );
+    P->add_children( re, n_op, se );
     return P;
 }
 
 // Equality Expression
-Expression *create_equality_expression( std::string op,
-                                                Expression *eq,
-                                                Expression *re ) {
+Expression *create_equality_expression( std::string op, Expression *eq,
+                                        Expression *re ) {
     EqualityExpression *P = new EqualityExpression();
     P->op1 = eq;
     P->op2 = re;
     P->op = op;
     Type reT = re->type;
     Type eqT = eq->type;
-    if (op == "==" || op == "!=" ) {
-        if (( reT.isInt() || reT.isFloat() ) &&
+    if ( op == "==" || op == "!=" ) {
+        if ( ( reT.isInt() || reT.isFloat() ) &&
              ( eqT.isInt() || eqT.isFloat() ) ) {
-            P->type = Type( U_CHAR_T, 0,0 );
+            P->type = Type( U_CHAR_T, 0, 0 );
         }
 
         else {
@@ -511,16 +496,16 @@ Expression *create_equality_expression( std::string op,
         std::cerr << "Incorrect equality expression. Something went wrong\n";
         exit( 0 );
     }
-    
-    P->name="eqality_expression";
-    Node * n_op = create_non_term((op).c_str());
-    P->add_children(eq, n_op, re);
+
+    P->name = "eqality_expression";
+    Node *n_op = create_non_term( ( op ).c_str() );
+    P->add_children( eq, n_op, re );
     return P;
 }
 
 // And Expression
 Expression *create_and_expression( std::string op, Expression *an,
-                                      Expression *eq ) {
+                                   Expression *eq ) {
     AndExpression *P = new AndExpression();
     P->op1 = an;
     P->op2 = eq;
@@ -545,16 +530,15 @@ Expression *create_and_expression( std::string op, Expression *an,
         std::cerr << "Incorrect and_expression. Something went wrong\n";
         exit( 0 );
     }
-    
-    P->name="and_expression";
-    Node * n_op = create_non_term((op).c_str());
-    P->add_children(an, n_op, eq);
+
+    P->name = "and_expression";
+    Node *n_op = create_non_term( ( op ).c_str() );
+    P->add_children( an, n_op, eq );
     return P;
 }
 
-Expression *
-create_exclusive_or_expression( std::string op, Expression *ex,
-                                Expression *an ) {
+Expression *create_exclusive_or_expression( std::string op, Expression *ex,
+                                            Expression *an ) {
     ExclusiveorExpression *P = new ExclusiveorExpression();
     P->op1 = ex;
     P->op2 = an;
@@ -580,14 +564,15 @@ create_exclusive_or_expression( std::string op, Expression *ex,
             << "Incorrect exclusive or expression. Something went wrong\n";
         exit( 0 );
     }
-    
-    P->name="exclusive_or_expression";
-    Node * n_op = create_non_term((op).c_str());
-    P->add_children(ex, n_op, an);
+
+    P->name = "exclusive_or_expression";
+    Node *n_op = create_non_term( ( op ).c_str() );
+    P->add_children( ex, n_op, an );
     return P;
 }
 
-Expression* create_inclusive_or_expression( std::string op, Expression *ie, Expression *ex ) {
+Expression *create_inclusive_or_expression( std::string op, Expression *ie,
+                                            Expression *ex ) {
     InclusiveorExpression *P = new InclusiveorExpression();
     P->op1 = ie;
     P->op2 = ex;
@@ -603,8 +588,8 @@ Expression* create_inclusive_or_expression( std::string op, Expression *ie, Expr
                 P->type.make_signed();
             } else {
                 std::cerr << "Undefined operation of " << op
-                          << " on operands of type " << ieT.get_name() << " and "
-                          << exT.get_name() << "\n";
+                          << " on operands of type " << ieT.get_name()
+                          << " and " << exT.get_name() << "\n";
                 exit( 0 );
             }
         } else {
@@ -614,16 +599,15 @@ Expression* create_inclusive_or_expression( std::string op, Expression *ie, Expr
         }
     }
 
-    P->name="inclusive_or_expression";
-    Node * n_op = create_non_term((op).c_str());
-    P->add_children(ie, n_op, ex);
+    P->name = "inclusive_or_expression";
+    Node *n_op = create_non_term( ( op ).c_str() );
+    P->add_children( ie, n_op, ex );
     return P;
 }
 
 // Logical And
-Expression *
-create_logical_and_expression( std::string op, Expression *la,
-                              Expression *ie ) {
+Expression *create_logical_and_expression( std::string op, Expression *la,
+                                           Expression *ie ) {
     Logical_andExpression *P = new Logical_andExpression();
     P->op1 = la;
     P->op2 = ie;
@@ -633,7 +617,7 @@ create_logical_and_expression( std::string op, Expression *la,
     Type ieT = ie->type;
     if ( op == "&&" ) {
         if ( ieT.isIntorFloat() && laT.isIntorFloat() ) {
-            P->type = Type(U_CHAR_T, 0,0);
+            P->type = Type( U_CHAR_T, 0, 0 );
         } else {
             std::cerr << "Undefined operation of " << op
                       << " on operands of type " << ieT.get_name() << " and "
@@ -645,18 +629,16 @@ create_logical_and_expression( std::string op, Expression *la,
                      "wrong\n";
         exit( 0 );
     }
-    
-    P->name="logical_and_expression";
-    Node * n_op = create_non_term((op).c_str());
-    P->add_children(la, n_op, ie);
+
+    P->name = "logical_and_expression";
+    Node *n_op = create_non_term( ( op ).c_str() );
+    P->add_children( la, n_op, ie );
     return P;
-    
 }
 
 // Logical or
-Expression *
-create_logical_or_expression( std::string op, Expression *lo,
-                              Expression *la ) {
+Expression *create_logical_or_expression( std::string op, Expression *lo,
+                                          Expression *la ) {
     Logical_orExpression *P = new Logical_orExpression();
     P->op1 = lo;
     P->op2 = la;
@@ -666,7 +648,7 @@ create_logical_or_expression( std::string op, Expression *lo,
     Type laT = la->type;
     if ( op == "&&" ) {
         if ( loT.isIntorFloat() && laT.isIntorFloat() ) {
-            P->type = Type( U_CHAR_T, 0,0 );
+            P->type = Type( U_CHAR_T, 0, 0 );
         } else {
             std::cerr << "Undefined operation of " << op
                       << " on operands of type " << laT.get_name() << " and "
@@ -679,17 +661,15 @@ create_logical_or_expression( std::string op, Expression *lo,
         exit( 0 );
     }
 
-    P->name="logical_or_expression";
-    P->add_children(lo,la);
+    P->name = "logical_or_expression";
+    P->add_children( lo, la );
     return P;
 }
 
 // Conditional
 
-Expression *
-create_conditional_expression( std::string op, Expression *lo,
-                               Expression *te,
-                               Expression *coe ) {
+Expression *create_conditional_expression( std::string op, Expression *lo,
+                                           Expression *te, Expression *coe ) {
     ConditionalExpression *P = new ConditionalExpression();
     P->op1 = lo;
     P->op2 = te;
@@ -706,8 +686,9 @@ create_conditional_expression( std::string op, Expression *lo,
                 // signed type
                 P->type.make_signed();
             }
-        } else if ( teT.typeIndex == coeT.typeIndex && teT.ptr_level == coeT.ptr_level ) {
-            P->type= teT;
+        } else if ( teT.typeIndex == coeT.typeIndex &&
+                    teT.ptr_level == coeT.ptr_level ) {
+            P->type = teT;
         } else {
 
             // ERROR:
@@ -715,81 +696,78 @@ create_conditional_expression( std::string op, Expression *lo,
         }
     }
 
-    P->name="conditional_expression";
-    P->add_children(lo,te,coe);
+    P->name = "conditional_expression";
+    P->add_children( lo, te, coe );
     return P;
 }
 
 // AssignmentExpression
 
-Expression *create_assignment_expression( Expression *ue, Node *n_op, Expression *ase ) {
+Expression *create_assignment_expression( Expression *ue, Node *n_op,
+                                          Expression *ase ) {
     AssignmentExpression *P = new AssignmentExpression();
-    Non_Terminal * nt_op = dynamic_cast<Non_Terminal *>(n_op);
+    Non_Terminal *nt_op = dynamic_cast<Non_Terminal *>( n_op );
     std::string op = nt_op->name;
     P->op1 = ue;
     P->op2 = ase;
     P->op = op;
     Type ueT = ue->type;
     Type aseT = ase->type;
-    if (op == "=") {
+    if ( op == "=" ) {
         if ( ( ueT.isIntorFloat() ) && ( aseT.isIntorFloat() ) ) {
             // int and/or flot
             if ( ueT.typeIndex != aseT.typeIndex ) {
-                std::cout << "Warning: operation " << op << " between " << ueT.get_name() << " and " << aseT.get_name();
+                std::cout << "Warning: operation " << op << " between "
+                          << ueT.get_name() << " and " << aseT.get_name();
             }
             P->type = ueT;
-        } 
-        else if ( ueT.ptr_level > 0 && aseT.ptr_level > 0 && ueT.ptr_level == aseT.ptr_level ) {
+        } else if ( ueT.ptr_level > 0 && aseT.ptr_level > 0 &&
+                    ueT.ptr_level == aseT.ptr_level ) {
             /// meed the types of pointers
             if ( ueT.typeIndex == aseT.typeIndex ) {
                 P->type = ueT;
-            }
-            else {
-            std::cerr << "Undefined operation of " << op
-                    << " on operands of type " << ueT.get_name() << " and "
-                      << aseT.get_name() << "\n";
-            exit( 0);
+            } else {
+                std::cerr << "Undefined operation of " << op
+                          << " on operands of type " << ueT.get_name()
+                          << " and " << aseT.get_name() << "\n";
+                exit( 0 );
             }
         }
-    }    
-    else if ( op == "*=" || op == "/=" || op == "+=" || op == "-=" ) {
-            if ( ( ueT.isIntorFloat() ) && ( aseT.isIntorFloat() ) ) {
+    } else if ( op == "*=" || op == "/=" || op == "+=" || op == "-=" ) {
+        if ( ( ueT.isIntorFloat() ) && ( aseT.isIntorFloat() ) ) {
             // int and/or flot
-                if ( ueT.typeIndex != aseT.typeIndex ) {
+            if ( ueT.typeIndex != aseT.typeIndex ) {
                 std::cout << "Warning: operation " << op << " between "
-                          << ueT.get_name() << " and " << aseT.get_name() << "\n";
-                }
-                P->type = ueT;
-            }else {
-                std::cerr << "Undefined operation of " << op
+                          << ueT.get_name() << " and " << aseT.get_name()
+                          << "\n";
+            }
+            P->type = ueT;
+        } else {
+            std::cerr << "Undefined operation of " << op
                       << " on operands of type " << ueT.get_name() << " and "
                       << aseT.get_name() << "\n";
             exit( 0 );
-            }
-    }
-    else if ( op == "%=" ) {
-        if( (ueT.isInt() && aseT.isInt())){
+        }
+    } else if ( op == "%=" ) {
+        if ( ( ueT.isInt() && aseT.isInt() ) ) {
             P->type = ueT;
         } else {
             // Error
-            std::cerr << "Invalid Operands " << op << "having type " << ueT.get_name()
-                      << " and " << aseT.get_name() << "\n";
+            std::cerr << "Invalid Operands " << op << "having type "
+                      << ueT.get_name() << " and " << aseT.get_name() << "\n";
             exit( 0 );
         }
-    }
-    else if ( op == "<<=" || op == ">>=" ) {
-        if ( ueT.isInt() && aseT.isInt()){
+    } else if ( op == "<<=" || op == ">>=" ) {
+        if ( ueT.isInt() && aseT.isInt() ) {
             P->type = ueT;
-        }
-        else {
+        } else {
             // Operands are not integer type
             std::cerr << "Undefined operation of " << op
                       << " on operands of type " << ueT.get_name() << " and "
                       << ase->name << "\n";
             exit( 0 );
         }
-    }
-    else if ( op == "&=" || op == "|=" && op == "^=" ) {
+    } else if ( op == "&=" || op == "|=" && op == "^=" ) {
         if ( ueT.isInt() && aseT.isInt() ) {
             // int family
             P->type = ueT;
@@ -798,22 +776,20 @@ Expression *create_assignment_expression( Expression *ue, Node *n_op, Expression
                 // type
                 P->type.make_signed();
             }
-        } 
-        else {
+        } else {
             std::cerr << "Undefined operation of " << op
                       << " on operands of type " << ueT.get_name() << " and "
                       << aseT.get_name() << "\n";
             exit( 0 );
         }
-        
-    } 
-    else {
+
+    } else {
         std::cerr << "Incorrect logical or expression. Something went wrong\n";
         exit( 0 );
     }
 
-    P->name="assignment_expression";
-    P->add_children(ue, ase);
+    P->name = "assignment_expression";
+    P->add_children( ue, ase );
     return P;
 }
 
@@ -826,8 +802,8 @@ Expression *create_toplevel_expression( Expression *te, Expression *ase ) {
     Type teT = te->type;
     Type aseT = ase->type;
     //////need TO DO LATER///////////
-    
-    P->name="toplevel_expression";
-    P->add_children(te,ase);
+
+    P->name = "toplevel_expression";
+    P->add_children( te, ase );
     return P;
 }
