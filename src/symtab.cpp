@@ -72,7 +72,7 @@ PrimaryExpression *create_primary_identifier(Identifier *a){
             exit(0);
         }
     }
-    P->typeIndex = ste->typeIndex;
+    P->typeIndex = ste->type_index;
     P->Cval = nullptr;
     P->Sval = nullptr;
     P->op1 = nullptr;
@@ -273,7 +273,7 @@ CastExpression * create_caste_expression_typename(Node *n, CastExpression* ce){
     //XXX: TODO Implement
     CastExpression * P = new CastExpression();
     P->op1=ce;
-
+    
     return P;
 }
 
@@ -286,8 +286,8 @@ MultiplicativeExpression * create_multiplicative_expression(std::string op, Mult
     Type meT = me->type;
     Type ceT = ce->type;
     if(op == "*" || op == "/"){
-        if( meT.int_type() && ceT.int_type() ) {
-            P->type = meT > ceT ? meT : ceT;
+        if( meT.isInt() && ceT.isInt() ) {
+            P->type = meT.typeIndex > ceT.typeIndex ? meT : ceT;
             if(!(meT.isUnsigned() && ceT.isUnsigned())){
                 //As a safety we upgrade unsigned type to corresponding signed type
 		P->type.make_signed();
@@ -298,7 +298,7 @@ MultiplicativeExpression * create_multiplicative_expression(std::string op, Mult
         }
 	
         else if(meT.isFloat() && ceT.isFloat() ){
-		P->type = meT > ceT ? meT : ceT;
+		P->type = meT.typeIndex > ceT.typeIndex ? meT : ceT;
         }
         else{
             std::cerr << "Undefined operation * for operands of type " << meT.name << " and " << ceT.name << "\n";
@@ -318,8 +318,6 @@ MultiplicativeExpression * create_multiplicative_expression(std::string op, Mult
 
 }
 
-
-
 // TODO : Add Pointer Support
 // Additive Expression 
 AdditiveExpression * create_additive_expression(std::string op,AdditiveExpression * ade, MultiplicativeExpression *me){
@@ -327,23 +325,22 @@ AdditiveExpression * create_additive_expression(std::string op,AdditiveExpressio
     P->op1=ade;
     P->op2=me;
     P->op=op;
-    Type adeT = ade.type;
-    Type meT = me.type;
+    Type adeT = ade->type;
+    Type meT = me->type;
     if(meT.isInt() && adeT.isInt() ){
-        P->type = meT > adeT ? meT : adeT;
+        P->type = meT.typeIndex > adeT.typeIndex ? meT : adeT;
         if(!(meT.isUnsigned() && adeT.isUnsigned())){
                 //As a safety we upgrade unsigned type to corresponding signed type
-		P->make_signed();
+		P->type.make_signed();
         }
 
     }
-        else if((meT.isFloat()  && ceT.isInt() ) || (meT.isInt() && ceT.isFloat() )){
-		P->type = meT.isFloat() ? meT : ceT;
-        }
-	
-        else if(meT.isFloat() && ceT.isFloat() ){
-		P->type = meT > ceT ? meT : ceT;
-        }
+    else if((meT.isFloat()  && adeT.isInt() ) || (meT.isInt() && adeT.isFloat() )){
+		P->type = meT.isFloat() ? meT : adeT;
+    }
+    else if(meT.isFloat() && adeT.isFloat() ){
+		P->type = meT.typeIndex > adeT.typeIndex ? meT : ceT;
+    }
     else{
             //Error
             std::cerr << "Undefined operation * for operands of type " << meT.name << " and " << adeT.name << "\n";
@@ -411,8 +408,8 @@ EqualityExpression * create_equality_expression(std::string op,EqualityExpressio
     P->op1=eq;
     P->op2=re;
     P->op=op;
-    Types reT = re->getType();
-    Types eqT = eq->getType();
+    Type reT = re->type;
+    Type eqT = eq->type;
     if(op == "==" || op == "!=" ){
         if( ( reT.isInt()  || reT.isFloat() ) && ( seT.isInt() || reT.isFloat() ) ) {
             P->type = Type("bool", U_CHAR_T, 0);
@@ -716,7 +713,6 @@ AssignmentExpression * create_assignment_expression(std::string op,UnaryExpressi
         }
         else{
             std::cerr << "Undefined operation of " << op << " on operands of type " << exT.name << " and " << anT.name << "\n";
-            exit(0);
         }
     }
     else{
