@@ -408,7 +408,7 @@ create_multiplicative_expression( std::string op, Expression *me,
             P->type.make_unsigned();
         } else {
             // Error
-            std::cerr << "Invalid Operands to binary %% having type "
+            std::cerr << "Invalid Operands to binary % having type "
                       << meT.get_name() << " and " << ceT.get_name() << "\n";
             exit( 0 );
         }
@@ -950,6 +950,9 @@ int set_index(DeclarationSpecifiers *ds)
     Type t=Type(0,0, false);
     t.is_const=false;
     t.typeIndex=-1;
+    for(int i=0; i < ty.size(); i++)
+    std::cout << ty.at(i) << ' ';
+
     if(ty.size()==3){
         if (ty.at(0)==UNSIGNED  && ty.at(1)==INT && ty.at(2)==LONG) {t.typeIndex=8;}
         else if (ty.at(0)==SIGNED  && ty.at(1)==INT&& ty.at(2)==LONG) {t.typeIndex=9;}
@@ -964,7 +967,7 @@ int set_index(DeclarationSpecifiers *ds)
         else if (ty.at(0)==SIGNED && ty.at(1)==INT) {t.typeIndex=5;}
         else if (ty.at(0)==UNSIGNED && ty.at(1)==LONG) {t.typeIndex=6;}
         else if (ty.at(0)==SIGNED && ty.at(1)==LONG) {t.typeIndex=7;}
-        else if (ty.at(0)==FLOAT && ty.at(1)==DOUBLE) {t.typeIndex=12;}
+        else if (ty.at(0)==LONG && ty.at(1)==DOUBLE) {t.typeIndex=12;}
         else{
             err+=2;
         }
@@ -976,8 +979,26 @@ int set_index(DeclarationSpecifiers *ds)
         else if(ty.at(0)==DOUBLE){
             t.typeIndex=11;
         }
-        else if (ty.at(0)==STRUCT || ty.at(0)==UNION){
+        else if(ty.at(0)==CHAR){
+            t.typeIndex=1;
+        }
+        else if(ty.at(0)==SHORT){
+            t.typeIndex=3;
+        }
+        else if(ty.at(0)==INT){
+            t.typeIndex=5;
+        }
+        else if(ty.at(0)==LONG){
+            t.typeIndex=7;
+        }
+        else if(ty.at(0)==VOID){
+            t.typeIndex=13;
+        }
+        else if (ty.at(0)==STRUCT){
             t.typeIndex=-1;
+        }
+        else if (ty.at(0)==UNION){
+            t.typeIndex=-2;
         }
         else{
             err+=2;

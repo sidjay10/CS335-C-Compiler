@@ -167,7 +167,9 @@ class StructDefinition {
     StructDefinition();
     size_t get_size();
 
-    Type *get_member( Identifier *i ); 
+    Type *get_member( Identifier *i ){
+      return nullptr;
+    }
 };
 
 StructDefinition *create_struct_definition( int un_or_st,
