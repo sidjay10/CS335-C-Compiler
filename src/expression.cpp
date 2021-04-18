@@ -878,3 +878,108 @@ Expression *create_toplevel_expression( Expression *te, Expression *ase ) {
     P->add_children( te, ase );
     return P;
 }
+unsigned stou(std::string const & str, size_t * idx = 0, int base = 10) {
+    unsigned long result = std::stoul(str, idx, base);
+    if (result > std::numeric_limits<unsigned>::max()) {
+        throw std::out_of_range("stou");
+    }
+    return result;
+}
+Constant::Constant(const char* _name, const char* _value):Terminal(_name,_value){
+
+    ConstantType = Type( 2, 0, false );
+    int length = value.length();
+    if ( name == "CONSTANT HEX" || name == "CONSTANT INT" ) {
+        
+        int islong = 0, isunsigned = 0,digitend=length;
+        for ( int i = 0; i < length; i++ ) {
+            if ( value[i] == 'l' || value[i] == 'L' ){
+                islong = 1;
+                digitend = i < digitend ? i : digitend ;
+            }
+            if ( value[i] == 'u' || value[i] == 'U' ){
+                isunsigned = 1;
+                digitend = i < digitend ? i : digitend ;
+            }
+            if ( islong && isunsigned ){
+                ConstantType.typeIndex = PrimitiveTypes::U_LONG_T;
+                if(name=="CONSTANT HEX"){
+                    val.ul=std::stoul(value,nullptr,16);
+                }
+                else{
+                    val.ul=std::stoul(value);
+                }
+                return;
+                //TODO//
+            }
+        }
+        if ( islong ) {
+            ConstantType.typeIndex = PrimitiveTypes::LONG_T;
+            if(name=="CONSTANT HEX"){
+                    val.l=std::stol(value,nullptr,16);
+                }
+            else{
+                val.l=std::stol(value);
+            }
+            return;
+        }
+        else if ( isunsigned ) {
+            ConstantType.typeIndex = PrimitiveTypes::U_INT_T;
+            if(name=="CONSTANT HEX"){
+                    val.ui=stou(value,nullptr,16);
+                }
+            else{
+                val.ui=stou(value);
+            }
+            return ;
+        }
+        else {
+            if(name=="CONSTANT HEX"){
+                    val.i=std::stoi(value,nullptr,16);
+                }
+            else{
+                val.i=std::stoi(value);
+            }
+            ConstantType.typeIndex = PrimitiveTypes::INT_T;
+            return ;
+        }
+        // TODO return type
+
+        // return retT;
+        // loop over value to get unsigned etc and return typeIndex
+    }
+    else if ( name == "CONSTANT FLOAT" ) {
+        
+        int isfloat = 0;
+        for ( int i = 0; i < length; i++ ) {
+            
+            if ( value[i] == 'f' || value[i] == 'F') {
+                ConstantType.typeIndex = PrimitiveTypes::FLOAT_T;
+                val.f=std::stof(value);
+                return;
+            }
+        }
+        ConstantType.typeIndex = PrimitiveTypes::DOUBLE_T;
+        val.d=std::stod(value);
+        return;
+        // loop over value to get float
+    } 
+    else if ( name == "CONSANT EXP" ) {
+        // loop over value to get if long or double
+        int islong = 0;
+        for ( int i = 0; i < length; i++ ) {
+            if ( value[i] == 'f' || value[i] == 'F' ) {
+                ConstantType.typeIndex = PrimitiveTypes::FLOAT_T;
+                val.f=std::stof(value);
+                return ;
+            }
+        }
+        ConstantType.typeIndex = PrimitiveTypes::LONG_T;
+        val.l=std::stol(value);
+        return;
+    }
+    else {
+        // ------TODO---------
+        //return retT;
+    }
+}
