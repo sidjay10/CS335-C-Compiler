@@ -349,9 +349,19 @@ class PostfixExpression : public Expression {
     };
 };
 
+union data{
+    int i;
+    uint ui;
+    ulong ul;
+    long l;
+    float f;
+    double d;
+};
 class Constant : public Terminal {
   public:
-    Constant( const char *name );
+    Constant( const char *name ,const char* value);
+    union data val;
+    Type ConstantType;
 
     Type getConstantType() {
         Type retT( 2, 0, false );
@@ -410,8 +420,9 @@ class Constant : public Terminal {
             return retT;
         }
     }
-};
 
+
+};
 class StringLiteral : public Terminal {
   public:
     StringLiteral( const char *name );
