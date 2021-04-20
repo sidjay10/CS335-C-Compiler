@@ -364,63 +364,8 @@ class Constant : public Terminal {
     Type ConstantType;
 
     Type getConstantType() {
-        Type retT( 2, 0, false );
-        int length = value.length();
-        if ( name == "CONSTANT HEX" || name == "CONSTANT INT" ) {
-          
-            int islong = 0, isunsigned = 0;
-            for ( int i = 0; i < length; i++ ) {
-                if ( value[i] == 'l' || value[i] == 'L' )
-                    islong = 1;
-                if ( value[i] == 'u' || value[i] == 'U' )
-                    isunsigned = 1;
-                if ( islong && isunsigned ){
-                    retT.typeIndex = PrimitiveTypes::U_LONG_T;
-                    return retT;
-                }
-            }
-            if ( islong ) {
-                retT.typeIndex = PrimitiveTypes::LONG_T;
-                return retT;
-            }
-            if ( isunsigned ) {
-                retT.typeIndex = PrimitiveTypes::U_INT_T;
-                return retT;
-            }
-            retT.typeIndex = PrimitiveTypes::INT_T;
-            return retT;
-            // loop over value to get unsigned etc and return typeIndex
-        } else if ( name == "CONSTANT FLOAT" ) {
-            
-            int isfloat = 0;
-            for ( int i = 0; i < length; i++ ) {
-                
-                if ( value[i] == 'f' || value[i] == 'F') {
-                    retT.typeIndex = PrimitiveTypes::FLOAT_T;
-                    return retT;
-                }
-            }
-            
-            retT.typeIndex = PrimitiveTypes::DOUBLE_T;
-
-            return retT;
-            // loop over value to get float
-        } else if ( name == "CONSANT EXP" ) {
-            // loop over value to get if long or double
-            int islong = 0;
-            for ( int i = 0; i < length; i++ ) {
-                if ( value[i] == 'f' || value[i] == 'F' ) {
-                    retT.typeIndex = PrimitiveTypes::FLOAT_T;
-                    return retT;
-                }
-            }
-            retT.typeIndex = PrimitiveTypes::LONG_T;
-            return retT;
-        } else {
-            return retT;
-        }
+        return ConstantType;
     }
-
 
 };
 class StringLiteral : public Terminal {
