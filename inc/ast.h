@@ -20,6 +20,7 @@ class Node {
 		virtual void add_children (Node * node1, Node * node2);
 		virtual void add_children (Node * node1, Node * node2, Node * node3);
 		virtual void add_children (Node * node1, Node * node2, Node * node3, Node * node4);
+		unsigned long long int get_id();
 	protected:
 		Node ();
 		virtual ~Node() {}
@@ -30,7 +31,10 @@ class Terminal : public Node {
 	public:
 		std::string name;
 		std::string value;
+		unsigned int line_num;
+		unsigned int column;
 		Terminal(const char * name_, const char * value_);
+		Terminal(const char * name_, const char * value_,  unsigned int _line_num, unsigned int _column );
 		void dotify();
 		
 };
@@ -51,6 +55,7 @@ class Non_Terminal : public Node {
 
 unsigned long long int get_next_node_id();
 Node * create_terminal(const char * name, const char * value);
+Terminal * create_terminal(const char * name, const char * value, unsigned int line_num, unsigned int column);
 Node * create_non_term(const char * name);
 Node * create_non_term(const char* name, Node* node1, Node* node2, Node* node3, Node* node4, Node* node5, Node* node6, Node* node7);
 Node * create_non_term(const char* name, Node* node1, Node* node2, Node* node3, Node* node4, Node* node5, Node* node6);

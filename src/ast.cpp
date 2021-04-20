@@ -14,9 +14,20 @@ unsigned long long int get_next_node_id() {
 
 Node::Node() : id(get_next_node_id()) {};
 
+unsigned long long int Node::get_id() {
+	return id;
+}
+
 Terminal::Terminal(const char * name_, const char * value_) {
 	name = std::string(name_);
 	if (value_) value = std::string(value_);
+}
+
+Terminal::Terminal(const char * name_, const char * value_, unsigned int _line_num, unsigned int _column ) {
+	name = std::string(name_);
+	if (value_) value = std::string(value_);
+	line_num = _line_num;
+	column = _column;
 }
 
 
@@ -116,6 +127,11 @@ void Non_Terminal::add_children (Node * node1, Node * node2, Node * node3, Node 
 
 Node * create_terminal(const char* name, const char * value) {
 	Terminal * terminal_node = new Terminal(name,value);
+	return terminal_node;
+}
+
+Terminal * create_terminal(const char * name, const char * value, unsigned int line_num, unsigned int column){
+	Terminal * terminal_node = new Terminal(name,value,line_num,column);
 	return terminal_node;
 }
 

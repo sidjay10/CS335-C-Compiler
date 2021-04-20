@@ -351,15 +351,15 @@ class PostfixExpression : public Expression {
 
 union data{
     int i;
-    uint ui;
-    ulong ul;
+    unsigned int ui;
     long l;
+    unsigned long ul;
     float f;
     double d;
 };
 class Constant : public Terminal {
   public:
-    Constant( const char *name ,const char* value);
+    Constant( const char *name ,const char* value, unsigned int line_num, unsigned int column);
     union data val;
     Type ConstantType;
 
@@ -368,6 +368,9 @@ class Constant : public Terminal {
     }
 
 };
+
+Constant* create_constant( const char *name ,const char* value, unsigned int line_num, unsigned int column);
+
 class StringLiteral : public Terminal {
   public:
     StringLiteral( const char *name );

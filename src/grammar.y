@@ -1,6 +1,8 @@
 
 %{
 	#include <stdio.h>
+	#include <iostream>
+	#include <sstream>
 	#include <ast.h>
 	#include <symtab.h>
 	#include <expression.h>
@@ -13,6 +15,7 @@
 
 %union{
 	Node * node;
+	Terminal * terminal;
 	int value;
 	DeclarationSpecifiers * declaration_specifiers;
 	Declaration * declaration;
@@ -59,7 +62,8 @@
 
 
 %token <node> '(' ')' '[' ']' '.' ',' '+' '-' '!' '&' '*' '~' '/' '%'
-%token <node> '<' '>' '^' '|' ':' '?' '=' ';' '{' '}'
+%token <node> '<' '>' '^' '|' ':' '?' ';' '{' '}'
+%token <terminal> '='
 
 %token <node> SIZEOF
 %token <identifier> IDENTIFIER
@@ -87,15 +91,17 @@
 %token <node> PTR_OP INC_OP DEC_OP LEFT_OP RIGHT_OP LE_OP GE_OP EQ_OP NE_OP
 %token <node> AND_OP OR_OP MUL_ASSIGN DIV_ASSIGN MOD_ASSIGN ADD_ASSIGN
 %token <node> SUB_ASSIGN LEFT_ASSIGN RIGHT_ASSIGN AND_ASSIGN
-%token <node> XOR_ASSIGN OR_ASSIGN TYPE_NAME
+%token <node> XOR_ASSIGN OR_ASSIGN
 
 %token <value> TYPEDEF EXTERN STATIC AUTO REGISTER
-%token <value> SIGNED UNSIGNED CHAR SHORT LONG INT FLOAT DOUBLE VOID
+%token <type_specifier> SIGNED UNSIGNED CHAR SHORT LONG INT FLOAT DOUBLE VOID TYPE_NAME
 %token <value> CONST VOLATILE
 %token <value> STRUCT UNION ENUM ELLIPSIS
 
 %token <node> CASE DEFAULT IF ELSE SWITCH WHILE DO FOR GOTO CONTINUE BREAK RETURN
 
+
+%type <node> type_name
 %type <node> constant_expression
 %type <node> unary_operator assignment_operator
 %type <declaration> declaration 
@@ -132,7 +138,7 @@
 
 %type <declarator> struct_declarator
 
-%type <node> type_name initializer initializer_list
+/*%type <node> initializer initializer_list*/
 %type <parameter_type_list> parameter_type_list parameter_list
 %type <parameter_declaration> parameter_declaration 
 %type <abstract_declarator> abstract_declarator
@@ -305,11 +311,14 @@ declaration_specifiers
 init_declarator_list
 	: init_declarator				 { $$ = create_init_declarator_list( $1 ); }
 	| init_declarator_list ',' init_declarator	 { $$ = add_to_init_declarator_list ( $1, $3 ); }
+	| error							{ $$ = NULL; }
+	| init_declarator_list ',' error 			{ $$ = $1; }
 	;
 
 init_declarator
 	: declarator			 { $$ = $1; }
-	| declarator '=' initializer	 { $$ = add_initializer_to_declarator( $1, $3 ); }
+	/*| declarator '=' initializer	 { $$ = add_initializer_to_declarator( $1, $2, $3 ); }*/
+	| declarator '=' assignment_expression	 { $$ = add_initializer_to_declarator( $1, $2, $3 ); }
 	;
 
 storage_class_specifier
@@ -321,18 +330,18 @@ storage_class_specifier
 	;
 
 type_specifier
-	:  VOID				{ $$ = create_type_specifier(VOID); }
-	|  CHAR				{ $$ = create_type_specifier(CHAR); }
-	|  SHORT			{ $$ = create_type_specifier(SHORT); }
-	|  INT				{ $$ = create_type_specifier(INT); }
-	|  LONG				{ $$ = create_type_specifier(LONG); }
-	|  FLOAT			{ $$ = create_type_specifier(FLOAT); }
-	|  DOUBLE			{ $$ = create_type_specifier(DOUBLE); }
-	|  SIGNED			{ $$ = create_type_specifier(SIGNED); }
-	|  UNSIGNED			{ $$ = create_type_specifier(UNSIGNED); }
+	:  VOID				{ $$ = $1; }
+	|  CHAR				{ $$ = $1; }
+	|  SHORT			{ $$ = $1; }
+	|  INT				{ $$ = $1; }
+	|  LONG				{ $$ = $1; }
+	|  FLOAT			{ $$ = $1; }
+	|  DOUBLE			{ $$ = $1; }
+	|  SIGNED			{ $$ = $1; }
+	|  UNSIGNED			{ $$ = $1; }
 	|  struct_or_union_specifier 	{ $$ = $1; }
 	|  enum_specifier		{ $$ = $1; }
-	|  TYPE_NAME			{ $$ = create_type_specifier(TYPE_NAME); }
+	|  TYPE_NAME			{ $$ = $1; }
 	;
 struct_or_union_specifier
 	:  struct_or_union IDENTIFIER '{' struct_declaration_list '}'	{ $$ = create_type_specifier( $1, $2, $4); }
@@ -390,7 +399,7 @@ enumerator
 
 type_qualifier
 	:  CONST	 { $$ = CONST; }
-	|  VOLATILE	 { $$ = VOLATILE; }
+/*	|  VOLATILE	 { $$ = VOLATILE; }*/
 	;
 
 declarator
@@ -400,12 +409,13 @@ declarator
 
 direct_declarator
 	:  IDENTIFIER	 					 { $$ = create_dir_declarator_id( ID , $1 ); }
-	|  '(' declarator ')'	 				 { $$ = create_dir_declarator_dec( DECLARATOR, $2 ); }
+	/*|  '(' declarator ')'	 				 { $$ = create_dir_declarator_dec( DECLARATOR, $2 ); }*/
 	/*|  direct_declarator '[' constant_expression ']'	 { $$ = create_dir_declarator_arr( ARRAY, $1, $3 ); }*/
-	|  direct_declarator '[' CONSTANT ']'	 { $$ = create_dir_declarator_arr( ARRAY, $1, $3 ); }
-	|  direct_declarator '[' ']'	 			 { $$ = create_dir_declarator_arr( ARRAY, $1, NULL ); }
-	|  direct_declarator '(' parameter_type_list ')'	 { $$ = create_dir_declarator_fun( FUNCTION, $1, $3 ); }
-	|  direct_declarator '(' ')'				 { $$ = create_dir_declarator_fun( FUNCTION, $1, NULL ); }
+	|  direct_declarator '[' CONSTANT ']'	 		 { $$ = append_dir_declarator_arr( ARRAY, $1, $3 ); }
+	|  direct_declarator '[' '-' CONSTANT ']'	         { error_msg("Array dimension must be a positive integer", $4->line_num, $4->column ); $$=NULL; }
+	/*|  direct_declarator '[' ']'	 			 { $$ = create_dir_declarator_arr( ARRAY, $1, NULL ); }*/
+	|  direct_declarator '(' parameter_type_list ')'	 { $$ = append_dir_declarator_fun( FUNCTION, $1, $3 ); }
+	|  direct_declarator '(' ')'				 { $$ = append_dir_declarator_fun( FUNCTION, $1, NULL ); }
 	;
 
 pointer
@@ -453,19 +463,20 @@ abstract_declarator
 	;
 
 direct_abstract_declarator
-	:  '(' abstract_declarator ')'					{ $$ = create_direct_abstract_declarator( ABSTRACT, $2 ); }
-	|  '[' ']'							{ $$ = create_direct_abstract_declarator( SQUARE ); } 
+	:  '[' ']'							{ $$ = create_direct_abstract_declarator( NULL ); } 
+	|  '[' CONSTANT ']'	 					{ $$ = create_direct_abstract_declarator( $2 ); } 
+	|  direct_abstract_declarator '[' ']'				{ $$ = append_direct_abstract_declarator( $1, NULL ); } 
+	|  direct_abstract_declarator '[' CONSTANT ']'			{ $$ = append_direct_abstract_declarator( $1, $3 ); } 
+	/*:  '(' abstract_declarator ')'					{ $$ = create_direct_abstract_declarator( ABSTRACT, $2 ); }*/
 	/*|  '[' constant_expression ']'	 				{ $$ = create_direct_abstract_declarator( SQUARE, NULL, $2 ); } */
-	|  '[' CONSTANT ']'	 				{ $$ = create_direct_abstract_declarator( SQUARE, NULL, $2 ); } 
-	|  direct_abstract_declarator '[' ']'				{ $$ = create_direct_abstract_declarator( SQUARE, $1 ); } 
-	|  direct_abstract_declarator '[' constant_expression ']'	{ $$ = create_direct_abstract_declarator( SQUARE, $1, $3 ); } 
-	|  '(' ')'	 						{ $$ = create_direct_abstract_declarator( ROUND ); } 
-	|  '(' parameter_type_list ')'	 				{ $$ = create_direct_abstract_declarator( ROUND, NULL, $2 ); } 
-	|  direct_abstract_declarator '(' ')'	 			{ $$ = create_direct_abstract_declarator( ROUND, $1 ); } 
-	|  direct_abstract_declarator '(' parameter_type_list ')'	{ $$ = create_direct_abstract_declarator( ROUND, $1, $3 ); } 
+	/*|  direct_abstract_declarator '[' constant_expression ']'	{ $$ = create_direct_abstract_declarator( SQUARE, $1, $3 ); }*/ 
+	/*|  '(' ')'	 						{ $$ = create_direct_abstract_declarator( ROUND ); } */
+	/*|  '(' parameter_type_list ')'	 				{ $$ = create_direct_abstract_declarator( ROUND, NULL, $2 ); }*/ 
+	/*|  direct_abstract_declarator '(' ')'	 			{ $$ = create_direct_abstract_declarator( ROUND, $1 ); } */
+	/*|  direct_abstract_declarator '(' parameter_type_list ')'	{ $$ = create_direct_abstract_declarator( ROUND, $1, $3 ); } */ 
 	;
 
-initializer
+/*initializer
 	:  assignment_expression	 { $$ = $1; }
 	|  '{' initializer_list '}'	 { $$ = create_non_term("initializer_list", $2); }
 	|  '{' initializer_list ',' '}'	 { $$ = create_non_term("initializer_list", $2); }
@@ -475,7 +486,7 @@ initializer_list
 	:  initializer	 { $$ = create_non_term("initializer", $1); }
 	|  initializer_list ',' initializer	 { $$ = create_non_term("initializer_list", $1, $3); }
 	;
-
+*/
 statement
 	:  labeled_statement	 { $$ = $1; }
 	|  compound_statement	 { $$ = $1; }
@@ -559,11 +570,14 @@ function_definition
 #include <stdio.h>
 
 extern char yytext[];
-extern int column;
+extern unsigned int column;
+extern std::stringstream text;
 
 void yyerror(const char *s)
 //char *s;
 {
 	fflush(stdout);
-	printf("\n%*s\n%*s\n", column, "^", column, s);
+	printf("%d:%d ERROR : %s\n",line_num,column,s);
+	std::cout << text.str(); 
+	printf("\n%*s\n", column, "^");
 }

@@ -7,6 +7,8 @@ IS			(u|U|l|L)*
 
 %{
 #include <stdio.h>
+#include <iostream>
+#include <sstream>
 #include "scanner.h"
 #include "ast.h"
 #include "symtab.h"
@@ -25,57 +27,60 @@ void parse();
 int check_type();
 int yylex();
 
-int column = 1;
-int line_num=1;
+unsigned int column = 1;
+unsigned int line_num=1;
+
+std::stringstream text;
+std::vector < std::string > code;
 %}
 
 %%
 "/*"			{ comment(); }
-"//"[^\n]*\n		{ line_num++;  }
+"//"[^\n]*\n		{ code.push_back(text.str()); text.clear(); text.str(std::string()); line_num++;  }
 
 "auto"			{ count(); return(AUTO); }
 "break"			{ count(); return(BREAK); }
 "case"			{ count(); return(CASE); }
-"char"			{ count(); return(CHAR); }
+"char"			{ yylval.type_specifier = create_type_specifier(CHAR, line_num, column); count(); return(CHAR); }
 "const"			{ count(); return(CONST); }
 "continue"		{ count(); return(CONTINUE); }
 "default"		{ count(); return(DEFAULT); }
 "do"			{ count(); return(DO); }
-"double"		{ count(); return(DOUBLE); }
+"double"		{ yylval.type_specifier = create_type_specifier(DOUBLE, line_num, column); count(); return(DOUBLE); }
 "else"			{ count(); return(ELSE); }
 "enum"			{ count(); return(ENUM); }
 "extern"		{ count(); return(EXTERN); }
-"float"			{ count(); return(FLOAT); }
+"float"			{ yylval.type_specifier = create_type_specifier(FLOAT, line_num, column); count(); return(FLOAT); }
 "for"			{ count(); return(FOR); }
 "goto"			{ count(); return(GOTO); }
 "if"			{ count(); return(IF); }
-"int"			{ count(); return(INT); }
-"long"			{ count(); return(LONG); }
+"int"			{ yylval.type_specifier = create_type_specifier(INT, line_num, column); count(); return(INT); }
+"long"			{ yylval.type_specifier = create_type_specifier(LONG, line_num, column); count(); return(LONG); }
 "register"		{ count(); return(REGISTER); }
 "return"		{ count(); return(RETURN); }
-"short"			{ count(); return(SHORT); }
-"signed"		{ count(); return(SIGNED); }
+"short"			{ yylval.type_specifier = create_type_specifier(SHORT, line_num, column); count(); return(SHORT); }
+"signed"		{ yylval.type_specifier = create_type_specifier(SIGNED, line_num, column); count(); return(SIGNED); }
 "sizeof"		{ count(); return(SIZEOF); }
 "static"		{ count(); return(STATIC); }
 "struct"		{ count(); return(STRUCT); }
 "switch"		{ count(); return(SWITCH); }
 "typedef"		{ count(); return(TYPEDEF); }
 "union"			{ count(); return(UNION); }
-"unsigned"		{ count(); return(UNSIGNED); }
-"void"			{ count(); return(VOID); }
+"unsigned"		{ yylval.type_specifier = create_type_specifier(UNSIGNED, line_num, column); count(); return(UNSIGNED); }
+"void"			{ yylval.terminal = create_type_specifier(VOID, line_num, column); count(); return(VOID); }
 "volatile"		{ count(); return(VOLATILE); }
 "while"			{ count(); return(WHILE); }
 
-{L}({L}|{D})*		{ count(); return(check_type()); }
+{L}({L}|{D})*		{  int type = check_type(); count(); return(type); }
 
-0[xX]{H}+{IS}?		{ count(); yylval.node = create_terminal("CONSTANT HEX", yytext); return(CONSTANT); }
-0{D}+{IS}?		{ count(); yylval.node = create_terminal("CONSTANT INT", yytext); return(CONSTANT); }
-{D}+{IS}?		{ count(); yylval.node = create_terminal("CONSTANT INT", yytext); return(CONSTANT); }
-L?'(\\.|[^\\'])+'	{ count(); yylval.node = create_terminal("CONSTANT", yytext); return(CONSTANT); }
+0[xX]{H}+{IS}?		{  yylval.constant = create_constant("CONSTANT HEX", yytext, line_num, column); count(); return(CONSTANT); }
+0{D}+{IS}?		{  yylval.constant = create_constant("CONSTANT INT", yytext, line_num, column); count(); return(CONSTANT); }
+{D}+{IS}?		{  yylval.constant = create_constant("CONSTANT INT", yytext, line_num, column); count(); return(CONSTANT); }
+L?'(\\.|[^\\'])+'	{  yylval.constant = create_constant("CONSTANT", yytext, line_num, column); count(); return(CONSTANT); }
 
-{D}+{E}{FS}?		{ count(); yylval.node = create_terminal("CONSTANT EXP", yytext); return(CONSTANT); }
-{D}*"."{D}+({E})?{FS}?	{ count(); yylval.node = create_terminal("CONSTANT FLOAT", yytext); return(CONSTANT); }
-{D}+"."{D}*({E})?{FS}?	{ count(); yylval.node = create_terminal("CONSTANT FLOAT", yytext); return(CONSTANT); }
+{D}+{E}{FS}?		{  yylval.constant = create_constant("CONSTANT EXP", yytext, line_num, column); count(); return(CONSTANT); }
+{D}*"."{D}+({E})?{FS}?	{  yylval.constant = create_constant("CONSTANT FLOAT", yytext, line_num, column); count(); return(CONSTANT); }
+{D}+"."{D}*({E})?{FS}?	{  yylval.constant = create_constant("CONSTANT FLOAT", yytext, line_num, column); count(); return(CONSTANT); }
 
 L?\"(\\.|[^\\"])*\"	{ count(); return(STRING_LITERAL); }
 
@@ -106,7 +111,7 @@ L?\"(\\.|[^\\"])*\"	{ count(); return(STRING_LITERAL); }
 ("}"|"%>")		{ count(); return('}'); }
 ","			{ count(); return(','); }
 ":"			{ count(); return(':'); }
-"="			{ count(); return('='); }
+"="			{ yylval.terminal= create_terminal("==",NULL, line_num, column ); count(); return('='); }
 "("			{ count(); return('('); }
 ")"			{ count(); return(')'); }
 ("["|"<:")		{ count(); return('['); }
@@ -138,8 +143,11 @@ void comment()
 
 loop:
 	while ((c = yyinput()) != '*' && c != 0){
-		if(c=='\n')
-			line_num++; 
+		if(c=='\n') {
+			code.push_back(text.str());
+			text.clear(); text.str(std::string());
+			line_num++;
+		} 
 		continue;
 	}
 	if ((c1 = yyinput()) != '/' && c != 0)
@@ -166,11 +174,19 @@ void count()
 	for (i = 0; yytext[i] != '\0'; i++) {
 		if (yytext[i] == '\n')
 			{column = 1;
+				code.push_back(text.str());
+text.clear(); text.str(std::string());
+	
+
 			line_num++;}
-		else if (yytext[i] == '\t')
-			column += 8 - (column % 8);
-		else
-			column++;
+		else if (yytext[i] == '\t') {
+			column += 9 - (column % 8) ;
+	text << yytext[i];
+		} else {
+			column++; 
+
+	text << yytext[i];
+	}
 	}
 }
 
@@ -186,7 +202,7 @@ int check_type()
 	it actually will only return IDENTIFIER
 */
 
-	Identifier * id = new Identifier(yytext);
+	Identifier * id = new Identifier(yytext, line_num, column);
 	yylval.identifier = id;
 	return(IDENTIFIER);
 }

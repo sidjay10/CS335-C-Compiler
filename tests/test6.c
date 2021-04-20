@@ -2,28 +2,20 @@ float c;
 float d;
 long this;
 
+struct abc{
+	float int x;
+	long float y;
+};
+
+
+float funct[0x12];
+
 int fun( float a, int b);
 
 int main() {
-	int a[][][];
+	unsigned float x;
+	int c, a[12][24][32], b[10], aa,bb;
 	int **x;
-	return 0;
-}
-
-struct a {
-	int x;
-
-};
-
-int fun( float a, int b) {
-
-	struct a q;
-	int x,y;
-	while ( x == 2 ) {
-		int z = 10;
-	}
-	if ( y==0 ) {
-		int k = 3;
-	}
+	int abc(int, int) = 20;
 	return 0;
 }

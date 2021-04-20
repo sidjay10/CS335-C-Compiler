@@ -7,6 +7,8 @@
 #include <string>
 #include <sstream>
 
+void yyerror( const char *s );
+
 enum PrimitiveTypes {
     U_CHAR_T = 0,
     CHAR_T = 1,
@@ -19,10 +21,16 @@ enum PrimitiveTypes {
     FLOAT_T = 8,
     DOUBLE_T = 9,
     LONG_DOUBLE_T = 10,
-    VOID_T = 11
+    VOID_T = 11,
+    ERROR_T = 12
 };
 
-extern int line_num;
+extern unsigned int line_num;
+extern unsigned int column;
+
+extern std::stringstream text;
+extern std::vector<std::string> code;
+
 // All class declarations
 class StructDefinition;
 class AssignmentExpression;
@@ -72,11 +80,21 @@ class Types {
 class Type {
   public:
     int typeIndex;
+
+    bool is_pointer;
     int ptr_level;
+
+    bool is_array;
+    unsigned int array_dim;
+    std::vector<unsigned int> array_dims;
+
+    bool is_function;
+    unsigned int num_args;
+    std::vector<Type> arg_types;
 
     Type();
 
-    Type( int idx, int p_lvli, bool is_con );
+    Type( int idx, int p_lvl, bool is_con );
     bool is_const;
     bool isPrimitive();
     std::string get_name();
@@ -85,10 +103,13 @@ class Type {
     bool isIntorFloat();
     bool isUnsigned();
     bool isPointer();
+    bool isVoid();
     void make_signed();
     void make_unsigned();
-    int get_size();
+    size_t get_size();
 };
+
+// Type INVALID_TYPE;
 
 extern std::vector<Types *> type_specifiers;
 
@@ -104,9 +125,12 @@ class SymTabEntry {
     std::string name;
     int level;
     Type type;
+    unsigned int line_num;
+    unsigned int column;
 
     // TODO: This needs to be expanded
-    SymTabEntry( std::string name_parameter );
+    SymTabEntry( std::string name_parameter, unsigned int line_num,
+                 unsigned int column );
 };
 
 class FuncEnt : public SymTabEntry {
@@ -135,7 +159,7 @@ class GlobalSymbolTable : public SymbolTable {
     std::map<std::string, SymTabEntry *> sym_table;
     void add_symbol( DeclarationSpecifiers *declaration_specifiers,
                      Declarator *declarator );
-    void add_to_table( SymTabEntry *symbol, bool redef );
+    void add_to_table( SymTabEntry *symbol, bool redef, Identifier *id );
     SymTabEntry *get_symbol_from_table( std::string name );
 };
 
@@ -148,7 +172,7 @@ class LocalSymbolTable : public SymbolTable {
     void clear_current_level();
     void empty_table();
     LocalSymbolTable();
-    void add_to_table( SymTabEntry *symbol );
+    void add_to_table( SymTabEntry *symbol, Identifier *id );
     SymTabEntry *get_symbol_from_table( std::string name );
     void add_function( DeclarationSpecifiers *declaration_specifiers,
                        Declarator *declarator );
@@ -162,6 +186,8 @@ typedef int TYPE_QUALIFIER;
 class Identifier : public Terminal {
   public:
     Identifier( const char *name );
+    Identifier( const char *name, unsigned int _line_num,
+                unsigned int _column );
 };
 
 class TypeQualifierList : public Non_Terminal {
@@ -202,9 +228,10 @@ class Declarator : public Non_Terminal {
     int get_pointer_level();
     Declarator();
     Declarator( Pointer *p, DirectDeclarator *dd );
+    //	void dotify();
 };
 
-Declarator *add_initializer_to_declarator( Declarator *declarator,
+Declarator *add_initializer_to_declarator( Declarator *declarator, Terminal *eq,
                                            Node *init_expr );
 
 Declarator *create_declarator( Pointer *pointer,
@@ -225,15 +252,15 @@ class DirectDeclarator : public Non_Terminal {
     DIRECT_DECLARATOR_TYPE type;
 
     Identifier *id;
+#if 0
     Declarator *declarator;
     DirectDeclarator *direct_declarator;
 
-#if 0
 		//TODO: Add these in
 		Constant_Expression * const_expr;
 #endif
 
-    Node *const_expr;
+    std::vector<unsigned int> array_dims;
     ParameterTypeList *params;
     DirectDeclarator();
 };
@@ -243,11 +270,11 @@ DirectDeclarator *create_dir_declarator_id( DIRECT_DECLARATOR_TYPE type,
 DirectDeclarator *create_dir_declarator_dec( DIRECT_DECLARATOR_TYPE type,
                                              Declarator *declarator );
 DirectDeclarator *
-create_dir_declarator_arr( DIRECT_DECLARATOR_TYPE type,
+append_dir_declarator_arr( DIRECT_DECLARATOR_TYPE type,
                            DirectDeclarator *direct_declarator,
-                           Node *const_expr );
+                           Constant *const_expr );
 DirectDeclarator *
-create_dir_declarator_fun( DIRECT_DECLARATOR_TYPE type,
+append_dir_declarator_fun( DIRECT_DECLARATOR_TYPE type,
                            DirectDeclarator *direct_declarator,
                            ParameterTypeList *params );
 
@@ -348,22 +375,22 @@ typedef enum {
 
 class DirectAbstractDeclarator : public Non_Terminal {
   public:
-    DIRECT_ABSTRACT_DECLARATOR_TYPE type;
-    AbstractDeclarator *abstract_declarator;
-    Node *const_expr;
-    DirectAbstractDeclarator *direct_abstract_declarator;
-    ParameterTypeList *parameter_type_list;
+    //    DIRECT_ABSTRACT_DECLARATOR_TYPE type;
+    //    AbstractDeclarator *abstract_declarator;
+    std::vector<unsigned int> array_dims;
+    //    DirectAbstractDeclarator *direct_abstract_declarator;
+    //    ParameterTypeList *parameter_type_list;
     DirectAbstractDeclarator();
 };
 
+DirectAbstractDeclarator *create_direct_abstract_declarator( Constant *_const );
 DirectAbstractDeclarator *
-create_direct_abstract_declarator( DIRECT_ABSTRACT_DECLARATOR_TYPE typ );
+append_direct_abstract_declarator( DirectAbstractDeclarator *dabs,
+                                   Constant *_const );
+#if 0
 DirectAbstractDeclarator *
 create_direct_abstract_declarator( DIRECT_ABSTRACT_DECLARATOR_TYPE typ,
                                    AbstractDeclarator *abs );
-DirectAbstractDeclarator *
-create_direct_abstract_declarator( DIRECT_ABSTRACT_DECLARATOR_TYPE typ,
-                                   DirectAbstractDeclarator *dabs );
 DirectAbstractDeclarator *
 create_direct_abstract_declarator( DIRECT_ABSTRACT_DECLARATOR_TYPE typ,
                                    DirectAbstractDeclarator *dabs, Node *ce );
@@ -371,12 +398,13 @@ DirectAbstractDeclarator *
 create_direct_abstract_declarator( DIRECT_ABSTRACT_DECLARATOR_TYPE typ,
                                    DirectAbstractDeclarator *dabs,
                                    ParameterTypeList *param_list );
-
+#endif
 class AbstractDeclarator : public Non_Terminal {
   public:
     Pointer *pointer;
     DirectAbstractDeclarator *direct_abstract_declarator;
     AbstractDeclarator( Pointer *ptr, DirectAbstractDeclarator *dabs );
+    int get_pointer_level();
 };
 
 AbstractDeclarator *
@@ -387,7 +415,9 @@ class ParameterDeclaration : public Non_Terminal {
     DeclarationSpecifiers *declaration_specifiers;
     Declarator *declarator;
     AbstractDeclarator *abstract_declarator;
+    Type type;
     ParameterDeclaration();
+    void create_type();
 };
 
 ParameterDeclaration *create_parameter_declaration( DeclarationSpecifiers *ds,
@@ -453,7 +483,7 @@ create_struct_declaration_list( StructDeclaration *struct_declaration );
 StructDeclarationList *
 add_to_struct_declaration_list( StructDeclarationList *struct_declaration_list,
                                 StructDeclaration *struct_declaration );
-void verify_struct_declarator( StructDeclarationList *st );
+int verify_struct_declarator( StructDeclarationList *st );
 class Enumerator : public Non_Terminal {
   public:
     Identifier *id;
@@ -475,7 +505,7 @@ EnumeratorList *add_to_enumerator_list( EnumeratorList *enumerator_list,
 
 typedef int TYPE_SPECIFIER;
 
-class TypeSpecifier : public Non_Terminal {
+class TypeSpecifier : public Terminal {
   public:
     TYPE_SPECIFIER type;
     Identifier *id;
@@ -483,14 +513,17 @@ class TypeSpecifier : public Non_Terminal {
     EnumeratorList *enumerator_list;
     int type_index;
 
-    TypeSpecifier( TYPE_SPECIFIER typ );
+    TypeSpecifier( TYPE_SPECIFIER typ, unsigned int line_num,
+                   unsigned int column );
     TypeSpecifier( TYPE_SPECIFIER type, Identifier *Id,
                    StructDeclarationList *struct_declaration_list );
     TypeSpecifier( TYPE_SPECIFIER type, Identifier *Id,
                    EnumeratorList *enumerator_list );
 };
 
-TypeSpecifier *create_type_specifier( TYPE_SPECIFIER type );
+TypeSpecifier *create_type_specifier( TYPE_SPECIFIER type,
+                                      unsigned int line_num,
+                                      unsigned int column );
 TypeSpecifier *
 create_type_specifier( TYPE_SPECIFIER type, Identifier *id,
                        StructDeclarationList *struct_declaration_list );
@@ -498,5 +531,7 @@ TypeSpecifier *create_type_specifier( TYPE_SPECIFIER type, Identifier *id,
                                       EnumeratorList *enumerator_list );
 
 Node *add_to_global_symbol_table( Declaration *declaration );
+
+void error_msg( std::string str, unsigned int line_num, unsigned int column );
 
 #endif

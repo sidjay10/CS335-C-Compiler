@@ -13,8 +13,8 @@
 #include <utility>
 #include <iterator>
 
-extern int line_num;
-extern int column;
+extern unsigned int line_num;
+extern unsigned int column;
 
 //##############################################################################
 //############################# EXPRESSION #####################################
@@ -56,6 +56,7 @@ Expression *create_primary_constant( Constant *a ) {
 
     return P;
 }
+
 Expression *create_primary_stringliteral( StringLiteral *a ) {
     PrimaryExpression *P = new PrimaryExpression();
     P->isTerminal = 3;
@@ -885,7 +886,7 @@ unsigned stou(std::string const & str, size_t * idx = 0, int base = 10) {
     }
     return result;
 }
-Constant::Constant(const char* _name, const char* _value):Terminal(_name,_value){
+Constant::Constant(const char* _name, const char* _value, unsigned int _line_num, unsigned int _column):Terminal(_name,_value, _line_num, _column){
 
     ConstantType = Type( 2, 0, false );
     int length = value.length();
@@ -982,4 +983,10 @@ Constant::Constant(const char* _name, const char* _value):Terminal(_name,_value)
         // ------TODO---------
         //return retT;
     }
+}
+
+Constant* create_constant( const char *name ,const char* value, unsigned int line_num, unsigned int column) {
+	Constant * con = new Constant ( name, value, line_num, column);
+	return con;
+
 }
