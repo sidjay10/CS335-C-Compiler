@@ -14,6 +14,8 @@ class Node {
 	public:
 		unsigned long long int id;
 		int is_printed = 1;
+		unsigned int line_num;
+		unsigned int column;
 
 		virtual void dotify() = 0;
 		virtual void add_child(Node * node);
@@ -23,6 +25,7 @@ class Node {
 		unsigned long long int get_id();
 	protected:
 		Node ();
+		Node (unsigned int line_num, unsigned int column );
 		virtual ~Node() {}
 };
 
@@ -31,8 +34,6 @@ class Terminal : public Node {
 	public:
 		std::string name;
 		std::string value;
-		unsigned int line_num;
-		unsigned int column;
 		Terminal(const char * name_, const char * value_);
 		Terminal(const char * name_, const char * value_,  unsigned int _line_num, unsigned int _column );
 		void dotify();

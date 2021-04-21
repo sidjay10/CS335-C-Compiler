@@ -156,6 +156,7 @@ Type::Type( int idx, int p_lvl, bool is_con ) {
 
     is_function = false;
     num_args = 0;
+    is_defined = false;
 }
 bool Type::isPrimitive() {
     if ( typeIndex >= 0 && typeIndex <= 12 ) {
@@ -184,22 +185,25 @@ std::string Type::get_name() {
             ss << "*";
         }
     } else if ( is_function ) {
-        ss << "( ";
-        if ( num_args == 1 ) {
+        if ( num_args == 0 ) {
+            ss << "( )";
+        }
+        else if ( num_args == 1 ) {
+            ss << "( ";
             for ( auto it = arg_types.begin(); it != arg_types.end(); it++ ) {
                 ss << ( *it ).get_name();
             }
+            ss << " )";
         } else {
-
+            ss << "( ";
             auto it = arg_types.begin();
             ss << ( *it ).get_name();
             for ( auto it = arg_types.begin() + 1; it != arg_types.end();
                   it++ ) {
                 ss << ", " << ( *it ).get_name();
             }
+            ss << " )";
         }
-
-        ss << ")";
     }
     return ss.str();
 }
@@ -284,9 +288,65 @@ bool Type::isVoid() {
     return false;
 }
 
+bool Type::is_invalid() {
+
+    if ( typeIndex == -1 ) {
+        return true;
+    }
+
+    return false;
+}
+
 bool operator==( Type &obj1, Type &obj2 ) {
-    return ( obj1.typeIndex == obj2.typeIndex &&
-             obj1.ptr_level == obj2.ptr_level );
+
+    if ( obj1.typeIndex != obj2.typeIndex ) {
+        return false;
+    } else if ( obj1.is_array == true && obj2.is_array == true ) {
+        if ( obj1.array_dim != obj2.array_dim ) {
+            return false;
+        } else {
+            for ( unsigned int i = 0; i < obj1.array_dim; i++ ) {
+                if ( obj1.array_dims[i] == 0 || obj2.array_dims[i] == 0 ||
+                     obj1.array_dims[i] == obj2.array_dims[i] ) {
+                    continue;
+                } else {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+    } else if ( obj1.is_array != obj2.is_array ) {
+        return false;
+    } else if ( obj1.is_pointer == true && obj2.is_pointer == true ) {
+        return obj1.ptr_level == obj2.ptr_level;
+
+    } else if ( obj1.is_pointer != obj2.is_pointer ) {
+        return false;
+    } else if ( obj1.is_function == true && obj2.is_function == true ) {
+        if ( obj1.num_args != obj2.num_args ) {
+            return false;
+        } else {
+            for ( unsigned int i = 0; i < obj1.num_args; i++ ) {
+                if ( obj1.arg_types[i] == obj2.arg_types[i] ) {
+                    continue;
+                } else {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+    } else if ( obj1.is_function != obj2.is_function ) {
+        return false;
+    }
+
+    else {
+        return true;
+    }
+
+    return false;
 }
 
 //##############################################################################
@@ -427,6 +487,12 @@ TypeQualifierList *create_type_qualifier_list( TYPE_QUALIFIER type ) {
     return tql;
 }
 
+TypeQualifierList *add_to_type_qualifier_list( TypeQualifierList *tql,
+                                               TYPE_QUALIFIER type ) {
+    tql->append_to_list( type );
+    return tql;
+}
+
 //##############################################################################
 //############################# DECLARATION ####################################
 //##############################################################################
@@ -442,6 +508,7 @@ Declaration *new_declaration( DeclarationSpecifiers *declaration_specifiers,
 
 void Declaration::add_to_symbol_table( LocalSymbolTable &sym_tab ) {
     if ( init_declarator_list == nullptr ) {
+        /* Nothing to add to the symbol table */
         return;
     }
     std::vector<Declarator *> &dec = init_declarator_list->declarator_list;
@@ -449,6 +516,7 @@ void Declaration::add_to_symbol_table( LocalSymbolTable &sym_tab ) {
     bool is_const = declaration_specifiers->is_const;
     assert( type_index != -1 );
     if ( type_index == -2 ) {
+        /* Error in type index, don't add any thing to the symbol table */
         return;
     }
 
@@ -475,7 +543,27 @@ void Declaration::add_to_symbol_table( LocalSymbolTable &sym_tab ) {
             e->type.is_function = true;
             e->type.is_pointer =
                 false; /* We don't implement function pointers */
-            e->type.num_args = dd->params->param_list.size();
+            if ( dd->params != nullptr ) {
+                e->type.num_args = dd->params->param_list.size();
+
+                bool fun_args_valid = true;
+                for ( auto j = dd->params->param_list.begin();
+                      j != dd->params->param_list.end(); j++ ) {
+                    if ( ( *j )->type.is_invalid() ) {
+                        fun_args_valid = false;
+                        break;
+                    } else {
+                        e->type.arg_types.push_back( ( *j )->type );
+                    }
+                }
+
+                if ( !fun_args_valid ) {
+                    delete e;
+                    continue;
+                }
+            } else {
+                e->type.num_args = 0;
+            }
 
         } else {
             std::cerr << "INVALID TYPE: " << dd->type << "\n";
@@ -491,16 +579,6 @@ void Declaration::add_to_symbol_table( LocalSymbolTable &sym_tab ) {
         sym_tab.add_to_table( e, ( *i )->id );
     }
 }
-
-TypeQualifierList *add_to_type_qualifier_list( TypeQualifierList *tql,
-                                               TYPE_QUALIFIER type ) {
-    tql->append_to_list( type );
-    return tql;
-}
-
-//##############################################################################
-//############################# DECLARATION ####################################
-//##############################################################################
 
 Declaration ::Declaration( DeclarationSpecifiers *declaration_specifiers_,
                            DeclaratorList *init_declarator_list_ )
@@ -523,7 +601,6 @@ void Declaration::add_to_symbol_table( GlobalSymbolTable &sym_tab ) {
 
     for ( auto i = dec.begin(); i != dec.end(); i++ ) {
         int pointer_level = ( *i )->get_pointer_level();
-        // std::cout << "G: " << ( *i )->id->value << "\n";
 
         SymTabEntry *e = new SymTabEntry(
             ( *i )->id->value, ( *i )->id->line_num, ( *i )->id->column );
@@ -543,7 +620,26 @@ void Declaration::add_to_symbol_table( GlobalSymbolTable &sym_tab ) {
             e->type.is_function = true;
             e->type.is_pointer =
                 false; /* We don't implement function pointers */
-            e->type.num_args = dd->params->param_list.size();
+            if ( dd->params != nullptr ) {
+                e->type.num_args = dd->params->param_list.size();
+                bool fun_args_valid = true;
+                for ( auto j = dd->params->param_list.begin();
+                      j != dd->params->param_list.end(); j++ ) {
+                    if ( ( *j )->type.is_invalid() ) {
+                        fun_args_valid = false;
+                        break;
+                    } else {
+                        e->type.arg_types.push_back( ( *j )->type );
+                    }
+                }
+
+                if ( !fun_args_valid ) {
+                    delete e;
+                    continue;
+                }
+            } else {
+                e->type.num_args = 0;
+            }
         } else {
             std::cerr << "INVALID TYPE : " << dd->type << "\n";
             assert( 0 );
@@ -744,8 +840,7 @@ DeclarationList *add_to_declaration_list( DeclarationList *declaration_list,
 }
 
 //##############################################################################
-//############################# DECLARATOR LIST
-//################################
+//############################# DECLARATOR LIST ################################
 //##############################################################################
 
 DeclaratorList ::DeclaratorList() : Non_Terminal( "init_declarator_list" ){};
@@ -1024,8 +1119,7 @@ append_dir_declarator_fun( DIRECT_DECLARATOR_TYPE type,
 }
 
 //##############################################################################
-//######################## DIRECT ABSTRACT DECLARATOR
-//##########################
+//######################## DIRECT ABSTRACT DECLARATOR ##########################
 //##############################################################################
 
 DirectAbstractDeclarator::DirectAbstractDeclarator()
@@ -1151,8 +1245,7 @@ create_direct_abstract_declarator( DIRECT_ABSTRACT_DECLARATOR_TYPE typ,
 #endif
 
 //##############################################################################
-//########################### ABSTRACT DECLARATOR
-//##############################
+//########################### ABSTRACT DECLARATOR ##############################
 //##############################################################################
 
 AbstractDeclarator::AbstractDeclarator( Pointer *ptr,
@@ -1178,8 +1271,7 @@ create_abstract_declarator( Pointer *ptr, DirectAbstractDeclarator *dabs ) {
 }
 
 //##############################################################################
-//########################### PARAMETER DECLARATION
-//############################
+//########################### PARAMETER DECLARATION ############################
 //##############################################################################
 ParameterDeclaration::ParameterDeclaration()
     : Non_Terminal( "parameter_declaration" ){};
@@ -1209,8 +1301,9 @@ void ParameterDeclaration::create_type() {
         }
 
         else if ( dd->type == FUNCTION ) {
-            error_msg( "Formal Argument can't be of function type",
+            error_msg( "Formal Argument can't be of type function",
                        dd->id->line_num, dd->id->column );
+            type = Type();
             // type = INVALID_TYPE;
         }
 
@@ -1248,8 +1341,7 @@ ParameterDeclaration *create_parameter_declaration( DeclarationSpecifiers *ds,
     return pd;
 }
 //##############################################################################
-//############################ PARAMETER TYPE LIST
-//#############################
+//############################ PARAMETER TYPE LIST #############################
 //##############################################################################
 
 ParameterTypeList::ParameterTypeList()
@@ -1278,8 +1370,7 @@ ParameterTypeList *add_ellipsis_to_list( ParameterTypeList *ptl ) {
 }
 
 //##############################################################################
-//################################ IDENTIFIER
-//##################################
+//################################ IDENTIFIER ##################################
 //##############################################################################
 Identifier::Identifier( const char *name )
     : Terminal( "IDENTIFIER", name, 0, 0 ){};
@@ -1289,8 +1380,7 @@ Identifier::Identifier( const char *name, unsigned int _line_num,
     : Terminal( "IDENTIFIER", name, _line_num, _column ){};
 
 //##############################################################################
-//########################## FUNCTION DEFINITION
-//###############################
+//########################## FUNCTION DEFINITION ###############################
 //##############################################################################
 
 FunctionDefinition::FunctionDefinition(
@@ -1298,7 +1388,8 @@ FunctionDefinition::FunctionDefinition(
     Node *compound_statement_ )
     : Non_Terminal( "function_definiton" ),
       declaration_specifiers( declaration_specifiers_ ),
-      declarator( declarator_ ), compound_statement( compound_statement_ ){};
+      declarator( declarator_ ), compound_statement( compound_statement_ ),
+      error( 0 ){};
 
 FunctionDefinition *
 create_function_defintion( DeclarationSpecifiers *declaration_specifiers,
@@ -1307,8 +1398,10 @@ create_function_defintion( DeclarationSpecifiers *declaration_specifiers,
         declaration_specifiers, declarator, compound_statement );
     fd->add_children( declaration_specifiers, declarator, compound_statement );
     declaration_specifiers->create_type();
-    global_symbol_table.add_symbol( declaration_specifiers, declarator );
-    local_symbol_table.add_function( declaration_specifiers, declarator );
+    global_symbol_table.add_symbol( declaration_specifiers, declarator,
+                                    &( fd->error ) );
+    local_symbol_table.add_function( declaration_specifiers, declarator,
+                                     &( fd->error ) );
     return fd;
 }
 
@@ -1316,12 +1409,16 @@ FunctionDefinition *add_stmt_to_function_definition( FunctionDefinition *fd,
                                                      Node *compound_stmt ) {
     fd->compound_statement = compound_stmt;
     fd->add_child( compound_stmt );
+    if ( fd->error == 0 && compound_stmt != nullptr ) {
+        SymTabEntry *gte = global_symbol_table.get_symbol_from_table(
+            fd->declarator->id->value );
+        gte->type.is_defined = true;
+    }
     return fd;
 }
 
 //##############################################################################
-//############################## TYPE SPECIFIER
-//################################
+//############################## TYPE SPECIFIER ################################
 //##############################################################################
 
 TypeSpecifier::TypeSpecifier( TYPE_SPECIFIER typ, unsigned int _line_num,
@@ -1515,8 +1612,7 @@ TypeSpecifier *create_type_specifier( TYPE_SPECIFIER type, Identifier *id,
 }
 
 //##############################################################################
-//######################### STRUCT DECLARATION LIST
-//############################
+//######################### STRUCT DECLARATION LIST ############################
 //##############################################################################
 
 StructDeclarationList::StructDeclarationList()
@@ -1547,8 +1643,7 @@ add_to_struct_declaration_list( StructDeclarationList *struct_declaration_list,
 }
 
 //##############################################################################
-//############################ STRUCT DECLARATION
-//##############################
+//############################ STRUCT DECLARATION ##############################
 //##############################################################################
 
 StructDeclaration::StructDeclaration( SpecifierQualifierList *sq_list_,
@@ -1567,8 +1662,7 @@ create_struct_declaration( SpecifierQualifierList *sq_list,
 }
 
 //##############################################################################
-//######################### SPECIFIER QUALIFIER LIST
-//###########################
+//######################### SPECIFIER QUALIFIER LIST ###########################
 //##############################################################################
 
 SpecifierQualifierList::SpecifierQualifierList()
@@ -1703,8 +1797,7 @@ SpecifierQualifierList *add_type_qualifier_sq( SpecifierQualifierList *sq_list,
 }
 
 //##############################################################################
-//################################ ENUMERATOR
-//##################################
+//################################ ENUMERATOR ##################################
 //##############################################################################
 
 Enumerator::Enumerator( Identifier *id_, Node *const_expr )
@@ -1717,8 +1810,7 @@ Enumerator *create_enumerator( Identifier *id, Node *const_expr ) {
 }
 
 //##############################################################################
-//############################## ENUMERATOR LIST
-//###############################
+//############################## ENUMERATOR LIST ###############################
 //##############################################################################
 
 EnumeratorList::EnumeratorList() : Non_Terminal( "enumerator_list" ){};
@@ -1738,8 +1830,7 @@ EnumeratorList *add_to_enumerator_list( EnumeratorList *enumerator_list,
 }
 
 //##############################################################################
-//############################ LOCAL SYMBOL TABLE
-//##############################
+//############################ LOCAL SYMBOL TABLE ##############################
 //##############################################################################
 
 SymbolTable::SymbolTable(){};
@@ -1841,13 +1932,24 @@ SymTabEntry *LocalSymbolTable::get_symbol_from_table( std::string name ) {
 }
 
 void LocalSymbolTable::add_function(
-    DeclarationSpecifiers *declaration_specifiers, Declarator *declarator ) {
+    DeclarationSpecifiers *declaration_specifiers, Declarator *declarator,
+    int *error ) {
 
     sym_table.clear();
     ss.clear();
     ss.str( std::string() );
+    if ( *error == -1 ) {
+        return;
+    }
     assert( declarator->direct_declarator->type == FUNCTION );
     function_name = declarator->id->value;
+    SymTabEntry *gte =
+        global_symbol_table.get_symbol_from_table( function_name );
+
+    if ( gte == nullptr ) {
+        *error = -1;
+        return;
+    }
     // std::cout << "L: " << function_name << " " <<
     // declaration_specifiers->type_index;
 
@@ -1924,18 +2026,54 @@ void LocalSymbolTable::add_function(
 //##############################################################################
 
 void GlobalSymbolTable::add_symbol(
-    DeclarationSpecifiers *declaration_specifiers, Declarator *declarator ) {
+    DeclarationSpecifiers *declaration_specifiers, Declarator *declarator,
+    int *error ) {
 
     declaration_specifiers->create_type();
     int type_index = declaration_specifiers->type_index;
     bool is_const = declaration_specifiers->is_const;
     int pointer_level = declarator->get_pointer_level();
 
+    assert( type_index != -1 );
+    if ( type_index == -2 ) {
+        *error = -1;
+        return;
+    }
+    assert( declarator->direct_declarator->type == FUNCTION );
+
     SymTabEntry *e =
         new SymTabEntry( declarator->id->value, declarator->id->line_num,
                          declarator->id->column );
-    e->type = Type( type_index, pointer_level, is_const );
-    add_to_table( e, false, declarator->id );
+
+    e->type = Type( type_index, 0, true );
+    e->type.is_function = true;
+    e->type.is_pointer = false; /* We don't implement function pointers */
+    DirectDeclarator *dd = declarator->direct_declarator;
+    if ( dd->params != nullptr ) {
+        e->type.num_args = dd->params->param_list.size();
+        bool fun_args_valid = true;
+        for ( auto j = dd->params->param_list.begin();
+              j != dd->params->param_list.end(); j++ ) {
+            if ( ( *j )->type.is_invalid() ) {
+                fun_args_valid = false;
+                break;
+            } else {
+                e->type.arg_types.push_back( ( *j )->type );
+            }
+        }
+
+        if ( !fun_args_valid ) {
+            delete e;
+            *error = -1;
+            return;
+        }
+
+    } else {
+
+        e->type.num_args = 0;
+    }
+
+    add_to_table( e, true, declarator->id );
     ss << "global,"
        << "-," << declarator->id->value << ",fun:" << e->type.get_name()
        << ",0\n";
@@ -1962,7 +2100,7 @@ void GlobalSymbolTable::add_to_table( SymTabEntry *symbol, bool redef,
     auto it = sym_table.find( symbol->name );
     if ( it == sym_table.end() ) {
         sym_table.insert( {symbol->name, symbol} );
-    } else if ( !( it->second->type == symbol->type ) && redef ) {
+    } else if ( !( it->second->type == symbol->type ) ) {
 
         // Can't insert two symbols with same name at the same level
         error_msg( "Conflicting types for " + it->first, id->line_num,
@@ -1994,7 +2132,7 @@ SymTabEntry::SymTabEntry( std::string _name, unsigned int _line_num,
     : name( _name ), line_num( _line_num ), column( _column ){};
 
 //##############################################################################
-//########################### SYMBOL TABLE ENTRY ##############################
+//############################## ERROR MESSAGE #################################
 //##############################################################################
 
 void error_msg( std::string str, unsigned int line_num, unsigned int column ) {
@@ -2008,6 +2146,20 @@ void error_msg( std::string str, unsigned int line_num, unsigned int column ) {
     }
 
     printf( "\n\t%*s\n", column, "^" );
+}
+
+void error_msg( std::string str, unsigned int line_num ) {
+
+    std::cout << "\n" << line_num <<  " ERROR: " << str << "\n";
+    if ( line_num == ( code.size() + 1 ) ) {
+
+        std::cout << "\t" << text.str();
+    } else {
+        std::cout << "\t" << code[line_num - 1];
+    }
+	std::cout << "\n";
+
+    //printf( "\n\t%*s\n", column, "^" );
 }
 
 //##############################################################################

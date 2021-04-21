@@ -80,7 +80,7 @@
 %type <expression> inclusive_or_expression 
 %type <expression> exclusive_or_expression
 %type <expression> additive_expression
-%type <expression> argument_expression_list
+%type <argument_expression_list> argument_expression_list
 %type <expression> multiplicative_expression
 %type <expression> and_expression
 %type <expression> equality_expression  
@@ -157,7 +157,8 @@ primary_expression
 	: IDENTIFIER		{ $$ = create_primary_identifier($1); } 
 	| CONSTANT		{ $$ = create_primary_constant($1); }
 	| STRING_LITERAL	{ $$ = create_primary_stringliteral($1); } 
-	| '(' expression ')'	{ $$ = create_primary_expression($2); } 
+	/*| '(' expression ')'	{ $$ = create_primary_expression($2); }*/
+	| '(' expression ')'	{ $$ = $2; } 
 	;
 
 postfix_expression

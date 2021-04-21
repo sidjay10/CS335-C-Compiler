@@ -14,6 +14,8 @@ unsigned long long int get_next_node_id() {
 
 Node::Node() : id(get_next_node_id()) {};
 
+Node::Node(unsigned int _line_num, unsigned int _column ) : id(get_next_node_id()) , line_num(_line_num), column(_column) {};
+
 unsigned long long int Node::get_id() {
 	return id;
 }
@@ -23,11 +25,9 @@ Terminal::Terminal(const char * name_, const char * value_) {
 	if (value_) value = std::string(value_);
 }
 
-Terminal::Terminal(const char * name_, const char * value_, unsigned int _line_num, unsigned int _column ) {
+Terminal::Terminal(const char * name_, const char * value_, unsigned int _line_num, unsigned int _column ) : Node(_line_num, _column){
 	name = std::string(name_);
 	if (value_) value = std::string(value_);
-	line_num = _line_num;
-	column = _column;
 }
 
 

@@ -11,10 +11,13 @@
 #include <iostream>
 #include <vector>
 #include <utility>
+#include <string>
 #include <iterator>
 
 extern unsigned int line_num;
 extern unsigned int column;
+
+Type INVALID_TYPE;
 
 //##############################################################################
 //############################# EXPRESSION #####################################
@@ -27,21 +30,24 @@ Expression *create_primary_identifier( Identifier *a ) {
     PrimaryExpression *P = new PrimaryExpression();
     P->isTerminal = 1;
     P->Ival = a;
+    P->name = "primary_expression";
+
     SymTabEntry *ste = local_symbol_table.get_symbol_from_table( a->value );
     if ( ste == nullptr ) {
         ste = global_symbol_table.get_symbol_from_table( a->value );
         if ( ste == nullptr ) {
             // Error
-            std::cerr << "Undefined symbol " << a->value << "\n";
-            std::cerr << "ERROR at line " << line_num << "\n";
-            exit( 0 );
+            error_msg( "Undeclared symbol " + a->value, a->line_num,
+                       a->column );
+            P->type = INVALID_TYPE;
+            return P;
         }
     }
-
     P->type = ste->type;
-    P->name = "primary_expression";
-    P->add_child(a);
-    
+    P->add_child( a );
+    P->line_num = a->line_num;
+    P->column = a->column;
+
     return P;
 }
 
@@ -50,6 +56,8 @@ Expression *create_primary_constant( Constant *a ) {
     P->isTerminal = 2;
     P->Cval = a;
     P->type = a->getConstantType();
+    P->line_num = a->line_num;
+    P->column = a->column;
 
     P->name = "primary_expression";
     P->add_child( a );
@@ -63,11 +71,15 @@ Expression *create_primary_stringliteral( StringLiteral *a ) {
     P->Sval = a;
     P->type.typeIndex = PrimitiveTypes::U_CHAR_T;
     P->type.ptr_level = 1;
+    P->line_num = a->line_num;
+    P->column = a->column;
 
     P->name = "primary_expression";
     P->add_child( a );
     return P;
 }
+
+#if 0
 Expression *create_primary_expression( Expression *a ) {
     PrimaryExpression *P = new PrimaryExpression();
     P->isTerminal = 0;
@@ -80,23 +92,25 @@ Expression *create_primary_expression( Expression *a ) {
     return P;
 }
 
-// 2. ArguementExpressionList
-Expression *create_argument_expr_assignement( Expression *ase ) {
+#endif
+
+// 2. ArgumentExpressionList
+ArgumentExprList *create_argument_expr_assignement( Expression *ase ) {
     ArgumentExprList *P = new ArgumentExprList();
-    P->op2 = ase;
-    // ArguementExprList does not have any type as it is a composite entity
-    P->name = "assignment_expression";
+    P->args.push_back( ase );
+    // ArgumentExprList does not have any type as it is a composite entity
+    P->name = "arguments";
     P->add_child( ase );
 
     return P;
 }
-Expression *create_argument_expr_list( Expression *ae_list, Expression *ase ) {
-    ArgumentExprList *P = new ArgumentExprList();
-    P->op1 = ae_list;
-    P->op2 = ase;
+ArgumentExprList *create_argument_expr_list( ArgumentExprList *P,
+                                             Expression *ase ) {
 
-    P->name = "assignment_expression_list";
-    P->add_children( ae_list, ase );
+    P->args.push_back( ase );
+    // ArgumentExprList does not have any type as it is a composite entity
+    P->name = "arguments";
+    P->add_child( ase );
     return P;
 }
 
@@ -105,25 +119,51 @@ Expression *create_postfix_expr_arr( Expression *pe, Expression *e ) {
     PostfixExpression *P = new PostfixExpression();
     if ( dynamic_cast<PostfixExpression *>( pe ) ) {
         P->pe = dynamic_cast<PostfixExpression *>( pe );
-    } else
+    } else {
         P->pe = nullptr;
+    }
     P->exp = e;
-    Types peT = defined_types[pe->type.typeIndex];
+    P->name = "ARRAY ACCESS";
+    if ( pe->type.is_invalid() || e->type.is_invalid() ) {
+        P->type = INVALID_TYPE;
+        return P;
+    }
+    P->add_children( pe, e );
+    P->line_num = pe->line_num;
+    P->column = pe->column;
 
-    if ( pe->type.ptr_level == 1 ) {
-        if ( e->type.isInt() ) {
+    if ( e->type.isInt() ) {
+        if ( pe->type.is_array ) {
             P->type = pe->type;
-            P->type.ptr_level = 0;
+            P->type.ptr_level--;
+            P->type.array_dim--;
+            P->type.array_dims.erase( P->type.array_dims.begin() );
+            if ( P->type.ptr_level == 0 ) {
+                P->type.is_pointer = false;
+            }
+            if ( P->type.array_dim == 0 ) {
+                P->type.is_array = 0;
+            }
+        } else if ( pe->type.is_pointer ) {
+            P->type = pe->type;
+            P->type.ptr_level--;
+            if ( P->type.ptr_level == 0 ) {
+                P->type.is_pointer = false;
+            }
+
         } else {
-            // Error
-            std::cerr << "ERROR: Array subscript is not an integer\n";
-            std::cerr << "ERROR at line " << line_num << "\n";
-            exit( 0 );
+            error_msg( "Subscripted value is neither array nor pointer",
+                       line_num );
+            P->type = INVALID_TYPE;
         }
     }
+    else {
+        // Error
+        error_msg( "Array index must be of type integer", line_num );
+        P->type = INVALID_TYPE;
+        return P;
+    }
 
-    P->name = "ARRAY ACCESS";
-    P->add_children( pe, e );
     return P;
 }
 
@@ -131,20 +171,100 @@ Expression *create_postfix_expr_voidfun( Identifier *fi ) {
     PostfixExpression *P = new PostfixExpression();
     // Lookup Function type from symbol table - should be void
 
+    SymTabEntry *ste = global_symbol_table.get_symbol_from_table( fi->value );
+    if ( ste == nullptr ) {
+        // Error
+        error_msg( "Undeclared symbol " + fi->value, fi->line_num, fi->column );
+        P->type = INVALID_TYPE;
+        return P;
+    } else if ( !ste->type.is_function ) {
+        // Error
+        error_msg( "Called object '" + fi->value + "' is not a function",
+                   fi->line_num, fi->column );
+        P->type = INVALID_TYPE;
+        return P;
+    } else if ( ste->type.num_args != 0 ) {
+        // Error
+        error_msg( "Too few arguments to function '" + fi->value + "'",
+                   fi->line_num, fi->column );
+        P->type = INVALID_TYPE;
+        return P;
+    }
+
     P->name = "FUNCTION CALL";
     P->add_child( fi );
+    P->line_num = fi->line_num;
+    P->column = fi->column;
+
+    P->type = ste->type;
+    P->type.is_function = false;
+    P->type.num_args = 0;
+    P->type.arg_types.clear();
 
     return P;
 }
 
-Expression *create_postfix_expr_fun( Identifier *fi, Expression *ae ) {
+Expression *create_postfix_expr_fun( Identifier *fi, ArgumentExprList *ae ) {
     PostfixExpression *P = new PostfixExpression();
     // Here, we need to check two things:
-    // 1. whether ArguementExprList matches with Function signature from lookup
+    // 1. whether ArgumentExprList matches with Function signature from lookup
     // of symbol table table
+
+    SymTabEntry *ste = global_symbol_table.get_symbol_from_table( fi->value );
+    if ( ste == nullptr ) {
+        // Error
+        error_msg( "Undeclared symbol " + fi->value, fi->line_num, fi->column );
+        P->type = INVALID_TYPE;
+        return P;
+    } else if ( !ste->type.is_function ) {
+        // Error
+        error_msg( "Called object '" + fi->value + "' is not a function",
+                   fi->line_num, fi->column );
+        P->type = INVALID_TYPE;
+        return P;
+    } else if ( ste->type.num_args > ae->args.size() ) {
+        // Error
+        error_msg( "Too few arguments to function '" + fi->value +
+                       "' .Expected " + std::to_string( ste->type.num_args ) +
+                       ", got " + std::to_string( ae->args.size() ),
+                   fi->line_num, fi->column );
+        P->type = INVALID_TYPE;
+        return P;
+    } else if ( ste->type.num_args < ae->args.size() ) {
+        // Error
+        error_msg( "Too many arguments to function '" + fi->value +
+                       "' .Expected " + std::to_string( ste->type.num_args ) +
+                       ", got " + std::to_string( ae->args.size() ),
+                   fi->line_num, fi->column );
+        P->type = INVALID_TYPE;
+        return P;
+    } else if ( ste->type.num_args == ae->args.size() ) {
+        for ( unsigned int i = 0; i < ste->type.num_args; i++ ) {
+            if ( ae->args[i]->type.is_invalid() ) {
+                P->type = INVALID_TYPE;
+                return P;
+            }
+
+            if ( !( ste->type.arg_types[i] == ae->args[i]->type ) ) {
+                error_msg( "Type mismatch at argument " + std::to_string( i ) +
+                               " of function '" + fi->value + "' .Expected " +
+                               ste->type.arg_types[i].get_name() + ", got " +
+                               ae->args[i]->type.get_name(),
+                           fi->line_num, fi->column );
+                P->type = INVALID_TYPE;
+                return P;
+            }
+        }
+    }
 
     P->name = "FUNCTION CALL";
     P->add_children( fi, ae );
+    P->line_num = fi->line_num;
+    P->column = fi->column;
+    P->type = ste->type;
+    P->type.is_function = false;
+    P->type.num_args = 0;
+    P->type.arg_types.clear();
 
     return P;
 }
@@ -152,6 +272,12 @@ Expression *create_postfix_expr_fun( Identifier *fi, Expression *ae ) {
 Expression *create_postfix_expr_struct( std::string access_op, Expression *pe,
                                         Identifier *i ) {
     PostfixExpression *P = new PostfixExpression();
+
+    if ( pe->type.is_invalid() ) {
+        P->type = INVALID_TYPE;
+        return P;
+    }
+
     Types peT = defined_types[pe->type.typeIndex];
     if ( access_op == "." ) {
         if ( peT.is_struct && pe->type.ptr_level == 0 ) {
@@ -159,31 +285,40 @@ Expression *create_postfix_expr_struct( std::string access_op, Expression *pe,
             Type *iType = peT.struct_definition->get_member( i );
             if ( iType == nullptr ) {
                 // Error
-                std::cerr << "Error\n";
-                std::cerr << "ERROR at line " << line_num << "\n";
+                error_msg( i->value + " is not a member of " +
+                               pe->type.get_name(),
+                           i->line_num, i->column );
+                P->type = INVALID_TYPE;
+                return P;
             } else {
                 P->type = *iType;
             }
         } else {
-            std::cerr<<"Operand Error\n";
-            std::cerr << "ERROR at line " << line_num << "\n";
-            exit(0);
+            error_msg( "Invalid operand . with type " + pe->type.get_name(),
+                       i->line_num, i->column );
+            P->type = INVALID_TYPE;
+            return P;
         }
+
     } else if ( access_op == "->" ) {
         if ( peT.is_struct && pe->type.ptr_level == 1 ) {
             // whether i exists in Struct*
             Type *iType = peT.struct_definition->get_member( i );
             if ( iType == nullptr ) {
                 // Error
-                std::cerr << "Error\n";
-                std::cerr << "ERROR at line " << line_num << "\n";
+                error_msg( i->value + " is not a member of " +
+                               pe->type.get_name(),
+                           i->line_num, i->column );
+                P->type = INVALID_TYPE;
+                return P;
             } else {
                 P->type = *iType;
             }
         } else {
-            std::cerr<<"Operand Error\n";
-            std::cerr << "ERROR at line " << line_num << "\n";
-            exit(0);
+            error_msg( "Invalid operand . with type " + pe->type.get_name(),
+                       i->line_num, i->column );
+            P->type = INVALID_TYPE;
+            return P;
         }
     }
 
@@ -199,18 +334,30 @@ Expression *create_postfix_expr_ido( std::string op, Expression *pe ) {
     } else {
         P->pe = nullptr;
     }
+
+    if ( pe->type.is_invalid() ) {
+        P->type = INVALID_TYPE;
+        return P;
+    }
+
     P->op = op;
     if ( op == "++" || op == "--" ) {
-        if ( pe->type.isInt() || pe->type.isFloat() || pe->type.isPointer() ) {
-            P->type = pe->type;
+	if( pe->type.is_const == false ) {
+		if ( pe->type.isInt() || pe->type.isFloat() || pe->type.isPointer() ) {
+		    P->type = pe->type;
 
-        } else {
-            // Error postfix operator
-            std::cerr << "Postfix operator " << op
-                      << " cannot be applied to type" << pe->type.get_name() << "\n";
-                      std::cerr << "ERROR at line " << line_num << "\n";
-            exit( 0 );
-        }
+		} else {
+		    // Error postfix operator
+		    error_msg( "Invalid operand " + op + " with type " +
+				   pe->type.get_name(),
+			       line_num );
+		    P->type = INVALID_TYPE;
+		}
+	} else {
+		    error_msg( "Invalid operand " + op + " with constant type",
+			       line_num );
+		    P->type = INVALID_TYPE;
+	}
     } else {
         // This should not have reached
         std::cerr << "Parse error";
@@ -232,29 +379,53 @@ Expression *create_unary_expression_ue( std::string u_op, Expression *ue ) {
     U->op1 = ue;
     U->op = u_op;
     Type ueT = ue->type;
+    if ( ueT.is_invalid() ) {
+        U->type = INVALID_TYPE;
+        return U;
+    }
     if ( u_op == "++" || u_op == "--" ) {
-        // INC_OP, DEC_OP
-        if ( ueT.isInt() || ueT.isFloat() || ueT.isPointer() ) {
-            U->type = ue->type;
-        } else {
-            // Incorrect type throw error
-            delete U;
-            std::cerr << "Prefix operator " << u_op << " cannot be applied to type " << ue->type.get_name() << "\n";
-            std::cerr << "ERROR at line " << line_num << "\n";
-            exit(0);
-        }
+	if ( ueT.is_const == false ) {
+		// INC_OP, DEC_OP
+		if ( ueT.isInt() ) {
+		    U->name = u_op + ":" + ue->type.get_name();
+		    U->type = ue->type;
+
+		} else if ( ueT.isFloat() ) {
+
+		    U->name = u_op + ":" + ue->type.get_name();
+		    U->type = ue->type;
+
+		} else if ( ueT.isPointer() ) {
+		    U->name = u_op + ":" + ue->type.get_name();
+		    U->type = ue->type;
+		} else {
+		    // Incorrect type throw error
+		    error_msg( "Invalid operand " + u_op + " with type " +
+				   ue->type.get_name(),
+			       line_num );
+		    U->type = INVALID_TYPE;
+		    return U;
+		}
+	} else {
+		    error_msg( "Invalid operand " + u_op + " with constant type",
+			       line_num );
+		    U->type = INVALID_TYPE;
+	}
     } else if ( u_op == "sizeof" ) {
         // SizeOf
+
+        // TODO: Add implementation of sizeof, should return a constant
+        U->name = "sizeof";
+	U->type = Type();
         U->type.typeIndex = PrimitiveTypes::U_INT_T;
         U->type.ptr_level = 0;
-        U->type.is_const = false;
+        U->type.is_const = true;
     } else {
         // Raise Error
         std::cerr << "Error parsing Unary Expression.\n";
         std::cerr << "ERROR at line " << line_num << "\n";
-        exit(0);
+        exit( 0 );
     }
-    U->name = 'unary_expression';
     U->add_child( ue );
     return U;
 }
@@ -287,25 +458,26 @@ Expression *create_unary_expression_cast( Node *n_op, Expression *ce ) {
         } else {
             // Error because of dereference of non-pointer type
             delete U;
-            std::cerr << "Error : Invalid dereference of type " << ce->type.get_name() << "\n";
+            std::cerr << "Error : Invalid dereference of type "
+                      << ce->type.get_name() << "\n";
             std::cerr << "ERROR at line " << line_num << "\n";
-            exit(0);
+            exit( 0 );
         }
-    } else if ( u_op == "-" || u_op == "+" || u_op == "!" || u_op == "-") {
-        if(ce->type.isIntorFloat()){
-            U->type = ce->type;    
-        }
-        else{
-            //Throw Error
-            std::cerr << "Invalid use of unary operator " << u_op << " on type " << ce->type.get_name() << "\n";
+    } else if ( u_op == "-" || u_op == "+" || u_op == "!" || u_op == "-" ) {
+        if ( ce->type.isIntorFloat() ) {
+            U->type = ce->type;
+        } else {
+            // Throw Error
+            std::cerr << "Invalid use of unary operator " << u_op << " on type "
+                      << ce->type.get_name() << "\n";
             std::cerr << "ERROR at line " << line_num << "\n";
-            exit(0);
+            exit( 0 );
         }
     } else {
         // Throw Error
         std::cerr << "Parse error, invalid unary operator\n";
         std::cerr << "ERROR at line " << line_num << "\n";
-        exit(0);
+        exit( 0 );
     }
 
     U->name = "unary_expression";
@@ -331,7 +503,7 @@ Expression *create_cast_expression_typename( Node *n, Expression *ce ) {
     P->op1 = ce;
     P->type = ce->type;
 
-    P->name = "caste_expression";
+    P->name = "cast_expression";
     P->add_children( n, ce );
     return P;
 }
@@ -345,6 +517,11 @@ Expression *create_multiplicative_expression( std::string op, Expression *me,
     P->op = op;
     Type meT = me->type;
     Type ceT = ce->type;
+	if ( meT.is_invalid() || ceT.is_invalid() ) {
+		P->type = INVALID_TYPE;
+		return P;
+
+	}
     if ( op == "*" || op == "/" ) {
         if ( meT.isInt() && ceT.isInt() ) {
             P->type = meT.typeIndex > ceT.typeIndex ? meT : ceT;
@@ -362,10 +539,10 @@ Expression *create_multiplicative_expression( std::string op, Expression *me,
         else if ( meT.isFloat() && ceT.isFloat() ) {
             P->type = meT.typeIndex > ceT.typeIndex ? meT : ceT;
         } else {
-            std::cerr << "Undefined operation " << op
-                      << " for operands of type " << meT.get_name() << " and "
-                      << ceT.get_name() << "\n";
-            std::cerr << "ERROR at line " << line_num << "\n";
+
+		error_msg("Undefined operation " + op + " for operands of type " + meT.get_name() + " and " + ceT.get_name(), line_num);
+		P->type = INVALID_TYPE;
+		return P;
         }
     } else if ( op == "%" ) {
         if ( meT.isInt() && ceT.isInt() ) {
@@ -373,10 +550,9 @@ Expression *create_multiplicative_expression( std::string op, Expression *me,
             P->type.make_unsigned();
         } else {
             // Error
-            std::cerr << "Invalid Operands to binary % having type "
-                      << meT.get_name() << " and " << ceT.get_name() << "\n";
-            std::cerr << "ERROR at line " << line_num << "\n";
-            exit( 0 );
+		error_msg("Invalid operands to " + op + " for operands of type " + meT.get_name() + " and " + ceT.get_name(), line_num);
+		P->type = INVALID_TYPE;
+		return P;
         }
     }
 
@@ -405,19 +581,19 @@ Expression *create_additive_expression( std::string op, Expression *ade,
 
     } else if ( ( meT.isFloat() && adeT.isInt() ) ||
                 ( meT.isInt() && adeT.isFloat() ) ) {
-        P->type = meT.isFloat() ? meT : adeT; 
-    }else if( (meT.isPointer()&& adeT.isInt()) || (adeT.isPointer()&& meT.isInt())){
-            P->type = meT.isPointer() ? meT: adeT;
-    } 
-    else if ( meT.isPointer() && ( ( meT.isFloat() && adeT.isInt() ) ||
-                                   ( meT.isInt() && adeT.isFloat() ) ) ) {
+        P->type = meT.isFloat() ? meT : adeT;
+    } else if ( ( meT.isPointer() && adeT.isInt() ) ||
+                ( adeT.isPointer() && meT.isInt() ) ) {
+        P->type = meT.isPointer() ? meT : adeT;
+    } else if ( meT.isPointer() && ( ( meT.isFloat() && adeT.isInt() ) ||
+                                     ( meT.isInt() && adeT.isFloat() ) ) ) {
         P->type = meT.isFloat() ? meT : adeT;
     } else if ( meT.isFloat() && adeT.isFloat() ) {
         P->type = meT.typeIndex > adeT.typeIndex ? meT : adeT;
     } else {
         // Error
-        std::cerr << "Undefined operation " << op << " for operands of type " << meT.get_name()
-                  << " and " << adeT.get_name() << "\n";
+        std::cerr << "Undefined operation " << op << " for operands of type "
+                  << meT.get_name() << " and " << adeT.get_name() << "\n";
         std::cerr << "ERROR at line " << line_num << "\n";
         exit( 0 );
     }
@@ -615,8 +791,8 @@ Expression *create_inclusive_or_expression( std::string op, Expression *ie,
                 P->type.make_signed();
             } else {
                 std::cerr << "Undefined operation of " << op
-                          << " on operands of type " << ieT.get_name() << " and "
-                          << exT.get_name() << "\n";
+                          << " on operands of type " << ieT.get_name()
+                          << " and " << exT.get_name() << "\n";
                 std::cerr << "ERROR at line " << line_num << "\n";
                 exit( 0 );
             }
@@ -741,18 +917,28 @@ Expression *create_assignment_expression( Expression *ue, Node *n_op,
     P->op1 = ue;
     P->op2 = ase;
     P->op = op;
+    P->name = "assignment_expression";
+    P->add_children( ue, ase );
+
     Type ueT = ue->type;
     Type aseT = ase->type;
-    if(ueT.is_const){
+
+    if ( ueT.is_invalid() || aseT.is_invalid() ) {
+        P->type = INVALID_TYPE;
+        return P;
+    }
+    if ( ueT.is_const ) {
         std::cerr << "ERROR: Cannot assign to constant variable\n";
         std::cerr << "ERROR at line " << line_num << "\n";
-        exit(0);
+        exit( 0 );
     }
-    if (op == "=") {
+    if ( op == "=" ) {
         if ( ( ueT.isIntorFloat() ) && ( aseT.isIntorFloat() ) ) {
             // int and/or flot
             if ( ueT.typeIndex != aseT.typeIndex ) {
-                std::cout << "Warning: operation " << op << " between " << ueT.get_name() << " and " << aseT.get_name() << "\n";
+                std::cout << "Warning: operation " << op << " between "
+                          << ueT.get_name() << " and " << aseT.get_name()
+                          << "\n";
                 std::cout << "Warning on line " << line_num << "\n";
             }
             P->type = ueT;
@@ -761,58 +947,54 @@ Expression *create_assignment_expression( Expression *ue, Node *n_op,
             /// meed the types of pointers
             if ( ueT.typeIndex == aseT.typeIndex ) {
                 P->type = ueT;
+            } else {
+                std::cerr << "Undefined operation of " << op
+                          << " on operands of type " << ueT.get_name()
+                          << " and " << aseT.get_name() << "\n";
+                std::cerr << "ERROR at line " << line_num << "\n";
+                exit( 0 );
             }
-            else {
+        } else {
             std::cerr << "Undefined operation of " << op
-                    << " on operands of type " << ueT.get_name() << " and "
+                      << " on operands of type " << ueT.get_name() << " and "
                       << aseT.get_name() << "\n";
             std::cerr << "ERROR at line " << line_num << "\n";
-            exit( 0);
-            }
+            exit( 0 );
         }
-        else{
-            std::cerr << "Undefined operation of " << op
-                    << " on operands of type " << ueT.get_name() << " and "
-                      << aseT.get_name() << "\n";
-            std::cerr << "ERROR at line " << line_num << "\n";
-            exit( 0);
-        }
-    }    
-    else if ( op == "*=" || op == "/="  ) {
-            if ( ( ueT.isIntorFloat() ) && ( aseT.isIntorFloat() ) ) {
+    } else if ( op == "*=" || op == "/=" ) {
+        if ( ( ueT.isIntorFloat() ) && ( aseT.isIntorFloat() ) ) {
             // int and/or flot
             if ( ueT.typeIndex != aseT.typeIndex ) {
                 std::cout << "Warning: operation " << op << " between "
-                          << ueT.get_name() << " and " << aseT.get_name() << "\n";
+                          << ueT.get_name() << " and " << aseT.get_name()
+                          << "\n";
                 std::cout << "Warning on line " << line_num << "\n";
-                }
-                P->type = ueT;
-            }else {
-                std::cerr << "Undefined operation of " << op
+            }
+            P->type = ueT;
+        } else {
+            std::cerr << "Undefined operation of " << op
                       << " on operands of type " << ueT.get_name() << " and "
                       << aseT.get_name() << "\n";
-                std::cerr << "ERROR at line " << line_num << "\n";
+            std::cerr << "ERROR at line " << line_num << "\n";
             exit( 0 );
-            }
-    }
-    else if (op == "+=" || op =="-="){
+        }
+    } else if ( op == "+=" || op == "-=" ) {
         if ( ( ueT.isIntorFloat() ) && ( aseT.isIntorFloat() ) ) {
             // int and/or flot
-                if ( ueT.typeIndex != aseT.typeIndex ) {
+            if ( ueT.typeIndex != aseT.typeIndex ) {
                 std::cout << "Warning: operation " << op << " between "
-                          << ueT.get_name() << " and " << aseT.get_name() << "\n";
+                          << ueT.get_name() << " and " << aseT.get_name()
+                          << "\n";
                 std::cout << "Warning on line " << line_num << "\n";
-                }
-                P->type = ueT;
             }
-            else if(ueT.isPointer() && aseT.isInt()){
-                P->type = ueT;
-            }
-            else {
-                std::cerr << "Undefined operation of " << op
+            P->type = ueT;
+        } else if ( ueT.isPointer() && aseT.isInt() ) {
+            P->type = ueT;
+        } else {
+            std::cerr << "Undefined operation of " << op
                       << " on operands of type " << ueT.get_name() << " and "
                       << aseT.get_name() << "\n";
-                std::cerr << "ERROR at line " << line_num << "\n";
+            std::cerr << "ERROR at line " << line_num << "\n";
             exit( 0 );
         }
     } else if ( op == "%=" ) {
@@ -820,8 +1002,8 @@ Expression *create_assignment_expression( Expression *ue, Node *n_op,
             P->type = ueT;
         } else {
             // Error
-            std::cerr << "Invalid Operands " << op << "having type " << ueT.get_name()
-                      << " and " << aseT.get_name() << "\n";
+            std::cerr << "Invalid Operands " << op << "having type "
+                      << ueT.get_name() << " and " << aseT.get_name() << "\n";
             std::cerr << "ERROR at line " << line_num << "\n";
             exit( 0 );
         }
@@ -860,8 +1042,6 @@ Expression *create_assignment_expression( Expression *ue, Node *n_op,
     }
 
     // std::cerr << "Finished assignment\n";
-    P->name="assignment_expression";
-    P->add_children(ue, ase);
     return P;
 }
 
@@ -879,114 +1059,107 @@ Expression *create_toplevel_expression( Expression *te, Expression *ase ) {
     P->add_children( te, ase );
     return P;
 }
-unsigned stou(std::string const & str, size_t * idx = 0, int base = 10) {
-    unsigned long result = std::stoul(str, idx, base);
-    if (result > std::numeric_limits<unsigned>::max()) {
-        throw std::out_of_range("stou");
+unsigned stou( std::string const &str, size_t *idx = 0, int base = 10 ) {
+    unsigned long result = std::stoul( str, idx, base );
+    if ( result > std::numeric_limits<unsigned>::max() ) {
+        throw std::out_of_range( "stou" );
     }
     return result;
 }
-Constant::Constant(const char* _name, const char* _value, unsigned int _line_num, unsigned int _column):Terminal(_name,_value, _line_num, _column){
+Constant::Constant( const char *_name, const char *_value,
+                    unsigned int _line_num, unsigned int _column )
+    : Terminal( _name, _value, _line_num, _column ) {
 
     ConstantType = Type( 2, 0, false );
     int length = value.length();
     if ( name == "CONSTANT HEX" || name == "CONSTANT INT" ) {
-        
-        int islong = 0, isunsigned = 0,digitend=length;
+
+        int islong = 0, isunsigned = 0, digitend = length;
         for ( int i = 0; i < length; i++ ) {
-            if ( value[i] == 'l' || value[i] == 'L' ){
+            if ( value[i] == 'l' || value[i] == 'L' ) {
                 islong = 1;
-                digitend = i < digitend ? i : digitend ;
+                digitend = i < digitend ? i : digitend;
             }
-            if ( value[i] == 'u' || value[i] == 'U' ){
+            if ( value[i] == 'u' || value[i] == 'U' ) {
                 isunsigned = 1;
-                digitend = i < digitend ? i : digitend ;
+                digitend = i < digitend ? i : digitend;
             }
-            if ( islong && isunsigned ){
+            if ( islong && isunsigned ) {
                 ConstantType.typeIndex = PrimitiveTypes::U_LONG_T;
-                if(name=="CONSTANT HEX"){
-                    val.ul=std::stoul(value,nullptr,16);
-                }
-                else{
-                    val.ul=std::stoul(value);
+                if ( name == "CONSTANT HEX" ) {
+                    val.ul = std::stoul( value, nullptr, 16 );
+                } else {
+                    val.ul = std::stoul( value );
                 }
                 return;
-                //TODO//
+                // TODO//
             }
         }
         if ( islong ) {
             ConstantType.typeIndex = PrimitiveTypes::LONG_T;
-            if(name=="CONSTANT HEX"){
-                    val.l=std::stol(value,nullptr,16);
-                }
-            else{
-                val.l=std::stol(value);
+            if ( name == "CONSTANT HEX" ) {
+                val.l = std::stol( value, nullptr, 16 );
+            } else {
+                val.l = std::stol( value );
             }
             return;
-        }
-        else if ( isunsigned ) {
+        } else if ( isunsigned ) {
             ConstantType.typeIndex = PrimitiveTypes::U_INT_T;
-            if(name=="CONSTANT HEX"){
-                    val.ui=stou(value,nullptr,16);
-                }
-            else{
-                val.ui=stou(value);
+            if ( name == "CONSTANT HEX" ) {
+                val.ui = stou( value, nullptr, 16 );
+            } else {
+                val.ui = stou( value );
             }
-            return ;
-        }
-        else {
-            if(name=="CONSTANT HEX"){
-                    val.i=std::stoi(value,nullptr,16);
-                }
-            else{
-                val.i=std::stoi(value);
+            return;
+        } else {
+            if ( name == "CONSTANT HEX" ) {
+                val.i = std::stoi( value, nullptr, 16 );
+            } else {
+                val.i = std::stoi( value );
             }
             ConstantType.typeIndex = PrimitiveTypes::INT_T;
-            return ;
+            return;
         }
         // TODO return type
 
         // return retT;
         // loop over value to get unsigned etc and return typeIndex
-    }
-    else if ( name == "CONSTANT FLOAT" ) {
-        
+    } else if ( name == "CONSTANT FLOAT" ) {
+
         int isfloat = 0;
         for ( int i = 0; i < length; i++ ) {
-            
-            if ( value[i] == 'f' || value[i] == 'F') {
+
+            if ( value[i] == 'f' || value[i] == 'F' ) {
                 ConstantType.typeIndex = PrimitiveTypes::FLOAT_T;
-                val.f=std::stof(value);
+                val.f = std::stof( value );
                 return;
             }
         }
         ConstantType.typeIndex = PrimitiveTypes::DOUBLE_T;
-        val.d=std::stod(value);
+        val.d = std::stod( value );
         return;
         // loop over value to get float
-    } 
-    else if ( name == "CONSANT EXP" ) {
+    } else if ( name == "CONSANT EXP" ) {
         // loop over value to get if long or double
         int islong = 0;
         for ( int i = 0; i < length; i++ ) {
             if ( value[i] == 'f' || value[i] == 'F' ) {
                 ConstantType.typeIndex = PrimitiveTypes::FLOAT_T;
-                val.f=std::stof(value);
-                return ;
+                val.f = std::stof( value );
+                return;
             }
         }
         ConstantType.typeIndex = PrimitiveTypes::LONG_T;
-        val.l=std::stol(value);
+        val.l = std::stol( value );
         return;
-    }
-    else {
+    } else {
         // ------TODO---------
-        //return retT;
+        // return retT;
     }
 }
 
-Constant* create_constant( const char *name ,const char* value, unsigned int line_num, unsigned int column) {
-	Constant * con = new Constant ( name, value, line_num, column);
-	return con;
-
+Constant *create_constant( const char *name, const char *value,
+                           unsigned int line_num, unsigned int column ) {
+    Constant *con = new Constant( name, value, line_num, column );
+    return con;
 }

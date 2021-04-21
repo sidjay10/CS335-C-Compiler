@@ -74,7 +74,6 @@ class Types {
     bool is_union;
     StructDefinition *struct_definition;
 
-    friend bool operator==( Type &obj1, Type &obj2 );
 };
 
 class Type {
@@ -91,6 +90,7 @@ class Type {
     bool is_function;
     unsigned int num_args;
     std::vector<Type> arg_types;
+    bool is_defined;
 
     Type();
 
@@ -104,9 +104,12 @@ class Type {
     bool isUnsigned();
     bool isPointer();
     bool isVoid();
+    bool is_invalid();
     void make_signed();
     void make_unsigned();
     size_t get_size();
+    
+	friend bool operator==( Type &obj1, Type &obj2 );
 };
 
 // Type INVALID_TYPE;
@@ -158,7 +161,7 @@ class GlobalSymbolTable : public SymbolTable {
   public:
     std::map<std::string, SymTabEntry *> sym_table;
     void add_symbol( DeclarationSpecifiers *declaration_specifiers,
-                     Declarator *declarator );
+                     Declarator *declarator, int *error );
     void add_to_table( SymTabEntry *symbol, bool redef, Identifier *id );
     SymTabEntry *get_symbol_from_table( std::string name );
 };
@@ -175,7 +178,7 @@ class LocalSymbolTable : public SymbolTable {
     void add_to_table( SymTabEntry *symbol, Identifier *id );
     SymTabEntry *get_symbol_from_table( std::string name );
     void add_function( DeclarationSpecifiers *declaration_specifiers,
-                       Declarator *declarator );
+                       Declarator *declarator, int *error );
 };
 
 extern LocalSymbolTable local_symbol_table;
@@ -349,6 +352,7 @@ class FunctionDefinition : public Non_Terminal {
     DeclarationSpecifiers *declaration_specifiers;
     Declarator *declarator;
     Node *compound_statement;
+    int error;
 
     FunctionDefinition( DeclarationSpecifiers *declaration_specifiers_,
                         Declarator *declarator_, Node *compound_statement_ );
@@ -533,5 +537,6 @@ TypeSpecifier *create_type_specifier( TYPE_SPECIFIER type, Identifier *id,
 Node *add_to_global_symbol_table( Declaration *declaration );
 
 void error_msg( std::string str, unsigned int line_num, unsigned int column );
+void error_msg( std::string str, unsigned int line_num );
 
 #endif

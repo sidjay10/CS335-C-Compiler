@@ -62,19 +62,14 @@ Expression *create_primary_expression( Expression *a );
 
 class ArgumentExprList : public Expression {
   public:
-    Expression *op1; // This will be null in case of root object
-    Expression *op2;
+	std::vector <Expression * > args;
 
-    ArgumentExprList() {
-        op1 = nullptr;
-        op2 = nullptr;
-    };
+    ArgumentExprList() {};
 };
 
 // Grammar warppers for ArguementExpressionList
-Expression *create_argument_expr_assignement( Expression *ase );
-Expression *create_argument_expr_list( Expression *ae_list, Expression *ase );
-
+ArgumentExprList *create_argument_expr_assignement( Expression *ase );
+ArgumentExprList *create_argument_expr_list( ArgumentExprList *ae_list, Expression *ase );
 //-------------------------------------------------
 class UnaryExpression : public Expression {
   public:
@@ -378,7 +373,7 @@ class StringLiteral : public Terminal {
 
 Expression *create_postfix_expr_arr( Expression *pe, Expression *exp );
 Expression *create_postfix_expr_voidfun( Identifier *fi );
-Expression *create_postfix_expr_fun( Identifier *fi, Expression *ae );
+Expression *create_postfix_expr_fun( Identifier *fi, ArgumentExprList *ae );
 Expression *create_postfix_expr_struct( std::string access_op, Expression *pe,
                                         Identifier *id );
 Expression *create_postfix_expr_ido( std::string op, Expression *pe );
