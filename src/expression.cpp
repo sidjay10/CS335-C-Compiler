@@ -138,6 +138,7 @@ Expression *create_postfix_expr_arr( Expression *pe, Expression *e ) {
             P->type.ptr_level--;
             P->type.array_dim--;
             P->type.array_dims.erase( P->type.array_dims.begin() );
+		P->type.is_const = false;
             if ( P->type.ptr_level == 0 ) {
                 P->type.is_pointer = false;
             }
@@ -147,6 +148,7 @@ Expression *create_postfix_expr_arr( Expression *pe, Expression *e ) {
         } else if ( pe->type.is_pointer ) {
             P->type = pe->type;
             P->type.ptr_level--;
+		P->type.is_const = false;
             if ( P->type.ptr_level == 0 ) {
                 P->type.is_pointer = false;
             }
