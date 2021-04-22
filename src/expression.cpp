@@ -525,8 +525,25 @@ Expression *create_cast_expression_typename( Node *n, Expression *ce ) {
     // XXX: TODO Implement
     CastExpression *P = new CastExpression();
     P->op1 = ce;
-    P->type = ce->type;
-
+    Type ceT=ce->type;
+    Type nT=n->type;
+    if(ceT.is_invalid() || nT.is_invalid()){
+        P->type = INVALID_TYPE;
+        return P;
+    }
+    if(ce->type.isIntorFloat() && n->type.isIntorFloat()){
+        P->type= n->type;
+    }
+    else if(ce->type.ptr_level >0  && n->type.ptr_level>0){
+        P->type = n->type;
+    }
+    else{
+        error_msg("Undefined casting operation of "+ ceT.get_name()+" into "+nT.get_name(),line_num);
+        P->type=INVALID_TYPE;
+        return P;
+    }
+    // P->type = ce->type;
+    
     P->name = "cast_expression";
     P->add_children( n, ce );
     return P;
@@ -943,7 +960,7 @@ Expression *create_logical_or_expression( std::string op, Expression *lo,
         return P;
     }
 
-    if ( op == "&&" ) {
+    if ( op == "||" ) {
         if ( loT.isIntorFloat() && laT.isIntorFloat() ) {
             P->type = Type( U_CHAR_T, 0, 0 );
         } else {
@@ -983,7 +1000,7 @@ Expression *create_conditional_expression( std::string op, Expression *lo,
         return P;
     }
 
-    if ( loT.isInt() ) {
+    if ( loT.isInt())  {
         if ( teT.isIntorFloat() && coeT.isIntorFloat() ) {
             P->type = teT.typeIndex > coeT.typeIndex ? teT : coeT;
             if ( !( teT.isUnsigned() && coeT.isUnsigned() ) ) {
@@ -995,10 +1012,18 @@ Expression *create_conditional_expression( std::string op, Expression *lo,
                     teT.ptr_level == coeT.ptr_level ) {
             P->type = teT;
         } else {
-
+            error_msg( " Type mismatch in conditional expression for operands of type " +
+                           teT.get_name() + " and " + coeT.get_name(),
+                       line_num );
+            P->type=INVALID_TYPE;
             // ERROR:
-            exit( 0 );
+            return P;
         }
+    }
+    else{
+        error_msg("Comparison expression is not an int",line_num);
+        P->type=INVALID_TYPE;
+        return P;
     }
 
     P->name = "conditional_expression";
