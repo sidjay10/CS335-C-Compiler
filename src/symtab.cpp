@@ -317,7 +317,11 @@ bool operator==( Type &obj1, Type &obj2 ) {
             return true;
         }
     } else if ( obj1.is_array != obj2.is_array ) {
-        return false;
+		if (obj1.ptr_level == obj2.ptr_level ) {
+			return true;
+	} else {
+        	return false;
+	}
     } else if ( obj1.is_pointer == true && obj2.is_pointer == true ) {
         return obj1.ptr_level == obj2.ptr_level;
 
@@ -1579,9 +1583,11 @@ create_type_specifier( TYPE_SPECIFIER type, Identifier *id,
         switch ( type ) {
         case UNION:
             struct_type->is_union = true;
+            struct_type->is_struct = false;
             break;
         case STRUCT:
             struct_type->is_union = false;
+            struct_type->is_struct = true;
             break;
         default:
             assert( 0 );
@@ -2151,6 +2157,33 @@ void error_msg( std::string str, unsigned int line_num, unsigned int column ) {
 void error_msg( std::string str, unsigned int line_num ) {
 
     std::cout << "\n" << line_num <<  " ERROR: " << str << "\n";
+    if ( line_num == ( code.size() + 1 ) ) {
+
+        std::cout << "\t" << text.str();
+    } else {
+        std::cout << "\t" << code[line_num - 1];
+    }
+	std::cout << "\n";
+
+    //printf( "\n\t%*s\n", column, "^" );
+}
+
+void warning_msg( std::string str, unsigned int line_num, unsigned int column ) {
+
+    std::cout << "\n" << line_num << ":" << column << " WARNING: " << str << "\n";
+    if ( line_num == ( code.size() + 1 ) ) {
+
+        std::cout << "\t" << text.str();
+    } else {
+        std::cout << "\t" << code[line_num - 1];
+    }
+
+    printf( "\n\t%*s\n", column, "^" );
+}
+
+void warning_msg( std::string str, unsigned int line_num ) {
+
+    std::cout << "\n" << line_num <<  " WARNING: " << str << "\n";
     if ( line_num == ( code.size() + 1 ) ) {
 
         std::cout << "\t" << text.str();

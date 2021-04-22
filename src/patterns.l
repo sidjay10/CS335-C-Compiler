@@ -36,7 +36,7 @@ std::vector < std::string > code;
 
 %%
 "/*"			{ comment(); }
-"//"[^\n]*\n		{ code.push_back(text.str()); text.clear(); text.str(std::string()); line_num++;  }
+"//"[^\n]*\n		{ code.push_back(text.str()); text.clear(); text.str(std::string()); column=1; line_num++;  }
 
 "auto"			{ count(); return(AUTO); }
 "break"			{ count(); return(BREAK); }
@@ -85,17 +85,17 @@ L?'(\\.|[^\\'])+'	{  yylval.constant = create_constant("CONSTANT", yytext, line_
 L?\"(\\.|[^\\"])*\"	{ count(); return(STRING_LITERAL); }
 
 "..."			{ count(); return(ELLIPSIS); }
-">>="			{ count(); return(RIGHT_ASSIGN); }
-"<<="			{ count(); return(LEFT_ASSIGN); }
-"+="			{ count(); return(ADD_ASSIGN); }
-"-="			{ count(); return(SUB_ASSIGN); }
-"*="			{ count(); return(MUL_ASSIGN); }
-"/="			{ count(); return(DIV_ASSIGN); }
-"%="			{ count(); return(MOD_ASSIGN); }
-"&="			{ count(); return(AND_ASSIGN); }
-"^="			{ count(); return(XOR_ASSIGN); }
-"|="			{ count(); return(OR_ASSIGN); }
-">>"			{ count(); return(RIGHT_OP); }
+">>="			{ yylval.terminal= create_terminal(">>=",NULL, line_num, column ); count(); return(RIGHT_ASSIGN); }
+"<<="			{ yylval.terminal= create_terminal("<<=",NULL, line_num, column ); count(); return(LEFT_ASSIGN); }
+"+="			{ yylval.terminal= create_terminal("+=",NULL, line_num, column ); count(); return(ADD_ASSIGN); }
+"-="			{ yylval.terminal= create_terminal("-=",NULL, line_num, column ); count(); return(SUB_ASSIGN); }
+"*="			{ yylval.terminal= create_terminal("*=",NULL, line_num, column ); count(); return(MUL_ASSIGN); }
+"/="			{ yylval.terminal= create_terminal("/=",NULL, line_num, column ); count(); return(DIV_ASSIGN); }
+"%="			{ yylval.terminal= create_terminal("%=",NULL, line_num, column ); count(); return(MOD_ASSIGN); }
+"&="			{ yylval.terminal= create_terminal("&=",NULL, line_num, column ); count(); return(AND_ASSIGN); }
+"^="			{ yylval.terminal= create_terminal("^=",NULL, line_num, column ); count(); return(XOR_ASSIGN); }
+"|="			{ yylval.terminal= create_terminal("|=",NULL, line_num, column ); count(); return(OR_ASSIGN); }
+">>"			{ yylval.terminal= create_terminal(">>",NULL, line_num, column ); count(); return(RIGHT_OP); }
 "<<"			{ count(); return(LEFT_OP); }
 "++"			{ count(); return(INC_OP); }
 "--"			{ count(); return(DEC_OP); }
@@ -111,18 +111,18 @@ L?\"(\\.|[^\\"])*\"	{ count(); return(STRING_LITERAL); }
 ("}"|"%>")		{ count(); return('}'); }
 ","			{ count(); return(','); }
 ":"			{ count(); return(':'); }
-"="			{ yylval.terminal= create_terminal("==",NULL, line_num, column ); count(); return('='); }
+"="			{ yylval.terminal= create_terminal("=",NULL, line_num, column ); count(); return('='); }
 "("			{ count(); return('('); }
 ")"			{ count(); return(')'); }
 ("["|"<:")		{ count(); return('['); }
 ("]"|":>")		{ count(); return(']'); }
 "."			{ count(); return('.'); }
-"&"			{ count(); return('&'); }
-"!"			{ count(); return('!'); }
-"~"			{ count(); return('~'); }
-"-"			{ count(); return('-'); }
-"+"			{ count(); return('+'); }
-"*"			{ count(); return('*'); }
+"&"			{ yylval.terminal= create_terminal("&",NULL, line_num, column ); count(); return('&'); }
+"!"			{ yylval.terminal= create_terminal("!",NULL, line_num, column ); count(); return('!'); }
+"~"			{ yylval.terminal= create_terminal("~",NULL, line_num, column ); count(); return('~'); }
+"-"			{ yylval.terminal= create_terminal("-",NULL, line_num, column ); count(); return('-'); }
+"+"			{ yylval.terminal= create_terminal("+",NULL, line_num, column ); count(); return('+'); }
+"*"			{ yylval.terminal= create_terminal("*",NULL, line_num, column ); count(); return('*'); }
 "/"			{ count(); return('/'); }
 "%"			{ count(); return('%'); }
 "<"			{ count(); return('<'); }
@@ -180,8 +180,8 @@ text.clear(); text.str(std::string());
 
 			line_num++;}
 		else if (yytext[i] == '\t') {
-			column += 9 - (column % 8) ;
-	text << yytext[i];
+			column += 8 - (column % 8) ;
+			text << yytext[i];
 		} else {
 			column++; 
 
@@ -201,6 +201,14 @@ int check_type()
 	return(IDENTIFIER);
 	it actually will only return IDENTIFIER
 */
+
+
+	if( std::string(yytext) == "NULL") {
+		yylval.constant = create_constant("CONSTANT HEX", "0x0", line_num, column);
+		yylval.constant->ConstantType = Type(VOID_T, 1, true);
+		yylval.constant->ConstantType.is_pointer = true;
+		return(CONSTANT);
+	}
 
 	Identifier * id = new Identifier(yytext, line_num, column);
 	yylval.identifier = id;

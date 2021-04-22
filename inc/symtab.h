@@ -538,5 +538,7 @@ Node *add_to_global_symbol_table( Declaration *declaration );
 
 void error_msg( std::string str, unsigned int line_num, unsigned int column );
 void error_msg( std::string str, unsigned int line_num );
+void warning_msg( std::string str, unsigned int line_num, unsigned int column );
+void warning_msg( std::string str, unsigned int line_num );
 
 #endif

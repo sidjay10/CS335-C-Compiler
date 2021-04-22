@@ -183,18 +183,18 @@ unary_expression
 	: postfix_expression			{ $$ = $1; } 
 	| INC_OP unary_expression		{ $$ = create_unary_expression_ue("++", $2); } 
 	| DEC_OP unary_expression		{ $$ = create_unary_expression_ue("--", $2); } 
-	| unary_operator cast_expression	{ $$=create_unary_expression_cast($1,$2); } 
+	| unary_operator cast_expression	{ $$ = create_unary_expression_cast($1,$2); } 
 	| SIZEOF unary_expression		{ $$ = create_unary_expression_ue("sizeof", $2); } 
 	| SIZEOF '(' type_name ')'		{ $$ = create_unary_expression_typename("SIZEOF type_name", $3); } 
 	;
 
 unary_operator
-	: '&'	{ $$ = create_non_term("&"); }
-	| '*'	{ $$ = create_non_term("*"); }
-	| '+'	{ $$ = create_non_term("+"); }
-	| '-'	{ $$ = create_non_term("-"); }
-	| '~'	{ $$ = create_non_term("~"); }
-	| '!'	{ $$ = create_non_term("!"); }
+	: '&'	{ $$ = $1; }
+	| '*'	{ $$ = $1; }
+	| '+'	{ $$ = $1; }
+	| '-'	{ $$ = $1; }
+	| '~'	{ $$ = $1; }
+	| '!'	{ $$ = $1; }
 	;
 
 cast_expression
@@ -271,17 +271,17 @@ assignment_expression
 	;
 
 assignment_operator
-	: '='		 { $$ = create_non_term("="); }
-	| MUL_ASSIGN	 { $$ = create_non_term("*="); }
-	| DIV_ASSIGN	 { $$ = create_non_term("/="); }
-	| MOD_ASSIGN	 { $$ = create_non_term("%="); }
-	| ADD_ASSIGN	 { $$ = create_non_term("+="); }
-	| SUB_ASSIGN	 { $$ = create_non_term("-="); }
-	| LEFT_ASSIGN	 { $$ = create_non_term("<<="); }
-	| RIGHT_ASSIGN	 { $$ = create_non_term(">>="); }
-	| AND_ASSIGN	 { $$ = create_non_term("&="); }
-	| XOR_ASSIGN	 { $$ = create_non_term("^="); }
-	| OR_ASSIGN	 { $$ = create_non_term("|="); }
+	: '='		 { $$ = $1; }
+	| MUL_ASSIGN	 { $$ = $1; }
+	| DIV_ASSIGN	 { $$ = $1; }
+	| MOD_ASSIGN	 { $$ = $1; }
+	| ADD_ASSIGN	 { $$ = $1; }
+	| SUB_ASSIGN	 { $$ = $1; }
+	| LEFT_ASSIGN	 { $$ = $1; }
+	| RIGHT_ASSIGN	 { $$ = $1; }
+	| AND_ASSIGN	 { $$ = $1; }
+	| XOR_ASSIGN	 { $$ = $1; }
+	| OR_ASSIGN	 { $$ = $1; }
 	;
 
 expression
@@ -453,8 +453,8 @@ identifier_list
 	;
 */
 type_name
-	:  specifier_qualifier_list	 { $$ = create_non_term("type_name", $1); }
-	|  specifier_qualifier_list abstract_declarator	 { $$ = create_non_term("type_name", $1, $2); }
+	:  specifier_qualifier_list	 		{ $$ = create_non_term("type_name", $1); }
+	|  specifier_qualifier_list abstract_declarator	{ $$ = create_non_term("type_name", $1, $2); }
 	;
 
 abstract_declarator
