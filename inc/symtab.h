@@ -9,6 +9,11 @@
 
 void yyerror( const char *s );
 
+class Expression;
+class Identifier;
+class PrimaryExpression;
+Expression *create_assignment_expression( Expression *ue, Node *n_op,
+                                          Expression *ase );
 enum PrimitiveTypes {
     U_CHAR_T = 0,
     CHAR_T = 1,
@@ -73,7 +78,6 @@ class Types {
     bool is_struct;
     bool is_union;
     StructDefinition *struct_definition;
-
 };
 
 class Type {
@@ -108,8 +112,8 @@ class Type {
     void make_signed();
     void make_unsigned();
     size_t get_size();
-    
-	friend bool operator==( Type &obj1, Type &obj2 );
+
+    friend bool operator==( Type &obj1, Type &obj2 );
 };
 
 // Type INVALID_TYPE;
@@ -227,7 +231,8 @@ class Declarator : public Non_Terminal {
     Identifier *id;
     Pointer *pointer;
     DirectDeclarator *direct_declarator;
-    Node *init_expr;
+    Expression *init_expr;
+    Terminal *eq;
     int get_pointer_level();
     Declarator();
     Declarator( Pointer *p, DirectDeclarator *dd );
@@ -235,7 +240,7 @@ class Declarator : public Non_Terminal {
 };
 
 Declarator *add_initializer_to_declarator( Declarator *declarator, Terminal *eq,
-                                           Node *init_expr );
+                                           Expression *init_expr );
 
 Declarator *create_declarator( Pointer *pointer,
                                DirectDeclarator *direct_declarator );
@@ -330,6 +335,7 @@ class Declaration : public Non_Terminal {
                  DeclaratorList *init_declarator_list_ );
     void add_to_symbol_table( LocalSymbolTable &sym_tab );
     void add_to_symbol_table( GlobalSymbolTable &sym_tab );
+    void dotify();
 };
 
 Declaration *new_declaration( DeclarationSpecifiers *declaraion_specifiers,
@@ -413,6 +419,18 @@ class AbstractDeclarator : public Non_Terminal {
 
 AbstractDeclarator *
 create_abstract_declarator( Pointer *pointer, DirectAbstractDeclarator *dabs );
+
+class SpecifierQualifierList;
+
+class TypeName : public Non_Terminal {
+  public:
+    SpecifierQualifierList *sq_list;
+    AbstractDeclarator *abstract_declarator;
+    Type type;
+    TypeName();
+};
+
+TypeName *create_type_name( SpecifierQualifierList *, AbstractDeclarator * );
 
 class ParameterDeclaration : public Non_Terminal {
   public:

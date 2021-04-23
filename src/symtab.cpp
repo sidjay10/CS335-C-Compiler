@@ -187,8 +187,7 @@ std::string Type::get_name() {
     } else if ( is_function ) {
         if ( num_args == 0 ) {
             ss << "( )";
-        }
-        else if ( num_args == 1 ) {
+        } else if ( num_args == 1 ) {
             ss << "( ";
             for ( auto it = arg_types.begin(); it != arg_types.end(); it++ ) {
                 ss << ( *it ).get_name();
@@ -317,11 +316,11 @@ bool operator==( Type &obj1, Type &obj2 ) {
             return true;
         }
     } else if ( obj1.is_array != obj2.is_array ) {
-		if (obj1.ptr_level == obj2.ptr_level ) {
-			return true;
-	} else {
-        	return false;
-	}
+        if ( obj1.ptr_level == obj2.ptr_level ) {
+            return true;
+        } else {
+            return false;
+        }
     } else if ( obj1.is_pointer == true && obj2.is_pointer == true ) {
         return obj1.ptr_level == obj2.ptr_level;
 
@@ -533,6 +532,22 @@ void Declaration::add_to_symbol_table( LocalSymbolTable &sym_tab ) {
 
         if ( dd->type == ID ) {
             e->type = Type( type_index, pointer_level, is_const );
+            if ( ( *i )->init_expr != nullptr ) {
+                PrimaryExpression *P = new PrimaryExpression();
+                P->isTerminal = 1;
+                Identifier *a = new Identifier( "" );
+                *a = *( *i )->id;
+
+                P->Ival = a;
+                P->name = "primary_expression";
+                P->type = Type( type_index, pointer_level, false );
+                P->add_child( a );
+                P->line_num = a->line_num;
+                P->column = a->column;
+                Expression *ae = create_assignment_expression(
+                    P, ( *i )->eq, ( *i )->init_expr );
+                add_child( ae );
+            }
         } else if ( dd->type == ARRAY ) {
             e->type = Type( type_index, dd->array_dims.size(), true );
             e->type.is_array = true;
@@ -665,6 +680,32 @@ void Declaration::add_to_symbol_table( GlobalSymbolTable &sym_tab ) {
     write_to_symtab_file( sym_tab.ss.str() );
     sym_tab.ss.clear();
     sym_tab.ss.str( std::string() );
+}
+
+void Declaration::dotify() {
+
+    std::vector<Node *> &c = children;
+
+    bool dotify_ = false;
+    if ( dotify_ ) {
+        if ( is_printed ) {
+            is_printed = 0;
+            std::stringstream ss;
+            ss << "\t" << id << " [label=\"" << name << "\"];\n";
+            for ( auto it = c.begin(); it != c.end(); it++ ) {
+                if ( dynamic_cast<AssignmentExpression *>( *it ) ) {
+                    ss << "\t" << id << " -> " << ( *it )->id << ";\n";
+                }
+                file_writer( ss.str() );
+
+                for ( auto it = c.begin(); it != c.end(); it++ ) {
+                    if ( dynamic_cast<AssignmentExpression *>( *it ) ) {
+                        ( *it )->dotify();
+                    }
+                }
+            }
+        }
+    }
 }
 
 //##############################################################################
@@ -837,6 +878,13 @@ DeclarationList *create_declaration_list( Declaration *declaration ) {
 DeclarationList *add_to_declaration_list( DeclarationList *declaration_list,
                                           Declaration *declaration ) {
 
+    if ( declaration == nullptr ) {
+        return declaration_list;
+    }
+    if ( declaration_list == nullptr ) {
+
+        return create_declaration_list( declaration );
+    }
     declaration_list->declarations.push_back( declaration );
     declaration_list->add_child( declaration );
     declaration->add_to_symbol_table( local_symbol_table );
@@ -881,7 +929,8 @@ DeclaratorList *add_to_init_declarator_list( DeclaratorList *dl,
 //##############################################################################
 
 Declarator ::Declarator( Pointer *p, DirectDeclarator *dd )
-    : Non_Terminal( "declarator" ), pointer( p ), direct_declarator( dd ) {
+    : Non_Terminal( "declarator" ), pointer( p ), direct_declarator( dd ),
+      init_expr( nullptr ), eq( nullptr ) {
     if ( dd == nullptr ) {
         id = nullptr;
     } else {
@@ -927,7 +976,7 @@ Declarator *create_declarator( Pointer *pointer,
 }
 
 Declarator *add_initializer_to_declarator( Declarator *declarator, Terminal *eq,
-                                           Node *ie ) {
+                                           Expression *ie ) {
 
     if ( declarator == nullptr ) {
         return NULL;
@@ -941,10 +990,9 @@ Declarator *add_initializer_to_declarator( Declarator *declarator, Terminal *eq,
                    eq->line_num, eq->column );
         return declarator;
     } else if ( declarator->direct_declarator->type == ID ) {
-
-        Identifier *id = new Identifier( declarator->id->value.c_str() );
-        declarator->init_expr = create_non_term( "=", id, ie );
-        declarator->add_child( declarator->init_expr );
+        declarator->eq = eq;
+        declarator->init_expr = ie;
+        declarator->add_child( ie );
         return declarator;
     } else {
         std::cerr << "INVALID TYPE: " << declarator->direct_declarator->type
@@ -1272,6 +1320,50 @@ create_abstract_declarator( Pointer *ptr, DirectAbstractDeclarator *dabs ) {
     AbstractDeclarator *abs = new AbstractDeclarator( ptr, dabs );
     abs->add_children( ptr, dabs );
     return abs;
+}
+
+//##############################################################################
+//############################### TYPE NAME  ###################################
+//##############################################################################
+
+TypeName::TypeName() : Non_Terminal( "type_name" ){};
+
+TypeName *create_type_name( SpecifierQualifierList *sq_list,
+                            AbstractDeclarator *abstract_declarator ) {
+    TypeName *type_name = new TypeName();
+    type_name->sq_list = sq_list;
+    type_name->abstract_declarator = abstract_declarator;
+    sq_list->create_type();
+
+    assert( sq_list->type_index != -1 );
+    if ( sq_list->type_index == -2 ) {
+        type_name->type = Type();
+    }
+    if ( abstract_declarator == nullptr ) {
+        type_name->type = Type( sq_list->type_index, 0, false );
+
+    }
+
+    else {
+        DirectAbstractDeclarator *dd =
+            abstract_declarator->direct_abstract_declarator;
+
+        if ( dd!= nullptr && dd->array_dims.size() != 0 ) {
+            type_name->type =
+                Type( sq_list->type_index, dd->array_dims.size(), true );
+            type_name->type.is_array = true;
+            type_name->type.is_pointer = true;
+            type_name->type.array_dim = dd->array_dims.size();
+            type_name->type.array_dims = dd->array_dims;
+        }
+
+        else {
+            int pointer_level = abstract_declarator->get_pointer_level();
+            type_name->type = Type( sq_list->type_index, pointer_level, false );
+        }
+    }
+
+    return type_name;
 }
 
 //##############################################################################
@@ -2156,21 +2248,23 @@ void error_msg( std::string str, unsigned int line_num, unsigned int column ) {
 
 void error_msg( std::string str, unsigned int line_num ) {
 
-    std::cout << "\n" << line_num <<  " ERROR: " << str << "\n";
+    std::cout << "\n" << line_num << " ERROR: " << str << "\n";
     if ( line_num == ( code.size() + 1 ) ) {
 
         std::cout << "\t" << text.str();
     } else {
         std::cout << "\t" << code[line_num - 1];
     }
-	std::cout << "\n";
+    std::cout << "\n";
 
-    //printf( "\n\t%*s\n", column, "^" );
+    // printf( "\n\t%*s\n", column, "^" );
 }
 
-void warning_msg( std::string str, unsigned int line_num, unsigned int column ) {
+void warning_msg( std::string str, unsigned int line_num,
+                  unsigned int column ) {
 
-    std::cout << "\n" << line_num << ":" << column << " WARNING: " << str << "\n";
+    std::cout << "\n"
+              << line_num << ":" << column << " WARNING: " << str << "\n";
     if ( line_num == ( code.size() + 1 ) ) {
 
         std::cout << "\t" << text.str();
@@ -2183,16 +2277,16 @@ void warning_msg( std::string str, unsigned int line_num, unsigned int column ) 
 
 void warning_msg( std::string str, unsigned int line_num ) {
 
-    std::cout << "\n" << line_num <<  " WARNING: " << str << "\n";
+    std::cout << "\n" << line_num << " WARNING: " << str << "\n";
     if ( line_num == ( code.size() + 1 ) ) {
 
         std::cout << "\t" << text.str();
     } else {
         std::cout << "\t" << code[line_num - 1];
     }
-	std::cout << "\n";
+    std::cout << "\n";
 
-    //printf( "\n\t%*s\n", column, "^" );
+    // printf( "\n\t%*s\n", column, "^" );
 }
 
 //##############################################################################

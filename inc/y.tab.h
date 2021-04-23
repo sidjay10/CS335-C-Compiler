@@ -215,8 +215,9 @@ union YYSTYPE
 	Logical_orExpression* logical_or_expression;
 	ConditionalExpression* conditional_expression;
 	Expression* expression;
+	TypeName * type_name;
 
-#line 220 "y.tab.h" /* yacc.c:1909  */
+#line 221 "y.tab.h" /* yacc.c:1909  */
 };
 
 typedef union YYSTYPE YYSTYPE;

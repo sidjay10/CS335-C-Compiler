@@ -138,7 +138,7 @@ Expression *create_postfix_expr_arr( Expression *pe, Expression *e ) {
             P->type.ptr_level--;
             P->type.array_dim--;
             P->type.array_dims.erase( P->type.array_dims.begin() );
-		P->type.is_const = false;
+            P->type.is_const = false;
             if ( P->type.ptr_level == 0 ) {
                 P->type.is_pointer = false;
             }
@@ -148,7 +148,7 @@ Expression *create_postfix_expr_arr( Expression *pe, Expression *e ) {
         } else if ( pe->type.is_pointer ) {
             P->type = pe->type;
             P->type.ptr_level--;
-		P->type.is_const = false;
+            P->type.is_const = false;
             if ( P->type.ptr_level == 0 ) {
                 P->type.is_pointer = false;
             }
@@ -211,13 +211,12 @@ Expression *create_postfix_expr_fun( Identifier *fi, ArgumentExprList *ae ) {
     // 1. whether ArgumentExprList matches with Function signature from lookup
     // of symbol table table
 
-
-	if ( fi->value == "printf"  || fi->value == "scanf" ) {
-/* Hack : To support printf for now */ 
-		P->type = Type(INT_T,0,true);
-		P->add_children( fi, ae);
-		return P;
-	}
+    if ( fi->value == "printf" || fi->value == "scanf" ) {
+        /* Hack : To support printf for now */
+        P->type = Type( INT_T, 0, true );
+        P->add_children( fi, ae );
+        return P;
+    }
 
     SymTabEntry *ste = global_symbol_table.get_symbol_from_table( fi->value );
     if ( ste == nullptr ) {
@@ -315,8 +314,7 @@ Expression *create_postfix_expr_struct( std::string access_op, Expression *pe,
             Type *iType = peT.struct_definition->get_member( i );
             if ( iType == nullptr ) {
                 // Error
-                error_msg( i->value + " is not a member of " +
-                               peT.name,
+                error_msg( i->value + " is not a member of " + peT.name,
                            i->line_num, i->column );
                 P->type = INVALID_TYPE;
                 return P;
@@ -464,7 +462,7 @@ Expression *create_unary_expression_cast( Node *n_op, Expression *ce ) {
         if ( ceT.is_function == false ) {
             U->type = ce->type;
             U->type.ptr_level++;
-		U->type.is_pointer = true;
+            U->type.is_pointer = true;
         } else {
             error_msg( "lvalue required as unary & operand", n_op->line_num,
                        n_op->column );
@@ -475,11 +473,11 @@ Expression *create_unary_expression_cast( Node *n_op, Expression *ce ) {
         if ( ce->type.ptr_level > 0 && !ce->type.is_array ) {
             U->type = ce->type;
             U->type.ptr_level--;
-		if ( U->type.ptr_level == 0 ) {
-			U->type.is_pointer = false;
-		} else {
-			U->type.is_pointer = true;
-		}
+            if ( U->type.ptr_level == 0 ) {
+                U->type.is_pointer = false;
+            } else {
+                U->type.is_pointer = true;
+            }
         } else {
             // Error because of dereference of non-pointer type
             error_msg( "Cannot dereference type " + ceT.get_name(),
@@ -521,31 +519,31 @@ Expression *create_unary_expression_typename( std::string u_op, Node *t_name ) {
 }
 
 // Cast Expression
-Expression *create_cast_expression_typename( Node *n, Expression *ce ) {
+Expression *create_cast_expression_typename( TypeName *tn, Expression *ce ) {
     // XXX: TODO Implement
     CastExpression *P = new CastExpression();
     P->op1 = ce;
-    Type ceT=ce->type;
-    Type nT=n->type;
-    if(ceT.is_invalid() || nT.is_invalid()){
+    Type ceT = ce->type;
+    Type tnT = tn->type;
+    if ( ceT.is_invalid() || tnT.is_invalid() ) {
         P->type = INVALID_TYPE;
         return P;
     }
-    if(ce->type.isIntorFloat() && n->type.isIntorFloat()){
-        P->type= n->type;
-    }
-    else if(ce->type.ptr_level >0  && n->type.ptr_level>0){
-        P->type = n->type;
-    }
-    else{
-        error_msg("Undefined casting operation of "+ ceT.get_name()+" into "+nT.get_name(),line_num);
-        P->type=INVALID_TYPE;
+    if ( ce->type.isIntorFloat() && tn->type.isIntorFloat() ) {
+        P->type = tn->type;
+    } else if ( ce->type.ptr_level > 0 && tn->type.ptr_level > 0 ) {
+        P->type = tn->type;
+    } else {
+        error_msg( "Undefined casting operation of " + ceT.get_name() +
+                       " into " + tnT.get_name(),
+                   line_num );
+        P->type = INVALID_TYPE;
         return P;
     }
     // P->type = ce->type;
-    
+
     P->name = "cast_expression";
-    P->add_children( n, ce );
+    P->add_children( tn, ce );
     return P;
 }
 
@@ -751,11 +749,11 @@ Expression *create_equality_expression( std::string op, Expression *eq,
     }
 
     if ( op == "==" || op == "!=" ) {
-	if ( reT.ptr_level > 0 && eqT.ptr_level > 0 ) {
+        if ( reT.ptr_level > 0 && eqT.ptr_level > 0 ) {
             P->type = Type( U_CHAR_T, 0, 0 );
-	}
-        else if ( ( reT.ptr_level == 0 && eqT.ptr_level == 0 ) && ( reT.isInt() || reT.isFloat() ) &&
-             ( eqT.isInt() || eqT.isFloat() ) ) {
+        } else if ( ( reT.ptr_level == 0 && eqT.ptr_level == 0 ) &&
+                    ( reT.isInt() || reT.isFloat() ) &&
+                    ( eqT.isInt() || eqT.isFloat() ) ) {
             P->type = Type( U_CHAR_T, 0, 0 );
         }
 
@@ -1000,7 +998,7 @@ Expression *create_conditional_expression( std::string op, Expression *lo,
         return P;
     }
 
-    if ( loT.isInt())  {
+    if ( loT.isInt() ) {
         if ( teT.isIntorFloat() && coeT.isIntorFloat() ) {
             P->type = teT.typeIndex > coeT.typeIndex ? teT : coeT;
             if ( !( teT.isUnsigned() && coeT.isUnsigned() ) ) {
@@ -1012,17 +1010,17 @@ Expression *create_conditional_expression( std::string op, Expression *lo,
                     teT.ptr_level == coeT.ptr_level ) {
             P->type = teT;
         } else {
-            error_msg( " Type mismatch in conditional expression for operands of type " +
+            error_msg( " Type mismatch in conditional expression for operands "
+                       "of type " +
                            teT.get_name() + " and " + coeT.get_name(),
                        line_num );
-            P->type=INVALID_TYPE;
+            P->type = INVALID_TYPE;
             // ERROR:
             return P;
         }
-    }
-    else{
-        error_msg("Comparison expression is not an int",line_num);
-        P->type=INVALID_TYPE;
+    } else {
+        error_msg( "Comparison expression is not an int", line_num );
+        P->type = INVALID_TYPE;
         return P;
     }
 

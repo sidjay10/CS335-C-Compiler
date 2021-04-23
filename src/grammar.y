@@ -57,6 +57,7 @@
 	Logical_orExpression* logical_or_expression;
 	ConditionalExpression* conditional_expression;
 	Expression* expression;
+	TypeName * type_name;
 }
 
 
@@ -101,7 +102,7 @@
 %token <node> CASE DEFAULT IF ELSE SWITCH WHILE DO FOR GOTO CONTINUE BREAK RETURN
 
 
-%type <node> type_name
+%type <type_name> type_name
 %type <node> constant_expression
 %type <node> unary_operator assignment_operator
 %type <declaration> declaration 
@@ -453,8 +454,8 @@ identifier_list
 	;
 */
 type_name
-	:  specifier_qualifier_list	 		{ $$ = create_non_term("type_name", $1); }
-	|  specifier_qualifier_list abstract_declarator	{ $$ = create_non_term("type_name", $1, $2); }
+	:  specifier_qualifier_list	 		{ $$ = create_type_name( $1, NULL); }
+	|  specifier_qualifier_list abstract_declarator	{ $$ = create_type_name( $1, $2); }
 	;
 
 abstract_declarator

@@ -106,7 +106,7 @@ class CastExpression : public Expression {
 };
 // NEED TO DO LATER
 Expression *create_cast_expression_typename(
-    Node *n,
+    TypeName *tn,
     Expression *ce ); // type_name wala add krna hai
 
 //-------------------------------------------------
