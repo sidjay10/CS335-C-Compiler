@@ -20,8 +20,14 @@ class Expression : public Non_Terminal {
   public:
     Type type;
     /* Change this late */
-    int num_opearands;
+    int num_operands;
     // Expression( Types * type, int num_op );
+
+
+	#if 0
+
+
+#endif
 
     Expression() : Non_Terminal( "" ){};
 };

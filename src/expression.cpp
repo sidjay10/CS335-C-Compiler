@@ -289,12 +289,18 @@ Expression *create_postfix_expr_struct( std::string access_op, Expression *pe,
     Types peT = defined_types[pe->type.typeIndex];
     if ( access_op == "." ) {
         if ( ( peT.is_struct || peT.is_union ) && pe->type.ptr_level == 0 ) {
+            if ( peT.struct_definition == nullptr ) {
+                error_msg( i->value + " is not a member of " +
+                               pe->type.get_name(),
+                           i->line_num, i->column );
+                P->type = INVALID_TYPE;
+                return P;
+            }
             // whether i exists in Struct
             Type *iType = peT.struct_definition->get_member( i );
             if ( iType == nullptr ) {
                 // Error
-                error_msg( i->value + " is not a member of " +
-                               pe->type.get_name(),
+                error_msg( i->value + " is not a member of " + peT.name,
                            i->line_num, i->column );
                 P->type = INVALID_TYPE;
                 return P;
@@ -302,14 +308,20 @@ Expression *create_postfix_expr_struct( std::string access_op, Expression *pe,
                 P->type = *iType;
             }
         } else {
-            error_msg( "Invalid operand . with type " + pe->type.get_name(),
-                       i->line_num, i->column );
+            error_msg( "Invalid operand . with type " + peT.name, i->line_num,
+                       i->column );
             P->type = INVALID_TYPE;
             return P;
         }
 
     } else if ( access_op == "->" ) {
         if ( ( peT.is_struct || peT.is_union ) && pe->type.ptr_level == 1 ) {
+            if ( peT.struct_definition == nullptr ) {
+                error_msg( i->value + " is not a member of " + peT.name,
+                           i->line_num, i->column );
+                P->type = INVALID_TYPE;
+                return P;
+            }
             // whether i exists in Struct*
             Type *iType = peT.struct_definition->get_member( i );
             if ( iType == nullptr ) {

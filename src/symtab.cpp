@@ -159,7 +159,7 @@ Type::Type( int idx, int p_lvl, bool is_con ) {
     is_defined = false;
 }
 bool Type::isPrimitive() {
-    if ( typeIndex >= 0 && typeIndex <= 12 ) {
+    if ( typeIndex >= 0 && typeIndex <= VOID_T ) {
         return true;
     } else {
         return false;
@@ -213,11 +213,35 @@ size_t Type::get_size() {
         for ( unsigned int i = 0; i < array_dim; i++ ) {
             p *= array_dims[i];
         }
-        return defined_types[typeIndex].size * p;
+        size_t sz;
+        if ( isPrimitive() ) {
+            sz = defined_types[typeIndex].size;
+        } else {
+            if ( defined_types[typeIndex].struct_definition != nullptr ) {
+                sz = defined_types[typeIndex].struct_definition->get_size();
+            } else {
+                error_msg( "Size of " + defined_types[typeIndex].name +
+                               " isn't known",
+                           line_num );
+                exit( 0 );
+            }
+        }
+        return sz * p;
 
     } else if ( ptr_level > 0 || is_function ) {
         return 8;
-    } else {
+    } else if ( !isPrimitive() ) {
+        if ( defined_types[typeIndex].struct_definition != nullptr ) {
+            return defined_types[typeIndex].struct_definition->get_size();
+        } else {
+            error_msg( "Size of " + defined_types[typeIndex].name +
+                           " isn't known",
+                       line_num );
+            exit( 0 );
+        }
+    }
+
+    else {
         return defined_types[typeIndex].size;
     }
 }
@@ -356,6 +380,10 @@ bool operator==( Type &obj1, Type &obj2 ) {
 //################################## TYPES #####################################
 //##############################################################################
 
+Types::Types()
+    : index( -1 ), name( "" ), size( 0 ), is_primitive( true ),
+      is_struct( false ), is_union( false ), struct_definition( nullptr ){};
+
 int add_to_defined_types( Types *typ ) {
     for ( auto it = defined_types.begin(); it != defined_types.end(); it++ ) {
         if ( ( *it ).name == typ->name ) {
@@ -387,14 +415,30 @@ void add_struct_defintion_to_type( int index,
 //############################ STRUCT DEFINITION ###############################
 //##############################################################################
 
-StructDefinition::StructDefinition(){};
+StructDefinition::StructDefinition() : recursive( 0 ){};
 
 size_t StructDefinition::get_size() {
+    if ( recursive == 1 ) {
+        std::cout << "ERROR : Cannot recursively define struct/union type\n";
+        exit( 0 );
+    }
+
+    recursive = 1;
     size_t size = 0;
     for ( auto it = members.begin(); it != members.end(); it++ ) {
-        // TODO: Implement This
-        size += 8;
+        size_t sz = it->second.get_size();
+        if ( sz % 8 != 0 ) {
+            sz += ( 8 - ( sz % 8 ) );
+        }
+        if ( un_or_st == UNION ) {
+            size = size < sz ? sz : size;
+        } else {
+            size += sz;
+        }
     }
+    assert( size != 0 );
+    std::cout << size << "\n";
+    recursive = 0;
     return size;
 }
 
@@ -405,18 +449,36 @@ StructDefinition *create_struct_definition( int un_or_st,
     std::cout << "struct {\n";
     for ( auto it = sdl->struct_declaration_list.begin();
           it != sdl->struct_declaration_list.end(); it++ ) {
-        // TODO: Complete this
         int type_index = ( *it )->sq_list->type_index;
         bool is_const = ( *it )->sq_list->is_const;
-        //	    assert( type_index != -1 );
+        assert( type_index != -1 );
+        if ( type_index == -2 ) {
+            continue;
+        }
 
         std::vector<Declarator *> dl =
             ( *it )->declarator_list->declarator_list;
 
         for ( auto jt = dl.begin(); jt != dl.end(); jt++ ) {
             int pointer_level = ( *jt )->get_pointer_level();
+            DirectDeclarator *dd = ( *jt )->direct_declarator;
             Type type( type_index, pointer_level, is_const );
 
+            if ( dd->type == ID ) {
+                ;
+            } else if ( dd->type == ARRAY ) {
+                type = Type( type_index, dd->array_dims.size(), true );
+                type.is_array = true;
+                type.is_pointer = true;
+                type.array_dim = dd->array_dims.size();
+                type.array_dims = dd->array_dims;
+            }
+
+            else if ( dd->type == FUNCTION ) {
+                error_msg( "Function cannot be member of struct/union",
+                           ( *jt )->id->line_num, ( *jt )->id->column );
+                continue;
+            }
             sd->members.insert( {( *jt )->id->value, type} );
             std::cout << "  " << ( *jt )->id->value << " " << type.get_name()
                       << "\n";
@@ -627,6 +689,22 @@ void Declaration::add_to_symbol_table( GlobalSymbolTable &sym_tab ) {
 
         if ( dd->type == ID ) {
             e->type = Type( type_index, pointer_level, is_const );
+            if ( ( *i )->init_expr != nullptr ) {
+                PrimaryExpression *P = new PrimaryExpression();
+                P->isTerminal = 1;
+                Identifier *a = new Identifier( "" );
+                *a = *( *i )->id;
+
+                P->Ival = a;
+                P->name = "primary_expression";
+                P->type = Type( type_index, pointer_level, false );
+                P->add_child( a );
+                P->line_num = a->line_num;
+                P->column = a->column;
+                Expression *ae = create_assignment_expression(
+                    P, ( *i )->eq, ( *i )->init_expr );
+                add_child( ae );
+            }
         } else if ( dd->type == ARRAY ) {
             e->type = Type( type_index, dd->array_dims.size(), true );
             e->type.is_array = true;
@@ -687,6 +765,12 @@ void Declaration::dotify() {
     std::vector<Node *> &c = children;
 
     bool dotify_ = false;
+    for ( auto it = c.begin(); it != c.end(); it++ ) {
+        if ( dynamic_cast<AssignmentExpression *>( *it ) ) {
+            dotify_ = true;
+            break;
+        }
+    }
     if ( dotify_ ) {
         if ( is_printed ) {
             is_printed = 0;
@@ -696,12 +780,12 @@ void Declaration::dotify() {
                 if ( dynamic_cast<AssignmentExpression *>( *it ) ) {
                     ss << "\t" << id << " -> " << ( *it )->id << ";\n";
                 }
-                file_writer( ss.str() );
+            }
+            file_writer( ss.str() );
 
-                for ( auto it = c.begin(); it != c.end(); it++ ) {
-                    if ( dynamic_cast<AssignmentExpression *>( *it ) ) {
-                        ( *it )->dotify();
-                    }
+            for ( auto it = c.begin(); it != c.end(); it++ ) {
+                if ( dynamic_cast<AssignmentExpression *>( *it ) ) {
+                    ( *it )->dotify();
                 }
             }
         }
@@ -1348,7 +1432,7 @@ TypeName *create_type_name( SpecifierQualifierList *sq_list,
         DirectAbstractDeclarator *dd =
             abstract_declarator->direct_abstract_declarator;
 
-        if ( dd!= nullptr && dd->array_dims.size() != 0 ) {
+        if ( dd != nullptr && dd->array_dims.size() != 0 ) {
             type_name->type =
                 Type( sq_list->type_index, dd->array_dims.size(), true );
             type_name->type.is_array = true;
@@ -1638,63 +1722,61 @@ void verify_struct_declarator( StructDeclarationList *st ) {
 
 #endif
 
-TypeSpecifier *
-create_type_specifier( TYPE_SPECIFIER type, Identifier *id,
-                       StructDeclarationList *struct_declaration_list ) {
+TypeSpecifier *create_struct_type( TYPE_SPECIFIER type, Identifier *id ) {
     assert( type == UNION || type == STRUCT );
-    TypeSpecifier *ts = new TypeSpecifier( type, id, struct_declaration_list );
+    TypeSpecifier *ts =
+        new TypeSpecifier( type, id, (StructDeclarationList *)NULL );
     std::stringstream ss;
-    ss << "type_specifier : ";
+    std::string name_;
+
     switch ( type ) {
     case UNION:
         ss << "UNION";
+        name_ = "union";
         break;
     case STRUCT:
         ss << "STRUCT";
+        name_ = "struct";
         break;
     default:
         assert( 0 );
     }
-    ts->name = ss.str();
-    // ts->add_children( id, struct_declaration_list );
+    ss << " " << id->value;
+    ts->name = "type_specifier : " + ss.str();
+
+    Types *struct_type = new Types;
+    struct_type->name = name_ + " " + id->value;
+    struct_type->is_primitive = false;
+
+    switch ( type ) {
+    case UNION:
+        struct_type->is_union = true;
+        struct_type->is_struct = false;
+        break;
+    case STRUCT:
+        struct_type->is_union = false;
+        struct_type->is_struct = true;
+        break;
+    default:
+        assert( 0 );
+    }
+    ts->type_index = add_to_defined_types( struct_type );
+
+    return ts;
+}
+
+TypeSpecifier *
+add_struct_declaration( TypeSpecifier *ts,
+                        StructDeclarationList *struct_declaration_list ) {
     if ( struct_declaration_list != nullptr ) {
         int err = verify_struct_declarator( struct_declaration_list );
-        std::string struct_name;
-
-        if ( id == nullptr ) {
-            struct_name = "struct #anon_" + std::to_string( anon_count );
-            anon_count++;
-        } else {
-            struct_name = "struct " + id->value;
-        }
-
-        Types *struct_type = new Types;
-        struct_type->name = struct_name;
-        struct_type->is_primitive = false;
-
-        switch ( type ) {
-        case UNION:
-            struct_type->is_union = true;
-            struct_type->is_struct = false;
-            break;
-        case STRUCT:
-            struct_type->is_union = false;
-            struct_type->is_struct = true;
-            break;
-        default:
-            assert( 0 );
-        }
         if ( err == 0 ) {
-            ts->type_index = add_to_defined_types( struct_type );
             StructDefinition *struct_definition =
-                create_struct_definition( type, struct_declaration_list );
+                create_struct_definition( ts->type, struct_declaration_list );
             add_struct_defintion_to_type( ts->type_index, struct_definition );
         }
-
-    } else {
-        ts->type_index = get_type_index( "struct " + id->value );
+        delete struct_declaration_list;
     }
-
     return ts;
 }
 

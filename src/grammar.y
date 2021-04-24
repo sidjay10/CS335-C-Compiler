@@ -110,7 +110,7 @@
 %type <declarator> init_declarator declarator
 %type <declaration_specifiers> declaration_specifiers 
 %type <value> storage_class_specifier 
-%type <type_specifier> type_specifier struct_or_union_specifier enum_specifier
+%type <type_specifier> type_specifier struct_or_union_specifier enum_specifier struct_or_union_id
 %type <value> type_qualifier
 
 %type <pointer> pointer
@@ -345,10 +345,22 @@ type_specifier
 	|  enum_specifier		{ $$ = $1; }
 	|  TYPE_NAME			{ $$ = $1; }
 	;
+/*
 struct_or_union_specifier
-	:  struct_or_union IDENTIFIER '{' struct_declaration_list '}'	{ $$ = create_type_specifier( $1, $2, $4); }
+	:  struct_or_union IDENTIFIER  _marker_ { } '{' struct_declaration_list '}'	{ $$ = create_type_specifier( $1, $2, $4); }
 	|  struct_or_union '{' struct_declaration_list '}'	 	{ $$ = create_type_specifier( $1, NULL, $3); }
 	|  struct_or_union IDENTIFIER	 				{ $$ = create_type_specifier( $1, $2, (StructDeclarationList *) NULL); }
+	;
+
+*/
+struct_or_union_specifier
+	:  struct_or_union_id  '{' struct_declaration_list '}'	{ $$ = add_struct_declaration( $1, $3); }
+	|  struct_or_union_id 	 				{ $$ =  $1; }
+	;
+
+struct_or_union_id
+	: struct_or_union IDENTIFIER	{ $$ = create_struct_type( $1, $2 ); }
+/*	| struct_or_union 		{ $$ = create_struct_type( $1, NULL ); }*/
 	;
 
 struct_or_union

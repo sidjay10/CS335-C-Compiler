@@ -15,6 +15,7 @@ class PrimaryExpression;
 Expression *create_assignment_expression( Expression *ue, Node *n_op,
                                           Expression *ase );
 enum PrimitiveTypes {
+    ERROR_T = -1,
     U_CHAR_T = 0,
     CHAR_T = 1,
     U_SHORT_T = 2,
@@ -27,7 +28,6 @@ enum PrimitiveTypes {
     DOUBLE_T = 9,
     LONG_DOUBLE_T = 10,
     VOID_T = 11,
-    ERROR_T = 12
 };
 
 extern unsigned int line_num;
@@ -64,6 +64,8 @@ class StructDefinition {
     StructDefinition();
     size_t get_size();
     Type *get_member( Identifier *id );
+	private:
+		int recursive;
 };
 
 StructDefinition *create_struct_definition( int un_or_st,
@@ -78,6 +80,7 @@ class Types {
     bool is_struct;
     bool is_union;
     StructDefinition *struct_definition;
+	Types();
 };
 
 class Type {
@@ -547,7 +550,9 @@ TypeSpecifier *create_type_specifier( TYPE_SPECIFIER type,
                                       unsigned int line_num,
                                       unsigned int column );
 TypeSpecifier *
-create_type_specifier( TYPE_SPECIFIER type, Identifier *id,
+create_struct_type( TYPE_SPECIFIER type, Identifier *id );
+                      
+TypeSpecifier * add_struct_declaration( TypeSpecifier * ts, 
                        StructDeclarationList *struct_declaration_list );
 TypeSpecifier *create_type_specifier( TYPE_SPECIFIER type, Identifier *id,
                                       EnumeratorList *enumerator_list );
