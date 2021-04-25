@@ -229,7 +229,7 @@ size_t Type::get_size() {
         return sz * p;
 
     } else if ( ptr_level > 0 || is_function ) {
-        return 8;
+        return WORD_SIZE;
     } else if ( !isPrimitive() ) {
         if ( defined_types[typeIndex].struct_definition != nullptr ) {
             return defined_types[typeIndex].struct_definition->get_size();
@@ -247,7 +247,7 @@ size_t Type::get_size() {
 }
 
 bool Type::isInt() {
-    if ( typeIndex >= 0 && typeIndex <= 7 ) {
+    if ( typeIndex >= U_CHAR_T && typeIndex <= LONG_T ) {
         if ( ptr_level == 0 ) {
             return true;
         } else {
@@ -340,7 +340,7 @@ bool operator==( Type &obj1, Type &obj2 ) {
             return true;
         }
     } else if ( obj1.is_array != obj2.is_array ) {
-        if ( obj1.ptr_level == obj2.ptr_level ) {
+        if ( obj1.ptr_level == 1 && obj2.ptr_level == 1 ) {
             return true;
         } else {
             return false;
@@ -427,8 +427,8 @@ size_t StructDefinition::get_size() {
     size_t size = 0;
     for ( auto it = members.begin(); it != members.end(); it++ ) {
         size_t sz = it->second.get_size();
-        if ( sz % 8 != 0 ) {
-            sz += ( 8 - ( sz % 8 ) );
+        if ( sz % WORD_SIZE != 0 ) {
+            sz += ( WORD_SIZE - ( sz % WORD_SIZE ) );
         }
         if ( un_or_st == UNION ) {
             size = size < sz ? sz : size;
@@ -606,6 +606,7 @@ void Declaration::add_to_symbol_table( LocalSymbolTable &sym_tab ) {
                 P->add_child( a );
                 P->line_num = a->line_num;
                 P->column = a->column;
+		P->res = new Address ( a->value, ID3);
                 Expression *ae = create_assignment_expression(
                     P, ( *i )->eq, ( *i )->init_expr );
                 add_child( ae );
@@ -701,6 +702,7 @@ void Declaration::add_to_symbol_table( GlobalSymbolTable &sym_tab ) {
                 P->add_child( a );
                 P->line_num = a->line_num;
                 P->column = a->column;
+		P->res = new Address ( a->value, ID3);
                 Expression *ae = create_assignment_expression(
                     P, ( *i )->eq, ( *i )->init_expr );
                 add_child( ae );
@@ -2225,7 +2227,7 @@ void GlobalSymbolTable::add_symbol(
         new SymTabEntry( declarator->id->value, declarator->id->line_num,
                          declarator->id->column );
 
-    e->type = Type( type_index, 0, true );
+    e->type = Type( type_index, pointer_level, true );
     e->type.is_function = true;
     e->type.is_pointer = false; /* We don't implement function pointers */
     DirectDeclarator *dd = declarator->direct_declarator;

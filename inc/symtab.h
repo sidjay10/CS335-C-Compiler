@@ -48,6 +48,8 @@ class TopLevelExpression;
 class Types;
 class Type;
 
+#define WORD_SIZE 4
+
 extern std::vector<Types> defined_types;
 
 std::string primitive_type_name( PrimitiveTypes type );

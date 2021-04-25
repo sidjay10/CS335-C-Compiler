@@ -6,6 +6,7 @@
 #include <map>
 #include <string>
 #include <symtab.h>
+#include <3ac.h>
 
 // All class declarations
 class StructDefinition;
@@ -22,14 +23,17 @@ class Expression : public Non_Terminal {
     /* Change this late */
     int num_operands;
     // Expression( Types * type, int num_op );
+	Address  * res;
+//	ThreeAC * code;
 
-
-	#if 0
-
+#if 0
+	Code
+	NextList
+	FalseList
 
 #endif
 
-    Expression() : Non_Terminal( "" ){};
+    Expression() : Non_Terminal( "" ), res ( nullptr ){};
 };
 
 // Expression::Expression(){}
@@ -93,7 +97,7 @@ Expression *
 create_unary_expression_ue( std::string u_op,
                             Expression *ue ); // INC_OP, DEC_OP, SIZEOF
 Expression *create_unary_expression_cast( Node *n_op, Expression *ce );
-Expression *create_unary_expression_typename( std::string u_op, Node *t_name );
+Expression *create_unary_expression_typename( std::string u_op, TypeName *t_name );
 
 //-------------------------------------------------
 class CastExpression : public Expression {
