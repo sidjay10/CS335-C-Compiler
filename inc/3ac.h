@@ -78,18 +78,25 @@ Quad ( Address * result, std::string operation, Address * arg1, Address * arg2 )
 
 std::ostream& operator<<(std::ostream& os, const Quad& q);
 
-Quad * emit(  Address * result, std::string operation, Address * arg1, Address * arg2 );
+int emit(  Address * result, std::string operation, Address * arg1, Address * arg2 );
 
 class Label : public ThreeAC {
-
-
+	public:
+	std::string name;
+	unsigned long long instructions_id;
+	Label(std::string n,unsigned long long ins_id){
+		name = n;
+		instructions_id=ins_id;
+	}
+};
+ 
+class GoTo : public ThreeAC {
+	public : 
+		Label label_id;
+		
 };
 
 std::ostream& operator<<(std::ostream& os, const Label& l);
-
-class GoTo : public ThreeAC {
-
-};
 
 std::ostream& operator<<(std::ostream& os, const GoTo& g);
 

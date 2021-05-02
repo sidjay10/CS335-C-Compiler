@@ -6,6 +6,8 @@
 	#include <ast.h>
 	#include <symtab.h>
 	#include <expression.h>
+	#include <3ac.h>
+	
 	void yyerror(const char *s);	
 	extern "C" int yylex();
 	extern Node * root; 
@@ -533,9 +535,10 @@ statement_list
 	|  statement_list statement	 { $$ = create_non_term("statement_list", $1, $2); }
 	;
 
+/* This is automatically an expression */
 expression_statement
 	:  ';'			 { $$ = create_terminal("EMPTY_STMT",NULL); }
-	|  expression ';'	 { $$ = $1; }
+	|  expression ';'	 { $$ = create_expression_statement($1); }
 	;
 
 selection_statement
