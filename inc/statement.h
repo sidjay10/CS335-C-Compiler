@@ -17,11 +17,12 @@ class Statement : public Non_Terminal {
         std::vector<GoTo*> breaklist;
         std::vector<GoTo*> continuelist;
         std::vector<GoTo*> caselist;
-    	Statement() : Non_Terminal("") { };   
+    Statement() : Non_Terminal("") {};   
 };
 
 class TopLevelStatement : public Statement {
-    Statement *s1;
+    public:
+        Statement *s1;
     
 };
 
@@ -37,15 +38,14 @@ Statement* create_statement_list(StatementList* slist,Statement* s1);
 
 class ExpressionStatement : public Statement{
     public:
-        std::string st;
-        ExpressionStatement() {
-            st="";
-        };
+        Expression *e1;
+        ExpressionStatement(){
+            e1=nullptr;
+        }
 
 };
 
-Statement* create_expression_statement(Expression * ex );
-
+Statement* create_expression_statement(Expression* e1);
 
 class SelectionStatement : public Statement{
     public:

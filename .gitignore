@@ -9,6 +9,7 @@ src/*.swp
 
 inc/*.vscode
 inc/*.swp
+inc/y.tab.h
 
 tests/*.vscode
 tests/*.swp

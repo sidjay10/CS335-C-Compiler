@@ -44,6 +44,7 @@ class Non_Terminal : public Node {
 	public:
 		std::string name;
 		std::vector <Node *> children;
+		
 
 		Non_Terminal(const char * name_);
 		void add_child(Node * node);
