@@ -9,11 +9,6 @@
 #include <3ac.h>
 
 
-#define CLEAR_VECTOR(v) \
-    for ( auto it = (v).begin(); it != (v).end(); it++ ) { \
-        delete (*it); \
-    }
-
 class Statement : public Non_Terminal {
     public:
         std::vector<GoTo*> nextlist; /* NextList Doubles up as TrueList */
@@ -22,10 +17,10 @@ class Statement : public Non_Terminal {
         std::vector<GoTo*> caselist;
     Statement() : Non_Terminal("") {};   
     ~Statement() {
-        CLEAR_VECTOR( nextlist );
-        CLEAR_VECTOR( breaklist );
-        CLEAR_VECTOR( continuelist );
-        CLEAR_VECTOR( caselist );
+        nextlist.clear();
+        breaklist.clear();
+        continuelist.clear();
+        caselist.clear();
     }
 };
 
@@ -57,17 +52,17 @@ Statement* create_expression_statement(Expression* e1);
 
 class SelectionStatement : public Statement{
 };
-Statement *create_selection_statement_if( Expression *ex, Label * l1, Statement *st1, GoTo * _goto, Label * l2, Statement *st2 );
-Statement *create_selection_statement_switch(std::string st,Expression *ex1, Statement *st1);
+Statement *create_selection_statement_if( Expression *ex, GoTo * _false, Label * l1, Statement *st1, GoTo * _goto, Label * l2, Statement *st2 );
+Statement *create_selection_statement_switch(Expression *ex1,GoTo* _goto, Statement* st1);
 
 class IterationStatement : public Statement {
     public:
     IterationStatement(){}
 };
 
-Statement* create_iteration_statement_while(Label * l1, Expression *e1, Label * l2, Statement *s1 );
-Statement* create_iteration_statement_do_while(Label *l1,Statement *s1,Label *l2,Expression *e1 );
-Statement* create_iteration_statement_for( Expression * ex1, Label * l1, Expression * ex2, Label * l2, Statement*s1 );
+Statement* create_iteration_statement_while(Label * l1, Expression *e1, GoTo * _false, Label * l2, Statement *s1 );
+Statement* create_iteration_statement_do_while(Label *l1,Statement *s1,  Label *l2,Expression *e1, GoTo * _false );
+Statement* create_iteration_statement_for( Expression * ex1, Label * l1,  Expression * ex2, Label * l2, Statement*s1 );
 Statement* create_iteration_statement_for( Expression * ex1, Label * l1, Expression * ex2, GoTo * _goto1, Label * l2, Expression * ex3, GoTo * _goto2 , Label * l3, Statement*s1 );
 
 class JumpStatement : public Statement {
@@ -106,8 +101,9 @@ Statement* create_labeled_statement_case(std::string st,Expression *ex,Statement
 Statement* create_labeled_statement_def(std::string st,Statement* s1);
 
 extern std::map<std::string,Label *> label_iden;
-extern std::map<std::string,std::vector<GoTo *>> goto_iden;
-
+extern std::map<std::string,std::vector<GoTo *> & > goto_iden;
+extern std::map<std::string, Label *> switch_label;
+extern Type* switch_type;
 class CompoundStatement : public Statement{
     public:
         StatementList *sl1;

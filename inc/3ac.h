@@ -11,6 +11,7 @@
 extern unsigned long long instructions;
 unsigned long long get_next_instr();
 
+
 extern unsigned long long temporaries;
 
 typedef enum ADD_TYPE_ {
@@ -45,11 +46,14 @@ Address * new_3id(std::string id);
 class ThreeAC {
 public:
 	unsigned int instr;
-
 	ThreeAC();
 	ThreeAC( bool no_add );
+	virtual std::string print() = 0;
+	virtual ~ThreeAC();
 
 };
+
+extern std::vector< ThreeAC * > ta_code;
 
 
 class Quad : public ThreeAC {
@@ -59,10 +63,10 @@ public:
 	Address * arg1;
 	Address * arg2;
 	Quad * next;
+	Quad ( Address * result, std::string operation, Address * arg1, Address * arg2 );
+	std::string print();
+	~Quad();
 
-Quad ( Address * result, std::string operation, Address * arg1, Address * arg2 );
-
-		
 };
 
 #define MEM_EMIT(a,b) \
@@ -76,30 +80,54 @@ Quad ( Address * result, std::string operation, Address * arg1, Address * arg2 )
 		(b) = (a)->res; \
 	}
 
+#define BACKPATCH(a) { \
+	Label * _lab; 			\
+	if ( (a)->falselist.size() != 0 || (a)->truelist.size() != 0 ) { \
+		_lab = create_new_label(); \
+	} \
+	backpatch((a)->falselist,_lab); \
+	backpatch((a)->truelist,_lab); \
+}
+
+#define SAVE_REGS( E, t1, t2 ) { \
+    if ( (t1)->type == TEMP ) { \
+        (E)->res = (t1); \
+    } else if ( (t2)->type == TEMP ){ \
+        (E)->res = (t2); \
+    } else { \
+        (E)->res = new_temp(); \
+    } \
+}
 
 std::ostream& operator<<(std::ostream& os, const Quad& q);
 
-int emit(  Address * result, std::string operation, Address * arg1, Address * arg2 );
+unsigned long long emit(  Address * result, std::string operation, Address * arg1, Address * arg2 );
 
 class Label : public ThreeAC {
 	public:
-	std::string name;
-	unsigned long long instructions_id;
-	Label();
+		std::string name;
+		unsigned long long instructions_id;
+		Label();
+		std::string print();
+		~Label();
 };
 
-extern unsigned long long label_count;
+extern unsigned long long labels;
 Label * create_new_label();
  
 class GoTo : public ThreeAC {
 	public : 
 		Label * label;
+		Address * res;
+		bool condition;
 		GoTo();
-		
+		std::string print();
+		~GoTo();
 };
 
 GoTo * create_new_goto();
 GoTo * create_new_goto(Label * label);
+GoTo * create_new_goto_cond(Address * res, bool condition);
 
 
 std::ostream& operator<<(std::ostream& os, const Label& l);
@@ -110,4 +138,6 @@ void backpatch( std::vector <GoTo * > & go_v, Label * label );
 
 // Append v2 at the end of vector 1
 void append ( std::vector <GoTo *> & v1, std::vector <GoTo *> & v2);
+
+void dump_and_reset_3ac();
 #endif

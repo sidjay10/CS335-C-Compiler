@@ -104,6 +104,8 @@ class Type {
     Type();
 
     Type( int idx, int p_lvl, bool is_con );
+    
+    int Type2(bool is_int,bool is_unsign);
     bool is_const;
     bool isPrimitive();
     std::string get_name();

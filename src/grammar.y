@@ -162,7 +162,7 @@
 %type <node> translation_unit external_declaration 
 
 %type <label> M_LABEL
-%type <_goto> M_GOTO
+%type <_goto> M_GOTO M_FALSE
 
 %start translation_unit
 %%
@@ -266,12 +266,12 @@ inclusive_or_expression
 
 logical_and_expression
 	: inclusive_or_expression				{ $$ = $1; }
-	| logical_and_expression AND_OP inclusive_or_expression	{ $$ = create_logical_and_expression("&&", $1, $3); }
+	| logical_and_expression AND_OP { $1->falselist.push_back(create_new_goto_cond($1->res,false)); if( $1->truelist.size() != 0 ) { backpatch( $1->truelist, create_new_label()); } } inclusive_or_expression	{ $$ = create_logical_and_expression("&&", $1, $4); }
 	;
 
 logical_or_expression
 	: logical_and_expression				{ $$ = $1; }
-	| logical_or_expression OR_OP logical_and_expression	{ $$ = create_logical_or_expression("||", $1, $3); }
+	| logical_or_expression OR_OP { $1->truelist.push_back(create_new_goto_cond($1->res,true)); if($1->falselist.size() != 0) { backpatch( $1->falselist, create_new_label() ); } }logical_and_expression	{ $$ = create_logical_or_expression("||", $1, $4); }
 	;
 
 conditional_expression
@@ -524,9 +524,9 @@ statement
 	;
 
 labeled_statement
-	:  IDENTIFIER ':' M_LABEL statement	 		{ $$ = create_labeled_statement_iden($1, $3,$4); }
-	|  CASE CONSTANT ':' M_LABEL statement		{ $$ = NULL; }
-	|  DEFAULT ':' M_LABEL statement	 		{ $$ = NULL; }
+	:  IDENTIFIER ':' M_LABEL statement	 		{ $$ = create_labeled_statement_iden($1, $3, $4); }
+/*	|  CASE constant_expression ':' M_LABEL statement		{ $$ = create_labeled_statement_case($2,$4,$5); }*/
+/*	|  DEFAULT ':' M_LABEL statement	 		{ $$ = create_labeled_statement_def($3,$4); }*/
 	;
 
 compound_statement
@@ -543,7 +543,7 @@ declaration_list
 
 statement_list
 	:  statement			 	 { $$ = create_statement_list( $1 ); }
-	|  statement_list statement	 { $$ = add_to_statement_list( $1, $2 ); }
+	|  statement_list { if ( $1 != nullptr && $1->nextlist.size() != 0 ) { backpatch($1->nextlist,create_new_label()); } } statement	 { $$ = add_to_statement_list( $1, $3 ); }
 	;
 
 /* This is automatically an expression */
@@ -553,16 +553,20 @@ expression_statement
 	;
 
 selection_statement
-	:  IF '(' expression ')' M_LABEL statement	 			{ $$ = create_selection_statement_if( $3, $5, $6, NULL, NULL, NULL);}
-	|  IF '(' expression ')' M_LABEL statement  ELSE M_GOTO M_LABEL statement	{ $$ = create_selection_statement_if( $3, $5, $6, $8, $9, $10 );}
-	|  SWITCH '(' expression ')' statement	 				{ $$ = NULL; }
+	:  IF '(' expression M_FALSE ')' M_LABEL statement	 			{ $$ = create_selection_statement_if( $3, $4, $6, $7, NULL, NULL, NULL);}
+	|  IF '(' expression M_FALSE ')' M_LABEL statement  ELSE M_GOTO M_LABEL statement	{ $$ = create_selection_statement_if( $3, $4, $6, $7, $9, $10, $11 );}
+/*	|  SWITCH '(' expression ')' statement	 				{ $$ = create_selection_statement_switch($3,$4,$6); } */
 	;
 
 iteration_statement
-	:  WHILE '(' M_LABEL expression ')' M_LABEL statement	 { $$ = create_iteration_statement_while( $3, $4, $6, $7 ); }
-	|  DO M_LABEL statement WHILE '(' M_LABEL expression ')' ';'	 { $$ = create_iteration_statement_do_while( $2, $3, $6, $7 ); }
-	|  FOR '(' expression_statement M_LABEL expression_statement ')' M_LABEL statement	 { $$ = create_iteration_statement_for( $3, $4, $5, $7, $8 ); }
-	|  FOR '(' expression_statement M_LABEL expression_statement M_GOTO M_LABEL expression M_GOTO ')' M_LABEL statement	 { $$ = create_iteration_statement_for( $3, $4, $5, $6, $7, $8, $9, $11, $12 ); }
+	:  WHILE '(' M_LABEL expression M_FALSE ')' M_LABEL statement	 { $$ = create_iteration_statement_while( $3, $4, $5, $7, $8 ); }
+	|  DO M_LABEL statement WHILE '(' M_LABEL expression M_FALSE ')' ';'	 { $$ = create_iteration_statement_do_while( $2, $3, $6, $7, $8 ); }
+	|  FOR '(' expression_statement  M_LABEL expression_statement  
+				{ if ( $5 != nullptr ) { $5->falselist.push_back(create_new_goto_cond($5->res,false)); } } 
+			')' M_LABEL statement	 { $$ = create_iteration_statement_for( $3, $4, $5, $8, $9 ); }
+	|  FOR '(' expression_statement M_LABEL expression_statement 
+				{ if ( $5 != nullptr ) { $5->falselist.push_back(create_new_goto_cond($5->res,false)); }}
+			 M_GOTO M_LABEL expression M_GOTO ')' M_LABEL statement	 { $$ = create_iteration_statement_for( $3, $4, $5, $7, $8, $9, $10, $12, $13 ); }
 	;
 
 jump_statement
@@ -588,13 +592,14 @@ function_declaration
 	;
 
 function_definition
-	:  function_declaration compound_statement	 { $$ = add_stmt_to_function_definition( $1, $2 ); }
+	:  function_declaration compound_statement	 { $$ = add_stmt_to_function_definition( $1, $2 ); dump_and_reset_3ac(); }
 	;
 /*	:  declaration_specifiers declarator compound_statement	 { $$ = create_function_defintion($1, $2, $3); }*/
 /*	|  declarator compound_statement	 { $$ = create_non_term("function_definition", $2); }*/
 
 M_LABEL : %empty { $$ = create_new_label(); } ;
 M_GOTO  : %empty { $$ = create_new_goto(); } ;
+M_FALSE : %empty { $$ = create_new_goto_cond(nullptr, false); };
 
 
 %%

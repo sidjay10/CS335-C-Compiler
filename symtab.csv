@@ -1,0 +1,5 @@
+Scope,Function Name, Symbol Name, Symbol Type, Symbol Level
+global,-,main,fun:int( ),0
+local,main,t,int,1
+local,main,a,int,1
+local,main,x,int*,1

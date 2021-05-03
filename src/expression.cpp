@@ -434,14 +434,14 @@ Expression *create_postfix_expr_ido( Terminal *op, Expression *pe ) {
         P->res = new_temp();
         Address *t1 = new_temp();
         emit( P->res, "()", pe->res, nullptr );
-        emit( t1, "=", P->res, nullptr );
+        emit( t1, "=", P->res,nullptr);
         emit( t1, op_code, t1, inc_value );
         emit( pe->res, "()s", t1, nullptr );
     } else if ( pe->res->type == ID3 ) {
         P->res = new_temp();
         Address *t1 = new_temp();
         emit( P->res, "()", pe->res, nullptr );
-        emit( t1, "=", P->res, nullptr );
+        emit( t1, "=", P->res,nullptr);
         emit( t1, op_code, t1, inc_value );
         emit( pe->res, "()s", t1, nullptr );
     } else {
@@ -559,7 +559,20 @@ Expression *create_unary_expression_cast( Node *n_op, Expression *ce ) {
             U->type = ce->type;
             U->type.ptr_level++;
             U->type.is_pointer = true;
-            // TODO : Implement 3AC for &
+            if ( ce->res->type == MEM ) {
+                U->res = ce->res;
+                U->res->type = TEMP;
+                emit( U->res, "=", ce->res, nullptr);
+            } else if ( ce->res->type == ID3 ) {
+                U->res = new_temp();
+                emit ( U->res, "=", ce->res, nullptr);
+            } else {
+               error_msg( "lvalue required as unary & operand", n_op->line_num,
+                       n_op->column );
+                U->type = INVALID_TYPE;
+                return U; 
+            }
+
         } else {
             error_msg( "lvalue required as unary & operand", n_op->line_num,
                        n_op->column );
@@ -598,9 +611,13 @@ Expression *create_unary_expression_cast( Node *n_op, Expression *ce ) {
         if ( ce->type.isIntorFloat() ) {
             U->type = ce->type;
             U->type.make_signed();
-            U->res = new_temp();
             Address *t1;
             MEM_EMIT( ce, t1 );
+            if ( t1->type == TEMP ) {
+                U->res = t1;
+            } else {
+                U->res = new_temp();
+            }
             emit( U->res, u_op, t1, nullptr );
         } else {
             // Throw Error
@@ -612,9 +629,14 @@ Expression *create_unary_expression_cast( Node *n_op, Expression *ce ) {
     } else if ( u_op == "!" ) {
         if ( ce->type.isInt() ) {
             U->type = Type( U_CHAR_T, 0, 0 );
-            U->res = new_temp();
             Address *t1;
             MEM_EMIT( ce, t1 );
+            BACKPATCH ( ce );
+            if ( t1->type == TEMP ) {
+                U->res = t1;
+            } else {
+                U->res = new_temp();
+            }
             emit( U->res, u_op, t1, nullptr );
         } else {
             // Throw Error
@@ -703,10 +725,10 @@ Expression *create_multiplicative_expression( std::string op, Expression *me,
                 op += "u";
             }
 
-            P->res = new_temp();
             Address *t1, *t2;
             MEM_EMIT( me, t1 );
             MEM_EMIT( ce, t2 );
+            SAVE_REGS( P, t1, t2 );
 
             if ( meT.typeIndex < ceT.typeIndex ) {
                 P->type = ceT;
@@ -731,10 +753,10 @@ Expression *create_multiplicative_expression( std::string op, Expression *me,
 
             op += "f";
 
-            P->res = new_temp();
             Address *t1, *t2;
             MEM_EMIT( me, t1 );
             MEM_EMIT( ce, t2 );
+            SAVE_REGS ( P, t1, t2 );
 
             if ( meT.typeIndex < ceT.typeIndex ) {
                 P->type = ceT;
@@ -760,10 +782,10 @@ Expression *create_multiplicative_expression( std::string op, Expression *me,
 
             P->type = ceT;
             P->type.make_unsigned();
-            P->res = new_temp();
             Address *t1, *t2;
             MEM_EMIT( me, t1 );
             MEM_EMIT( ce, t2 );
+            SAVE_REGS ( P, t1, t2 );
             emit( P->res, op, t1, t2 );
 
         } else {
@@ -811,10 +833,10 @@ Expression *create_additive_expression( std::string op, Expression *ade,
                 op += "u";
             }
 
-            P->res = new_temp();
             Address *t1, *t2;
             MEM_EMIT( ade, t1 );
             MEM_EMIT( me, t2 );
+            SAVE_REGS( P, t1, t2 );
 
             if ( adeT.typeIndex < meT.typeIndex ) {
                 P->type = meT;
@@ -878,11 +900,6 @@ Expression *create_additive_expression( std::string op, Expression *ade,
     P->name = "additive_expression";
     Node *n_op = create_non_term( ( op ).c_str() );
     P->add_children( ade, n_op, me );
-    P->res = new_temp();
-    Address *t1, *t2;
-    MEM_EMIT( ade, t1 );
-    MEM_EMIT( me, t2 );
-    emit( P->res, op, t1, t2 );
 
     return P;
 }
@@ -927,10 +944,10 @@ Expression *create_shift_expression( std::string op, Expression *se,
     P->name = "shift_expression";
     Node *n_op = create_non_term( ( op ).c_str() );
     P->add_children( se, n_op, ade );
-    P->res = new_temp();
     Address *t1, *t2;
     MEM_EMIT( se, t1 );
     MEM_EMIT( ade, t2 );
+    SAVE_REGS( P, t1, t2 );
     emit( P->res, op, t1, t2 );
     return P;
 }
@@ -976,10 +993,10 @@ Expression *create_relational_expression( std::string op, Expression *re,
     P->name = "relational_expression";
     Node *n_op = create_non_term( ( op ).c_str() );
     P->add_children( re, n_op, se );
-    P->res = new_temp();
     Address *t1, *t2;
     MEM_EMIT( re, t1 );
     MEM_EMIT( se, t2 );
+    SAVE_REGS( P, t1, t2 );
     emit( P->res, op, t1, t2 );
     return P;
 }
@@ -1031,10 +1048,10 @@ Expression *create_equality_expression( std::string op, Expression *eq,
     P->name = "eqality_expression";
     Node *n_op = create_non_term( ( op ).c_str() );
     P->add_children( eq, n_op, re );
-    P->res = new_temp();
     Address *t1, *t2;
     MEM_EMIT( eq, t1 );
     MEM_EMIT( re, t2 );
+    SAVE_REGS( P, t1, t2);
     emit( P->res, op, t1, t2 );
     return P;
 }
@@ -1080,10 +1097,10 @@ Expression *create_and_expression( std::string op, Expression *an,
     P->name = "and_expression";
     Node *n_op = create_non_term( ( op ).c_str() );
     P->add_children( an, n_op, eq );
-    P->res = new_temp();
     Address *t1, *t2;
     MEM_EMIT( an, t1 );
     MEM_EMIT( eq, t2 );
+    SAVE_REGS( P, t1, t2 );
     emit( P->res, op, t1, t2 );
     return P;
 }
@@ -1129,10 +1146,10 @@ Expression *create_exclusive_or_expression( std::string op, Expression *ex,
     P->name = "exclusive_or_expression";
     Node *n_op = create_non_term( ( op ).c_str() );
     P->add_children( ex, n_op, an );
-    P->res = new_temp();
     Address *t1, *t2;
     MEM_EMIT( ex, t1 );
     MEM_EMIT( an, t2 );
+    SAVE_REGS( P, t1, t2 );
     emit( P->res, op, t1, t2 );
     return P;
 }
@@ -1178,10 +1195,10 @@ Expression *create_inclusive_or_expression( std::string op, Expression *ie,
     P->name = "inclusive_or_expression";
     Node *n_op = create_non_term( ( op ).c_str() );
     P->add_children( ie, n_op, ex );
-    P->res = new_temp();
     Address *t1, *t2;
     MEM_EMIT( ie, t1 );
     MEM_EMIT( ex, t2 );
+    SAVE_REGS( P, t1, t2 );
     emit( P->res, op, t1, t2 );
     return P;
 }
@@ -1222,11 +1239,15 @@ Expression *create_logical_and_expression( std::string op, Expression *la,
     P->name = "logical_and_expression";
     Node *n_op = create_non_term( ( op ).c_str() );
     P->add_children( la, n_op, ie );
-    P->res = new_temp();
+    P->res = ie->res;
     Address *t1, *t2;
-    MEM_EMIT( la, t1 );
-    MEM_EMIT( ie, t2 );
-    emit( P->res, op, t1, t2 );
+    //MEM_EMIT( la, t1 );
+    //MEM_EMIT( ie, t2 );
+    //emit( P->res, op, t1, t2 );
+    //append(P->truelist,la->truelist);
+    append(P->truelist,ie->truelist);
+    append(P->falselist,la->falselist);
+    append(P->falselist,ie->falselist);
     return P;
 }
 
@@ -1265,11 +1286,15 @@ Expression *create_logical_or_expression( std::string op, Expression *lo,
 
     P->name = "logical_or_expression";
     P->add_children( lo, la );
-    P->res = new_temp();
+    P->res = la->res;
     Address *t1, *t2;
-    MEM_EMIT( lo, t1 );
-    MEM_EMIT( la, t2 );
-    emit( P->res, op, t1, t2 );
+    //MEM_EMIT( lo, t1 );
+    //MEM_EMIT( la, t2 );
+    //emit( P->res, op, t1, t2 );
+    append(P->truelist,lo->truelist);
+    append(P->truelist,la->truelist);
+    //append(P->falselist,lo->falselist);
+    append(P->falselist,la->falselist);
 
     return P;
 }
@@ -1405,8 +1430,25 @@ Expression *create_assignment_expression( Expression *ue, Node *n_op,
             P->type = INVALID_TYPE;
             return P;
         }
-        P->res = ue->res;
-        emit( P->res, op.substr( 0, 1 ), ue->res, ase->res );
+        if ( ue->res->type == MEM ) {
+            Address *t1 = new_temp();
+            emit( t1, "()", ue->res, nullptr );
+            emit( t1, op.substr( 0, 1 ), t1, ase->res );
+            emit( ue->res, "()s", t1, nullptr );
+            P->res = t1;
+
+        } else if ( ue->res->type == ID3 ) {
+            Address *t1 = new_temp();
+            emit ( t1, "()", ue->res, nullptr );
+            emit( t1, op.substr( 0, 1 ), t1, ase->res );
+            emit( ue->res, "()s", t1, nullptr );
+            P->res = t1;
+        } else {
+            error_msg( "lvalue required as left operand", n_op->line_num,
+                       n_op->column );
+            P->type = INVALID_TYPE;
+            return P;
+        }
     } else if ( op == "+=" || op == "-=" ) {
         if ( ( ueT.isIntorFloat() ) && ( aseT.isIntorFloat() ) ) {
             // int and/or flot
@@ -1434,8 +1476,10 @@ Expression *create_assignment_expression( Expression *ue, Node *n_op,
 
         } else if ( ue->res->type == ID3 ) {
             Address *t1 = new_temp();
-            emit( t1, op.substr( 0, 1 ), ue->res, ase->res );
-            emit( P->res, "=", t1, nullptr );
+            emit ( t1, "()", ue->res, nullptr );
+            emit( t1, op.substr( 0, 1 ), t1, ase->res );
+            emit( ue->res, "()s", t1, nullptr );
+            P->res = t1;
         } else {
             error_msg( "lvalue required as left operand", n_op->line_num,
                        n_op->column );
