@@ -7,13 +7,14 @@
 #include <expression.h>
 #include <symtab.h>
 #include <vector>
+#include <3ac.h>
+#include <statement.h>
 #include <y.tab.h>
 #include <iostream>
 #include <vector>
 #include <utility>
 #include <string>
 #include <iterator>
-#include <3ac.h>
 
 extern unsigned int line_num;
 extern unsigned int column;

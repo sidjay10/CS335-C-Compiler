@@ -51,6 +51,7 @@ public:
 
 };
 
+
 class Quad : public ThreeAC {
 public:
 	Address * result;
@@ -84,17 +85,21 @@ class Label : public ThreeAC {
 	public:
 	std::string name;
 	unsigned long long instructions_id;
-	Label(std::string n,unsigned long long ins_id){
-		name = n;
-		instructions_id=ins_id;
-	}
+	Label();
 };
+
+extern unsigned long long label_count;
+Label * create_new_label();
  
 class GoTo : public ThreeAC {
 	public : 
-		Label label_id;
+		Label * label;
+		GoTo();
 		
 };
+
+GoTo * create_new_goto();
+
 
 std::ostream& operator<<(std::ostream& os, const Label& l);
 

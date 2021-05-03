@@ -170,7 +170,7 @@ extern int yydebug;
 
 union YYSTYPE
 {
-#line 16 "src/grammar.y" /* yacc.c:1909  */
+#line 19 "src/grammar.y" /* yacc.c:1909  */
 
 	Node * node;
 	Terminal * terminal;
@@ -216,8 +216,11 @@ union YYSTYPE
 	ConditionalExpression* conditional_expression;
 	Expression* expression;
 	TypeName * type_name;
+	Label * label; 
+	GoTo  * _goto;
+	Statement * statement;
 
-#line 221 "y.tab.h" /* yacc.c:1909  */
+#line 224 "y.tab.h" /* yacc.c:1909  */
 };
 
 typedef union YYSTYPE YYSTYPE;

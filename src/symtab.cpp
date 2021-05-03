@@ -8,6 +8,7 @@
 #include <sstream>
 #include <symtab.h>
 #include <expression.h>
+#include <statement.h>
 #include <vector>
 #include <y.tab.h>
 #include <iostream>

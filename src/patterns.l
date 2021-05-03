@@ -13,6 +13,7 @@ IS			(u|U|l|L)*
 #include "ast.h"
 #include "symtab.h"
 #include "expression.h"
+#include "statement.h"
 #include "y.tab.h"
 
 

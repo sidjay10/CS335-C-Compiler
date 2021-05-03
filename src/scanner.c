@@ -5,6 +5,8 @@
 
 #include <scanner.h>
 #include <ast.h>
+#include <3ac.h>
+#include <statment.h>
 #include <y.tab.h>
 
 

@@ -7,6 +7,7 @@
 	#include <symtab.h>
 	#include <expression.h>
 	#include <3ac.h>
+	#include <statement.h>
 	
 	void yyerror(const char *s);	
 	extern "C" int yylex();
@@ -60,6 +61,9 @@
 	ConditionalExpression* conditional_expression;
 	Expression* expression;
 	TypeName * type_name;
+	Label * label; 
+	GoTo  * _goto;
+	Statement * statement;
 }
 
 
@@ -151,9 +155,13 @@
 
 
 /*%type <node> identifier_list */
-%type <node> statement labeled_statement compound_statement statement_list expression_statement selection_statement iteration_statement jump_statement
+%type <node> labeled_statement compound_statement statement_list expression_statement selection_statement iteration_statement jump_statement
+%type <statement> statement
 
 %type <node> translation_unit external_declaration 
+
+%type <label> M_LABEL
+%type <_goto> M_GOTO
 
 %start translation_unit
 %%
@@ -544,9 +552,9 @@ expression_statement
 	;
 
 selection_statement
-	:  IF '(' expression ')' statement	 { $$ = create_non_term("IF", $3, $5); }
-	|  IF '(' expression ')' statement ELSE statement	 { $$ = create_non_term("IF ELSE", $3, $5, $7); }
-	|  SWITCH '(' expression ')' statement	 { $$ = create_non_term("SWITCH", $3, $5); }
+	:  IF '(' expression ')' M_LABEL statement	 				{ $$ = create_selection_statement_if( $3, $5, $6, NULL, NULL, NULL);}
+	|  IF '(' expression ')' M_LABEL statement  ELSE M_GOTO M_LABEL statement	{ $$ = create_selection_statement_if( $3, $5, $6, $8, $9, $10 );}
+	|  SWITCH '(' expression ')' statement	 				{ $$ = create_non_term("SWITCH", $3, $5); }
 	;
 
 iteration_statement
@@ -583,6 +591,9 @@ function_definition
 	;
 /*	:  declaration_specifiers declarator compound_statement	 { $$ = create_function_defintion($1, $2, $3); }*/
 /*	|  declarator compound_statement	 { $$ = create_non_term("function_definition", $2); }*/
+
+M_LABEL : %empty { $$ = create_new_label(); }
+M_GOTO  : %empty { $$ = create_new_goto(); }
 
 
 %%

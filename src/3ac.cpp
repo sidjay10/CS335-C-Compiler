@@ -4,17 +4,28 @@
 #include <symtab.h>
 #include <sstream>
 #include <3ac.h>
-#include <y.tab.h>
 
 unsigned long long instructions = 1;
-unsigned long long labels = 1;
+unsigned long long label_count = 1;
 
-Label* getNextLabel(){
+
+Label::Label() {
+	name = "L"+std::to_string(label_count++);
+	instructions_id = instructions;
+}
+
+Label* create_new_label(){
 	Label* l = new Label();
-	l->instructions_id = labels++;
-	l->name = "L"+std::to_string(l->instructions_id)+":";
+	std::cout << *l << "\n";
 	return l;
 }
+
+std::ostream& operator<<(std::ostream& os, const Label& l){
+	os << l.name << ":" ;
+	return os;
+}
+
+
 
 std::vector< ThreeAC * > three_ac_code;
 
@@ -73,8 +84,8 @@ std::ostream& operator<<(std::ostream& os, const Address& a){
 
 }
 void backpatch(std::vector<GoTo*> go_v, Label* label){
-	for(int i=0;i<go_v.size();i++){
-		go_v[i]->instruction_id=label->instructions_id;
+	for ( auto it = go_v.begin(); it != go_v.end(); it++ ) {
+		(*it)->label=label;
 	}
 	return ;
 }
@@ -85,4 +96,24 @@ ThreeAC::ThreeAC(bool no_add ) : instr ( instructions ){ };
 
 unsigned long long get_next_instr() {
 	return instructions++;
+}
+
+GoTo::GoTo () : label(nullptr) {};
+
+GoTo * create_new_goto() {
+	GoTo * _goto = new GoTo();
+	std::cout << *_goto;
+	return _goto;
+}
+
+std::ostream& operator<<(std::ostream& os, const GoTo& g){
+	
+	os << "goto";
+	if ( g.label == nullptr ) {
+		os << " -----";
+		return os;
+	}
+
+	os << " " << g.label;
+	return os;
 }
