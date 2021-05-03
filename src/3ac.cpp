@@ -7,6 +7,14 @@
 #include <y.tab.h>
 
 unsigned long long instructions = 1;
+unsigned long long labels = 1;
+
+Label* getNextLabel(){
+	Label* l = new Label();
+	l->instructions_id = labels++;
+	l->name = "L"+std::to_string(l->instructions_id)+":";
+	return l;
+}
 
 std::vector< ThreeAC * > three_ac_code;
 
@@ -29,11 +37,11 @@ std::ostream& operator<<(std::ostream& os, const Quad& q){
 	return os;
 }
 
-Quad * emit(  Address * result, std::string operation, Address * arg1, Address * arg2 ) {
+int emit(  Address * result, std::string operation, Address * arg1, Address * arg2 ) {
 	Quad * q = new Quad(result,operation,arg1,arg2);
 	three_ac_code.push_back(q);
 	std::cout << "3AC: " << *q << "\n";
-	return q;
+	return three_ac_code.size();
 
 }
 
@@ -64,7 +72,12 @@ std::ostream& operator<<(std::ostream& os, const Address& a){
 	return os;
 
 }
-
+void backpatch(std::vector<GoTo*> go_v, Label* label){
+	for(int i=0;i<go_v.size();i++){
+		go_v[i]->instruction_id=label->instructions_id;
+	}
+	return ;
+}
 
 ThreeAC::ThreeAC() : instr ( get_next_instr() ){ };
 

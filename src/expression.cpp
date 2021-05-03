@@ -48,7 +48,6 @@ Expression *create_primary_identifier( Identifier *a ) {
     P->add_child( a );
 
     P->res = new Address( a->value, ID3 );
-
     P->line_num = a->line_num;
     P->column = a->column;
 

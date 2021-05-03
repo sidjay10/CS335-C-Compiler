@@ -7,7 +7,6 @@
 #include <string>
 #include <symtab.h>
 #include <3ac.h>
-
 // All class declarations
 class StructDefinition;
 class AssignmentExpression;
@@ -24,6 +23,12 @@ class Expression : public Non_Terminal {
     int num_operands;
     // Expression( Types * type, int num_op );
 	Address  * res;
+  std::vector<GoTo*> truelist;
+  std::vector<GoTo*> nextlist;
+  std::vector<GoTo*> falselist;
+  std::vector<GoTo*> breaklist;
+  std::vector<GoTo*> continuelist;
+  std::vector<GoTo*> caselist;
 //	ThreeAC * code;
 
 #if 0
