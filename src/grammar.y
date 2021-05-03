@@ -66,7 +66,7 @@
 %token <node> '<' '>' '^' '|' ':' '?' ';' '{' '}'
 %token <terminal> '='
 
-%token <node> SIZEOF
+%token <terminal> SIZEOF
 %token <identifier> IDENTIFIER
 %token <constant> CONSTANT
 %token <string_literal> STRING_LITERAL
@@ -89,7 +89,9 @@
 %type <expression> postfix_expression
 %type <expression> primary_expression
 
-%token <node> PTR_OP INC_OP DEC_OP LEFT_OP RIGHT_OP LE_OP GE_OP EQ_OP NE_OP
+
+%token <terminal> INC_OP DEC_OP
+%token <node> PTR_OP LEFT_OP RIGHT_OP LE_OP GE_OP EQ_OP NE_OP
 %token <node> AND_OP OR_OP MUL_ASSIGN DIV_ASSIGN MOD_ASSIGN ADD_ASSIGN
 %token <node> SUB_ASSIGN LEFT_ASSIGN RIGHT_ASSIGN AND_ASSIGN
 %token <node> XOR_ASSIGN OR_ASSIGN
@@ -171,8 +173,8 @@ postfix_expression
 /*	| postfix_expression '(' argument_expression_list ')'	{ create_non_term("FUNCTION CALL ARGS", $1, $3 ); } */
 	| postfix_expression '.' IDENTIFIER	{ $$ = create_postfix_expr_struct(".", $1, $3); } 
 	| postfix_expression PTR_OP IDENTIFIER	{ $$ = create_postfix_expr_struct("->", $1, $3); } 
-	| postfix_expression INC_OP	{ $$ = create_postfix_expr_ido("++", $1); } 
-	| postfix_expression DEC_OP	{ $$ = create_postfix_expr_ido("--", $1); } 
+	| postfix_expression INC_OP	{ $$ = create_postfix_expr_ido( $2, $1); } 
+	| postfix_expression DEC_OP	{ $$ = create_postfix_expr_ido( $2, $1); } 
 	;
 
 argument_expression_list
@@ -182,11 +184,11 @@ argument_expression_list
 
 unary_expression
 	: postfix_expression			{ $$ = $1; } 
-	| INC_OP unary_expression		{ $$ = create_unary_expression_ue("++", $2); } 
-	| DEC_OP unary_expression		{ $$ = create_unary_expression_ue("--", $2); } 
-	| unary_operator cast_expression	{ $$ = create_unary_expression_cast($1,$2); } 
-	| SIZEOF unary_expression		{ $$ = create_unary_expression_ue("sizeof", $2); } 
-	| SIZEOF '(' type_name ')'		{ $$ = create_unary_expression_typename("SIZEOF type_name", $3); } 
+	| INC_OP unary_expression		{ $$ = create_unary_expression( $1, $2 ); } 
+	| DEC_OP unary_expression		{ $$ = create_unary_expression( $1, $2 ); } 
+	| unary_operator cast_expression	{ $$ = create_unary_expression_cast( $1, $2 ); } 
+	| SIZEOF unary_expression		{ $$ = create_unary_expression( $1, $2 ); } 
+	| SIZEOF '(' type_name ')'		{ $$ = create_unary_expression( $1, $3); } 
 	;
 
 unary_operator
@@ -552,10 +554,10 @@ iteration_statement
 	;
 
 jump_statement
-	:  GOTO IDENTIFIER ';'	 { $$ = create_non_term("GOTO", $2); }
-	|  CONTINUE ';'	 { $$ = create_non_term("CONTINUE"); }
-	|  BREAK ';'	 { $$ = create_non_term("BREAK"); }
-	|  RETURN ';'	 { $$ = create_non_term("RETURN"); }
+	:  GOTO IDENTIFIER ';'	 	 { $$ = create_non_term("GOTO", $2); }
+	|  CONTINUE ';'	 		 { $$ = create_non_term("CONTINUE"); }
+	|  BREAK ';'	 		 { $$ = create_non_term("BREAK"); }
+	|  RETURN ';'	 		 { $$ = create_non_term("RETURN"); }
 	|  RETURN expression ';'	 { $$ = create_non_term("RETURN", $2); }
 	;
 

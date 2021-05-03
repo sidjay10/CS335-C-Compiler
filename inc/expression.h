@@ -94,10 +94,10 @@ class UnaryExpression : public Expression {
 
 // Grammar warppers for UnaryExpression
 Expression *
-create_unary_expression_ue( std::string u_op,
+create_unary_expression( Terminal * op,
                             Expression *ue ); // INC_OP, DEC_OP, SIZEOF
 Expression *create_unary_expression_cast( Node *n_op, Expression *ce );
-Expression *create_unary_expression_typename( std::string u_op, TypeName *t_name );
+Expression *create_unary_expression( Terminal *, TypeName *t_name );
 
 //-------------------------------------------------
 class CastExpression : public Expression {
@@ -386,5 +386,5 @@ Expression *create_postfix_expr_voidfun( Identifier *fi );
 Expression *create_postfix_expr_fun( Identifier *fi, ArgumentExprList *ae );
 Expression *create_postfix_expr_struct( std::string access_op, Expression *pe,
                                         Identifier *id );
-Expression *create_postfix_expr_ido( std::string op, Expression *pe );
+Expression *create_postfix_expr_ido( Terminal * op, Expression *pe );
 #endif

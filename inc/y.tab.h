@@ -49,9 +49,9 @@ extern int yydebug;
     IDENTIFIER = 259,
     CONSTANT = 260,
     STRING_LITERAL = 261,
-    PTR_OP = 262,
-    INC_OP = 263,
-    DEC_OP = 264,
+    INC_OP = 262,
+    DEC_OP = 263,
+    PTR_OP = 264,
     LEFT_OP = 265,
     RIGHT_OP = 266,
     LE_OP = 267,
@@ -110,9 +110,9 @@ extern int yydebug;
 #define IDENTIFIER 259
 #define CONSTANT 260
 #define STRING_LITERAL 261
-#define PTR_OP 262
-#define INC_OP 263
-#define DEC_OP 264
+#define INC_OP 262
+#define DEC_OP 263
+#define PTR_OP 264
 #define LEFT_OP 265
 #define RIGHT_OP 266
 #define LE_OP 267

@@ -847,10 +847,6 @@ void DeclarationSpecifiers::create_type() {
             type_index = U_LONG_T;
         } else if ( ty.at( 0 ) == SIGNED && ty.at( 1 ) == LONG ) {
             type_index = LONG_T;
-            //        } else if ( ty.at( 0 ) == FLOAT && ty.at( 1 ) ==
-            //        DOUBLE )
-            //        {
-            //            type_index = DOUBLE_T;
         } else
             err += 2;
     } else if ( ty.size() == 1 ) {

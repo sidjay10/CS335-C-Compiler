@@ -60,7 +60,7 @@ std::vector < std::string > code;
 "return"		{ count(); return(RETURN); }
 "short"			{ yylval.type_specifier = create_type_specifier(SHORT, line_num, column); count(); return(SHORT); }
 "signed"		{ yylval.type_specifier = create_type_specifier(SIGNED, line_num, column); count(); return(SIGNED); }
-"sizeof"		{ count(); return(SIZEOF); }
+"sizeof"		{ yylval.terminal= create_terminal("sizeof",NULL, line_num, column ); count(); return(SIZEOF); }
 "static"		{ count(); return(STATIC); }
 "struct"		{ count(); return(STRUCT); }
 "switch"		{ count(); return(SWITCH); }
@@ -97,8 +97,8 @@ L?\"(\\.|[^\\"])*\"	{ count(); return(STRING_LITERAL); }
 "|="			{ yylval.terminal= create_terminal("|=",NULL, line_num, column ); count(); return(OR_ASSIGN); }
 ">>"			{ yylval.terminal= create_terminal(">>",NULL, line_num, column ); count(); return(RIGHT_OP); }
 "<<"			{ count(); return(LEFT_OP); }
-"++"			{ count(); return(INC_OP); }
-"--"			{ count(); return(DEC_OP); }
+"++"			{ yylval.terminal= create_terminal("++",NULL, line_num, column ); count(); return(INC_OP); }
+"--"			{ yylval.terminal= create_terminal("--",NULL, line_num, column ); count(); return(DEC_OP); }
 "->"			{ count(); return(PTR_OP); }
 "&&"			{ count(); return(AND_OP); }
 "||"			{ count(); return(OR_OP); }

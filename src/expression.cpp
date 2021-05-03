@@ -85,21 +85,6 @@ Expression *create_primary_stringliteral( StringLiteral *a ) {
     return P;
 }
 
-#if 0
-Expression *create_primary_expression( Expression *a ) {
-    PrimaryExpression *P = new PrimaryExpression();
-    P->isTerminal = 0;
-    P->op1 = a;
-    P->type = a->type;
-
-    P->name = "primary_expression";
-    P->add_child( a );
-
-    return P;
-}
-
-#endif
-
 // 2. ArgumentExpressionList
 ArgumentExprList *create_argument_expr_assignement( Expression *ase ) {
     ArgumentExprList *P = new ArgumentExprList();
@@ -107,7 +92,6 @@ ArgumentExprList *create_argument_expr_assignement( Expression *ase ) {
     // ArgumentExprList does not have any type as it is a composite entity
     P->name = "arguments";
     P->add_child( ase );
-
     return P;
 }
 ArgumentExprList *create_argument_expr_list( ArgumentExprList *P,
@@ -234,11 +218,9 @@ Expression *create_postfix_expr_voidfun( Identifier *fi ) {
 
 Expression *create_postfix_expr_fun( Identifier *fi, ArgumentExprList *ae ) {
     PostfixExpression *P = new PostfixExpression();
-    // Here, we need to check two things:
-    // 1. whether ArgumentExprList matches with Function signature from lookup
-    // of symbol table table
 
     if ( fi->value == "printf" || fi->value == "scanf" ) {
+	// XXX:
         /* Hack : To support printf for now */
         P->type = Type( INT_T, 0, true );
         P->add_children( fi, ae );
@@ -381,9 +363,8 @@ Expression *create_postfix_expr_struct( std::string access_op, Expression *pe,
     return P;
 }
 
-Expression *create_postfix_expr_ido( std::string op, Expression *pe ) {
+Expression *create_postfix_expr_ido( Terminal *op, Expression *pe ) {
 
-    // FIXME : Fix this type check should not allow (a++)--;
     PostfixExpression *P = new PostfixExpression();
     if ( dynamic_cast<PostfixExpression *>( pe ) ) {
         P->pe = dynamic_cast<PostfixExpression *>( pe );
@@ -396,24 +377,48 @@ Expression *create_postfix_expr_ido( std::string op, Expression *pe ) {
         return P;
     }
 
-    P->op = op;
-    if ( op == "++" || op == "--" ) {
-        if ( pe->type.is_const == false ) {
-            if ( pe->type.isInt() || pe->type.isFloat() ||
-                 pe->type.isPointer() ) {
-                P->type = pe->type;
+    P->op = op->name;
 
+    if ( op->name == "++" )
+        P->name = "POST INCREMENT";
+    else
+        P->name = "POST DECREMENT";
+
+    std::string op_code = op->name.substr( 0, 1 );
+
+    Address *inc_value;
+
+    if ( op->name == "++" || op->name == "--" ) {
+        if ( pe->type.is_const == false ) {
+
+            if ( pe->type.isPointer() ) {
+                op_code += "u";
+                P->type = pe->type;
+                Type t = pe->type;
+                t.ptr_level--;
+                inc_value = new_3const( t.get_size() );
+            } else if ( pe->type.isInt() ) {
+                P->type = pe->type;
+                if ( pe->type.isUnsigned() ) {
+                    op_code += "u";
+                }
+                inc_value = new_3const( 1 );
+
+            } else if ( pe->type.isFloat() ) {
+                P->type = pe->type;
+                op_code += "f";
+                inc_value = new_3const( 1.0 );
             } else {
                 // Error postfix operator
-                error_msg( "Invalid operand " + op + " with type " +
+                error_msg( "Invalid operand " + op->name + " with type " +
                                pe->type.get_name(),
-                           line_num );
+                           op->line_num, op->column );
                 P->type = INVALID_TYPE;
                 return P;
             }
         } else {
-            error_msg( "Invalid operand " + op + " with constant type",
-                       line_num );
+            error_msg( "Invalid operand " + op->name + " with constant type",
+                       op->line_num, op->column );
             P->type = INVALID_TYPE;
             return P;
         }
@@ -423,10 +428,6 @@ Expression *create_postfix_expr_ido( std::string op, Expression *pe ) {
         std::cerr << "ERROR at line " << line_num << "\n";
         exit( 0 );
     }
-    if ( op == "++" )
-        P->name = "POST INCREMENT";
-    else
-        P->name = "POST DECREMENT";
 
     P->add_child( pe );
     if ( pe->res->type == MEM ) {
@@ -434,17 +435,20 @@ Expression *create_postfix_expr_ido( std::string op, Expression *pe ) {
         Address *t1 = new_temp();
         emit( P->res, "()", pe->res, nullptr );
         emit( t1, "=", P->res, nullptr );
-        emit( t1, op.substr( 0, 1 ), t1, new_3const( 1 ) );
+        emit( t1, op_code, t1, inc_value );
         emit( pe->res, "()s", t1, nullptr );
     } else if ( pe->res->type == ID3 ) {
         P->res = new_temp();
         Address *t1 = new_temp();
         emit( P->res, "()", pe->res, nullptr );
         emit( t1, "=", P->res, nullptr );
-        emit( t1, op.substr( 0, 1 ), t1, new_3const( 1 ) );
+        emit( t1, op_code, t1, inc_value );
         emit( pe->res, "()s", t1, nullptr );
     } else {
-        error_msg( "lvalue required as operand to" + op, line_num );
+		delete inc_value;
+		inc_value = nullptr;
+        error_msg( "lvalue required as operand to" + op->name, op->line_num,
+                   op->column + 1 );
         P->type = INVALID_TYPE;
         return P;
     }
@@ -452,59 +456,74 @@ Expression *create_postfix_expr_ido( std::string op, Expression *pe ) {
 }
 
 // Unary Expression
-Expression *create_unary_expression_ue( std::string u_op, Expression *ue ) {
+Expression *create_unary_expression( Terminal *op, Expression *ue ) {
     UnaryExpression *U = new UnaryExpression();
     U->op1 = ue;
-    U->op = u_op;
+    U->op = op->name;
     Type ueT = ue->type;
     if ( ueT.is_invalid() ) {
         U->type = INVALID_TYPE;
         return U;
     }
+    std::string u_op = op->name;
+    U->name = u_op;
+    Address *inc_value = nullptr;
     if ( u_op == "++" || u_op == "--" ) {
+        u_op = u_op.substr( 0, 1 );
         if ( ueT.is_const == false ) {
-            // INC_OP, DEC_OP
-            if ( ueT.isInt() ) {
-                U->name = u_op + ":" + ue->type.get_name();
+            if ( ue->type.isPointer() ) {
+                u_op += "u";
                 U->type = ue->type;
-
-            } else if ( ueT.isFloat() ) {
-
-                U->name = u_op + ":" + ue->type.get_name();
+                Type t = ue->type;
+                t.ptr_level--;
+                inc_value = new_3const( t.get_size() );
+            } else if ( ue->type.isInt() ) {
                 U->type = ue->type;
+                if ( ue->type.isUnsigned() ) {
+                    u_op += "u";
+                }
+                inc_value = new_3const( 1 );
 
-            } else if ( ueT.isPointer() ) {
-                U->name = u_op + ":" + ue->type.get_name();
+            } else if ( ue->type.isFloat() ) {
                 U->type = ue->type;
+                u_op += "f";
+                inc_value = new_3const( 1.0 );
             } else {
                 // Incorrect type throw error
                 error_msg( "Invalid operand " + u_op + " with type " +
                                ue->type.get_name(),
-                           line_num );
+                           op->line_num, op->column );
                 U->type = INVALID_TYPE;
                 return U;
             }
         } else {
             error_msg( "Invalid operand " + u_op + " with constant type",
-                       line_num );
+                       op->line_num, op->column );
             U->type = INVALID_TYPE;
             return U;
         }
         if ( ue->res->type == MEM ) {
-            U->res = ue->res;
+            U->res = new_temp();
             emit( U->res, "()", ue->res, nullptr );
+            emit( U->res, u_op, U->res, inc_value );
+            emit( ue->res, "()s", U->res, nullptr );
         } else if ( ue->res->type == ID3 ) {
-            U->res = new_mem();
+            U->res = new_temp();
             emit( U->res, "()", ue->res, nullptr );
+            emit( U->res, u_op, U->res, inc_value );
+            emit( ue->res, "()s", U->res, nullptr );
         } else {
-            error_msg( "lvalue required as unary * operand", line_num );
+			delete inc_value;
+			inc_value = nullptr;
+            error_msg( "lvalue required as unary " + op->name + " operand",
+                       op->line_num, op->column );
             U->type = INVALID_TYPE;
             return U;
         }
     } else if ( u_op == "sizeof" ) {
         U->name = "sizeof";
         U->type = Type();
-        U->type.typeIndex = PrimitiveTypes::U_INT_T;
+        U->type.typeIndex = PrimitiveTypes::U_LONG_T;
         U->type.ptr_level = 0;
         U->type.is_const = true;
         U->res = new_3const( ue->type.get_size() );
@@ -540,7 +559,7 @@ Expression *create_unary_expression_cast( Node *n_op, Expression *ce ) {
             U->type = ce->type;
             U->type.ptr_level++;
             U->type.is_pointer = true;
-            // TODO : Implement 3AC
+            // TODO : Implement 3AC for &
         } else {
             error_msg( "lvalue required as unary & operand", n_op->line_num,
                        n_op->column );
@@ -578,7 +597,7 @@ Expression *create_unary_expression_cast( Node *n_op, Expression *ce ) {
     } else if ( u_op == "-" || u_op == "+" ) {
         if ( ce->type.isIntorFloat() ) {
             U->type = ce->type;
-		U->type.make_signed();
+            U->type.make_signed();
             U->res = new_temp();
             Address *t1;
             MEM_EMIT( ce, t1 );
@@ -616,23 +635,21 @@ Expression *create_unary_expression_cast( Node *n_op, Expression *ce ) {
     return U;
 }
 
-Expression *create_unary_expression_typename( std::string u_op,
-                                              TypeName *t_name ) {
+Expression *create_unary_expression( Terminal *op, TypeName *t_name ) {
     UnaryExpression *U = new UnaryExpression();
-
-    Node *n_op = create_non_term( ( u_op ).c_str() );
+    std::string u_op = op->name;
     U->name = u_op;
-    U->add_children( n_op, t_name );
-    U->type = Type();
-    U->type.typeIndex = PrimitiveTypes::U_INT_T;
-    U->type.ptr_level = 0;
-    U->type.is_const = true;
+    U->add_children( op, t_name );
+    U->type = Type( PrimitiveTypes::U_LONG_T, 0, true );
     U->res = new_3const( t_name->type.get_size() );
 
     return U;
 }
 
 // Cast Expression
+
+
+//TODO: Implement 3AC
 Expression *create_cast_expression_typename( TypeName *tn, Expression *ce ) {
     CastExpression *P = new CastExpression();
     P->op1 = ce;
@@ -674,12 +691,15 @@ Expression *create_multiplicative_expression( std::string op, Expression *me,
     }
     if ( op == "*" || op == "/" ) {
         if ( meT.isInt() && ceT.isInt() ) {
-            P->type = meT.typeIndex > ceT.typeIndex ? meT : ceT;
-            if ( !( meT.isUnsigned() && ceT.isUnsigned() ) ) {
-                // As a safety we upgrade unsigned type to corresponding signed
-                // type
-                P->type.make_signed();
-            } else {
+            if ( !meT.isUnsigned() && !ceT.isUnsigned() ) {
+                ;
+            } else if ( meT.isUnsigned() && ceT.isUnsigned() ) {
+                op += "u";
+            } else if ( !meT.isUnsigned() && ceT.isUnsigned() ) {
+                meT.make_unsigned();
+                op += "u";
+            } else if ( meT.isUnsigned() && !ceT.isUnsigned() ) {
+                ceT.make_unsigned();
                 op += "u";
             }
 
@@ -687,20 +707,47 @@ Expression *create_multiplicative_expression( std::string op, Expression *me,
             Address *t1, *t2;
             MEM_EMIT( me, t1 );
             MEM_EMIT( ce, t2 );
+
+            if ( meT.typeIndex < ceT.typeIndex ) {
+                P->type = ceT;
+                // TODO: extend the smaller type;
+            } else if ( meT.typeIndex > ceT.typeIndex ) {
+                P->type = meT;
+                // TODO: extend the smaller type;
+            } else {
+                P->type = meT;
+            }
+
             emit( P->res, op, t1, t2 );
 
         } else if ( ( meT.isFloat() && ceT.isInt() ) ||
                     ( meT.isInt() && ceT.isFloat() ) ) {
 
             P->type = meT.isFloat() ? meT : ceT;
-            // TODO : Implement floating point support
+            // TODO: Implement implicit cast to float
         }
 
         else if ( meT.isFloat() && ceT.isFloat() ) {
-            P->type = meT.typeIndex > ceT.typeIndex ? meT : ceT;
-            // TODO : Implement floating point support
-        } else {
 
+            op += "f";
+
+            P->res = new_temp();
+            Address *t1, *t2;
+            MEM_EMIT( me, t1 );
+            MEM_EMIT( ce, t2 );
+
+            if ( meT.typeIndex < ceT.typeIndex ) {
+                P->type = ceT;
+                // TODO: Extend the smaller type
+            } else if ( meT.typeIndex > ceT.typeIndex ) {
+                P->type = meT;
+                // TODO: Extend the smaller type
+            } else {
+                P->type = meT;
+            }
+
+            emit( P->res, op, t1, t2 );
+        } else {
             // Error
             error_msg( "Undefined operation " + op + " for operands of type " +
                            meT.get_name() + " and " + ceT.get_name(),
@@ -735,8 +782,8 @@ Expression *create_multiplicative_expression( std::string op, Expression *me,
     return P;
 }
 
-// TODO : Add Pointer Support
 // Additive Expression
+// TODO: Implement 3AC for type casts
 Expression *create_additive_expression( std::string op, Expression *ade,
                                         Expression *me ) {
     AdditiveExpression *P = new AdditiveExpression();
@@ -752,25 +799,73 @@ Expression *create_additive_expression( std::string op, Expression *ade,
     }
 
     if ( meT.isInt() && adeT.isInt() ) {
-        P->type = meT.typeIndex > adeT.typeIndex ? meT : adeT;
-        if ( !( meT.isUnsigned() && adeT.isUnsigned() ) ) {
-            // As a safety we upgrade unsigned type to corresponding signed type
-            P->type.make_signed();
-        } else {
-            op += "u";
-        }
+            if ( !adeT.isUnsigned() && !meT.isUnsigned() ) {
+                ;
+            } else if ( adeT.isUnsigned() && meT.isUnsigned() ) {
+                op += "u";
+            } else if ( !adeT.isUnsigned() && meT.isUnsigned() ) {
+                adeT.make_unsigned();
+                op += "u";
+            } else if ( adeT.isUnsigned() && !meT.isUnsigned() ) {
+                meT.make_unsigned();
+                op += "u";
+            }
+
+            P->res = new_temp();
+            Address *t1, *t2;
+            MEM_EMIT( ade, t1 );
+            MEM_EMIT( me, t2 );
+
+            if ( adeT.typeIndex < meT.typeIndex ) {
+                P->type = meT;
+                // TODO: extend the smaller type;
+            } else if ( adeT.typeIndex > meT.typeIndex ) {
+                P->type = adeT;
+                // TODO: extend the smaller type;
+            } else {
+                P->type = adeT;
+            }
+
+            emit( P->res, op, t1, t2 );
 
     } else if ( ( meT.isFloat() && adeT.isInt() ) ||
                 ( meT.isInt() && adeT.isFloat() ) ) {
-        P->type = meT.isFloat() ? meT : adeT;
-    } else if ( ( meT.isPointer() && adeT.isInt() ) ||
-                ( adeT.isPointer() && meT.isInt() ) ) {
-        P->type = meT.isPointer() ? meT : adeT;
-    } else if ( meT.isPointer() && ( ( meT.isFloat() && adeT.isInt() ) ||
-                                     ( meT.isInt() && adeT.isFloat() ) ) ) {
+		// TODO: Implement 3AC
         P->type = meT.isFloat() ? meT : adeT;
     } else if ( meT.isFloat() && adeT.isFloat() ) {
+		// TODO: Implement 3AC
         P->type = meT.typeIndex > adeT.typeIndex ? meT : adeT;
+        op += "f";
+    } else if ( adeT.isPointer() && meT.isInt() ) {
+        P->type = adeT;
+        P->res = new_mem();
+        Address *t1, *t2;
+        MEM_EMIT( ade, t1 );
+        MEM_EMIT( me, t2 );
+        Type t = adeT;
+        t.ptr_level--;
+        op += "u";
+        emit( t2, "*u", t2, new_3const( t.get_size() ) );
+        emit( P->res, op, t1, t2 );
+        P->name = "additive_expression";
+        Node *n_op = create_non_term( ( op ).c_str() );
+        P->add_children( ade, n_op, me );
+        return P;
+    } else if ( meT.isPointer() && adeT.isInt() ) {
+        P->type = meT;
+        P->res = new_mem();
+        Address *t1, *t2;
+        MEM_EMIT( ade, t1 );
+        MEM_EMIT( me, t2 );
+        Type t = meT;
+        t.ptr_level--;
+        op += "u";
+        emit( t1, "*u", t1, new_3const( t.get_size() ) );
+        emit( P->res, op, t1, t2 );
+        P->name = "additive_expression";
+        Node *n_op = create_non_term( ( op ).c_str() );
+        P->add_children( ade, n_op, me );
+        return P;
     } else {
         // Error
         error_msg( "Undefined operation " + op + " for operands of type " +
@@ -783,16 +878,17 @@ Expression *create_additive_expression( std::string op, Expression *ade,
     P->name = "additive_expression";
     Node *n_op = create_non_term( ( op ).c_str() );
     P->add_children( ade, n_op, me );
-
     P->res = new_temp();
     Address *t1, *t2;
-    MEM_EMIT( ade, t2 );
-    MEM_EMIT( me, t1 );
+    MEM_EMIT( ade, t1 );
+    MEM_EMIT( me, t2 );
     emit( P->res, op, t1, t2 );
+
     return P;
 }
 // Shift Expression
 
+// TODO: Implement 3AC for type casts
 Expression *create_shift_expression( std::string op, Expression *se,
                                      Expression *ade ) {
     ShiftExpression *P = new ShiftExpression();
@@ -1180,7 +1276,6 @@ Expression *create_logical_or_expression( std::string op, Expression *lo,
 
 // Conditional
 
-
 // TODO : Implement 3AC for this
 
 Expression *create_conditional_expression( std::string op, Expression *lo,
@@ -1256,12 +1351,11 @@ Expression *create_assignment_expression( Expression *ue, Node *n_op,
         return P;
     }
 
-
     if ( op == "=" ) {
         if ( ( ueT.isIntorFloat() ) && ( aseT.isIntorFloat() ) ) {
             // int and/or flot
-	// TODO: Implement safe cast
-    //        if ( !safe_cast( ueT, aseT ) ) {
+            // TODO: Implement safe cast
+            //        if ( !safe_cast( ueT, aseT ) ) {
             if ( ueT.typeIndex != aseT.typeIndex ) {
                 warning_msg( "Operation " + op + " between operands of type " +
                                  ueT.get_name() + " and " + aseT.get_name(),
@@ -1269,22 +1363,12 @@ Expression *create_assignment_expression( Expression *ue, Node *n_op,
             }
             P->type = ueT;
 
-        } else if ( ueT.ptr_level > 0 && aseT.ptr_level > 0 &&
-                    ueT.ptr_level == aseT.ptr_level ) {
-            P->type = ueT;
-#if 0
-            /// meed the types of pointers
-            if ( ueT.typeIndex == aseT.typeIndex ) {
-                P->type = ueT;
-            } else {
-                error_msg( "Undefined operation " + op +
-                               " for operands of type " + ueT.get_name() +
-                               " and " + aseT.get_name(),
+        } else if ( ueT.ptr_level > 0 && aseT.ptr_level > 0 ) {
+            if ( aseT.typeIndex != VOID_T && ( ueT.typeIndex != aseT.typeIndex || ueT.ptr_level != aseT.ptr_level ) ) {
+                warning_msg( "Assigning pointer of type " + aseT.get_name() + " to " + ueT.get_name(), 
                            n_op->line_num, n_op->column );
-                P->type = INVALID_TYPE;
-                return P;
             }
-#endif
+			P->type = ueT;
         } else {
             error_msg( "Undefined operation " + op + " for operands of type " +
                            ueT.get_name() + " and " + aseT.get_name(),
@@ -1295,8 +1379,8 @@ Expression *create_assignment_expression( Expression *ue, Node *n_op,
 
         if ( ue->res->type == MEM || ue->res->type == ID3 ) {
             P->res = ue->res;
-		Address * t1;
-		MEM_EMIT(ase,t1);
+            Address *t1;
+            MEM_EMIT( ase, t1 );
             emit( ue->res, "()s", t1, nullptr );
             P->res->type = TEMP;
         } else {
