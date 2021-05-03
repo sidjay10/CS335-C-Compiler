@@ -99,12 +99,15 @@ class GoTo : public ThreeAC {
 };
 
 GoTo * create_new_goto();
+GoTo * create_new_goto(Label * label);
 
 
 std::ostream& operator<<(std::ostream& os, const Label& l);
 
 std::ostream& operator<<(std::ostream& os, const GoTo& g);
 
+void backpatch( std::vector <GoTo * > & go_v, Label * label );
 
-
+// Append v2 at the end of vector 1
+void append ( std::vector <GoTo *> & v1, std::vector <GoTo *> & v2);
 #endif

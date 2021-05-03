@@ -155,8 +155,9 @@
 
 
 /*%type <node> identifier_list */
-%type <node> labeled_statement compound_statement statement_list expression_statement selection_statement iteration_statement jump_statement
+%type <statement> labeled_statement compound_statement statement_list selection_statement iteration_statement jump_statement
 %type <statement> statement
+%type <expression> expression_statement 
 
 %type <node> translation_unit external_declaration 
 
@@ -452,12 +453,12 @@ pointer
 	;
 
 type_qualifier_list
-	:  type_qualifier	 		{ $$ = create_type_qualifier_list( $1 ); }
+	:  type_qualifier	 					{ $$ = create_type_qualifier_list( $1 ); }
 	|  type_qualifier_list type_qualifier	{ $$ = add_to_type_qualifier_list( $1, $2 ); }
 	;
 
 parameter_type_list
-	:  parameter_list	 	 { $$ = $1 ; }
+	:  parameter_list	 	 		 { $$ = $1 ; }
 	|  parameter_list ',' ELLIPSIS	 { $$ = add_ellipsis_to_list( $1 ); }
 	;
 
@@ -467,9 +468,9 @@ parameter_list
 	;
 
 parameter_declaration
-	:  declaration_specifiers declarator	 	{ $$ = create_parameter_declaration( $1, $2, NULL ); } 
+	:  declaration_specifiers declarator	 		{ $$ = create_parameter_declaration( $1, $2, NULL ); } 
 	|  declaration_specifiers abstract_declarator	{ $$ = create_parameter_declaration( $1, NULL, $2 ); } 
-	|  declaration_specifiers	 		{ $$ = create_parameter_declaration( $1, NULL, NULL ); } 
+	|  declaration_specifiers	 					{ $$ = create_parameter_declaration( $1, NULL, NULL ); } 
 	;
 /*
 identifier_list
@@ -503,8 +504,8 @@ direct_abstract_declarator
 	;
 
 /*initializer
-	:  assignment_expression	 { $$ = $1; }
-	|  '{' initializer_list '}'	 { $$ = create_non_term("initializer_list", $2); }
+	:  assignment_expression	 	 { $$ = $1; }
+	|  '{' initializer_list '}'	 	 { $$ = create_non_term("initializer_list", $2); }
 	|  '{' initializer_list ',' '}'	 { $$ = create_non_term("initializer_list", $2); }
 	;
 
@@ -516,60 +517,60 @@ initializer_list
 statement
 	:  labeled_statement	 { $$ = $1; }
 	|  compound_statement	 { $$ = $1; }
-	|  expression_statement	 { $$ = create_non_term("expression_statement", $1); }
-	|  selection_statement	 { $$ = create_non_term("selection_statement", $1); }
-	|  iteration_statement	 { $$ = create_non_term("iteration_statement", $1); }
-	|  jump_statement	 { $$ = create_non_term("jump_statement", $1); }
+	|  expression_statement	 { $$ = create_expression_statement($1); }
+	|  selection_statement	 { $$ = $1; }
+	|  iteration_statement	 { $$ = $1; }
+	|  jump_statement	 	 { $$ = $1; }
 	;
 
 labeled_statement
-	:  IDENTIFIER ':' statement	 { $$ = create_non_term("labeled_statement", $1, $3); }
-	|  CASE constant_expression ':' statement	 { $$ = create_non_term("CASE", $2, $4); }
-	|  DEFAULT ':' statement	 { $$ = create_non_term("DEFAULT", $2); }
+	:  IDENTIFIER ':' M_LABEL statement	 		{ $$ = create_labeled_statement_iden($1, $3,$4); }
+	|  CASE CONSTANT ':' M_LABEL statement		{ $$ = NULL; }
+	|  DEFAULT ':' M_LABEL statement	 		{ $$ = NULL; }
 	;
 
 compound_statement
-	:  '{' '}'	 				{ $$ = NULL; }
-	|  '{' statement_list '}'	 		{ $$ = create_non_term("compound_statement", $2); }
-	|  '{' declaration_list '}'	 		{ local_symbol_table.clear_current_level(); $$ = create_non_term("compound_statement", $2); }
-	|  '{' declaration_list statement_list '}'	{ local_symbol_table.clear_current_level(); $$ = create_non_term("compound_statement", $2, $3); }
+	:  '{' '}'	 				                { $$ = NULL; }
+	|  '{' statement_list '}'	 		        { $$ = $2; }
+	|  '{' declaration_list '}'	 		        { local_symbol_table.clear_current_level(); $$ = NULL; }
+	|  '{' declaration_list statement_list '}'	{ local_symbol_table.clear_current_level(); $$ = $3; }
 	;
 
 declaration_list
-	:  declaration	 		 { $$ = create_declaration_list( $1 ); }
+	:  declaration	 		 		 { $$ = create_declaration_list( $1 ); }
 	|  declaration_list declaration	 { $$ = add_to_declaration_list( $1, $2 );}
 	;
 
 statement_list
-	:  statement			 { $$ = $1; }
-	|  statement_list statement	 { $$ = create_non_term("statement_list", $1, $2); }
+	:  statement			 	 { $$ = create_statement_list( $1 ); }
+	|  statement_list statement	 { $$ = add_to_statement_list( $1, $2 ); }
 	;
 
 /* This is automatically an expression */
 expression_statement
-	:  ';'			 { $$ = create_terminal("EMPTY_STMT",NULL); }
-	|  expression ';'	 { $$ = create_expression_statement($1); }
+	:  ';'			 	 { $$ = NULL; }
+	|  expression ';'	 { $$ = $1; }
 	;
 
 selection_statement
-	:  IF '(' expression ')' M_LABEL statement	 				{ $$ = create_selection_statement_if( $3, $5, $6, NULL, NULL, NULL);}
+	:  IF '(' expression ')' M_LABEL statement	 			{ $$ = create_selection_statement_if( $3, $5, $6, NULL, NULL, NULL);}
 	|  IF '(' expression ')' M_LABEL statement  ELSE M_GOTO M_LABEL statement	{ $$ = create_selection_statement_if( $3, $5, $6, $8, $9, $10 );}
-	|  SWITCH '(' expression ')' statement	 				{ $$ = create_non_term("SWITCH", $3, $5); }
+	|  SWITCH '(' expression ')' statement	 				{ $$ = NULL; }
 	;
 
 iteration_statement
-	:  WHILE '(' expression ')' statement	 { $$ = create_non_term("WHILE", $3, $5); }
-	|  DO statement WHILE '(' expression ')' ';'	 { $$ = create_non_term("DO WHILE", $5, $2); }
-	|  FOR '(' expression_statement expression_statement ')' statement	 { $$ = create_non_term("FOR", $3, $4, NULL, $6); }
-	|  FOR '(' expression_statement expression_statement expression ')' statement	 { $$ = create_non_term("FOR", $3, $4, $5, $7); }
+	:  WHILE '(' M_LABEL expression ')' M_LABEL statement	 { $$ = create_iteration_statement_while( $3, $4, $6, $7 ); }
+	|  DO M_LABEL statement WHILE '(' M_LABEL expression ')' ';'	 { $$ = create_iteration_statement_do_while( $2, $3, $6, $7 ); }
+	|  FOR '(' expression_statement M_LABEL expression_statement ')' M_LABEL statement	 { $$ = create_iteration_statement_for( $3, $4, $5, $7, $8 ); }
+	|  FOR '(' expression_statement M_LABEL expression_statement M_GOTO M_LABEL expression M_GOTO ')' M_LABEL statement	 { $$ = create_iteration_statement_for( $3, $4, $5, $6, $7, $8, $9, $11, $12 ); }
 	;
 
 jump_statement
-	:  GOTO IDENTIFIER ';'	 	 { $$ = create_non_term("GOTO", $2); }
-	|  CONTINUE ';'	 		 { $$ = create_non_term("CONTINUE"); }
-	|  BREAK ';'	 		 { $$ = create_non_term("BREAK"); }
-	|  RETURN ';'	 		 { $$ = create_non_term("RETURN"); }
-	|  RETURN expression ';'	 { $$ = create_non_term("RETURN", $2); }
+	:  GOTO IDENTIFIER ';'	 { 	$$ = create_jump_statement_go_to( $2 ); }
+	|  CONTINUE ';'	 		 { $$ = create_jump_statement( CONTINUE ); }
+	|  BREAK ';'	 		 { $$ = create_jump_statement( BREAK ); }
+	|  RETURN ';'	 		 { $$ = create_jump_statement( RETURN ); }
+	|  RETURN expression ';'  { $$ = create_jump_statement_exp( $2 ); }
 	;
 
 translation_unit
@@ -592,8 +593,8 @@ function_definition
 /*	:  declaration_specifiers declarator compound_statement	 { $$ = create_function_defintion($1, $2, $3); }*/
 /*	|  declarator compound_statement	 { $$ = create_non_term("function_definition", $2); }*/
 
-M_LABEL : %empty { $$ = create_new_label(); }
-M_GOTO  : %empty { $$ = create_new_goto(); }
+M_LABEL : %empty { $$ = create_new_label(); } ;
+M_GOTO  : %empty { $$ = create_new_goto(); } ;
 
 
 %%

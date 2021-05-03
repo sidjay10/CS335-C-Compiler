@@ -24,11 +24,7 @@ class Expression : public Non_Terminal {
     // Expression( Types * type, int num_op );
 	Address  * res;
   std::vector<GoTo*> truelist;
-  std::vector<GoTo*> nextlist;
   std::vector<GoTo*> falselist;
-  std::vector<GoTo*> breaklist;
-  std::vector<GoTo*> continuelist;
-  std::vector<GoTo*> caselist;
 //	ThreeAC * code;
 
 #if 0

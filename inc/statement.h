@@ -8,33 +8,41 @@
 #include <symtab.h>
 #include <3ac.h>
 
+
+#define CLEAR_VECTOR(v) \
+    for ( auto it = (v).begin(); it != (v).end(); it++ ) { \
+        delete (*it); \
+    }
+
 class Statement : public Non_Terminal {
     public:
-        Address *res;
-        std::vector<GoTo*> truelist;
-        std::vector<GoTo*> nextlist;
-        std::vector<GoTo*> falselist;
+        std::vector<GoTo*> nextlist; /* NextList Doubles up as TrueList */
         std::vector<GoTo*> breaklist;
         std::vector<GoTo*> continuelist;
         std::vector<GoTo*> caselist;
     Statement() : Non_Terminal("") {};   
+    ~Statement() {
+        CLEAR_VECTOR( nextlist );
+        CLEAR_VECTOR( breaklist );
+        CLEAR_VECTOR( continuelist );
+        CLEAR_VECTOR( caselist );
+    }
 };
 
 class TopLevelStatement : public Statement {
     public:
         Statement *s1;
+
+    TopLevelStatement() {};
     
 };
 
 class StatementList : public Statement{
     public :
-    std::vector <Statement * > args;
-    StatementList(){
-    }
-    
 };
 
-Statement* create_statement_list(StatementList* slist,Statement* s1);
+Statement * create_statement_list( Statement * st1 );
+Statement * add_to_statement_list( Statement * stl, Statement * st1 );
 
 class ExpressionStatement : public Statement{
     public:
@@ -48,41 +56,19 @@ class ExpressionStatement : public Statement{
 Statement* create_expression_statement(Expression* e1);
 
 class SelectionStatement : public Statement{
-    public:
-        Expression *ex1;
-        Statement *st1;
-        Statement *st2;
-        std::string st;
-        SelectionStatement(){
-            ex1=nullptr;
-            st2=nullptr;
-            st1=nullptr;
-            st="";
-        }
 };
 Statement *create_selection_statement_if( Expression *ex, Label * l1, Statement *st1, GoTo * _goto, Label * l2, Statement *st2 );
 Statement *create_selection_statement_switch(std::string st,Expression *ex1, Statement *st1);
 
 class IterationStatement : public Statement {
-    Expression* e1;
-    Statement* s1;
-    Statement *s2;
-    Statement *s3;
-    std::string st;
-    IterationStatement(){
-        e1=nullptr;
-        s1=nullptr;
-        s2=nullptr;
-        s3=nullptr;
-        e1=nullptr;
-        st="";
-    }
+    public:
+    IterationStatement(){}
 };
 
-Statement* create_iteration_statement_while(std::string, Expression *e1, Statement *s1 );
-Statement* create_iteration_statement_do_while(std::string st, Expression *e1, Statement *s1);
-Statement* create_iteration_statement_for_a(std::string st,Statement*s1, Statement* s2, Statement* s3);
-Statement* create_iteration_statement_for_b(std::string st,Statement*s1, Statement* s2, Expression *e1,Statement* s3);
+Statement* create_iteration_statement_while(Label * l1, Expression *e1, Label * l2, Statement *s1 );
+Statement* create_iteration_statement_do_while(Label *l1,Statement *s1,Label *l2,Expression *e1 );
+Statement* create_iteration_statement_for( Expression * ex1, Label * l1, Expression * ex2, Label * l2, Statement*s1 );
+Statement* create_iteration_statement_for( Expression * ex1, Label * l1, Expression * ex2, GoTo * _goto1, Label * l2, Expression * ex3, GoTo * _goto2 , Label * l3, Statement*s1 );
 
 class JumpStatement : public Statement {
     public:
@@ -96,9 +82,9 @@ class JumpStatement : public Statement {
         };
 };
 
-Statement* create_jump_statement_go_to(std::string st,Identifier* id);
-Statement* create_jump_statement(std::string st);
-Statement* create_jump_statement_ret_exp(std::string st,Expression* ex);
+Statement* create_jump_statement_go_to(Identifier* id);
+Statement* create_jump_statement( int type_ );
+Statement* create_jump_statement_exp(Expression* ex);
 
 class LabeledStatement: public Statement{
     public:
@@ -115,9 +101,12 @@ class LabeledStatement: public Statement{
 
 };
 
-Statement* create_labeled_statement_def(std::string st,Identifier *id,Statement* s1);
+Statement* create_labeled_statement_iden(Identifier *id,Label * l1, Statement* s1);
 Statement* create_labeled_statement_case(std::string st,Expression *ex,Statement* s1);
 Statement* create_labeled_statement_def(std::string st,Statement* s1);
+
+extern std::map<std::string,Label *> label_iden;
+extern std::map<std::string,std::vector<GoTo *>> goto_iden;
 
 class CompoundStatement : public Statement{
     public:

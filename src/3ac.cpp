@@ -9,7 +9,7 @@ unsigned long long instructions = 1;
 unsigned long long label_count = 1;
 
 
-Label::Label() {
+Label::Label() : ThreeAC(false) {
 	name = "L"+std::to_string(label_count++);
 	instructions_id = instructions;
 }
@@ -83,12 +83,17 @@ std::ostream& operator<<(std::ostream& os, const Address& a){
 	return os;
 
 }
-void backpatch(std::vector<GoTo*> go_v, Label* label){
+void backpatch(std::vector<GoTo*> & go_v, Label* label){
 	for ( auto it = go_v.begin(); it != go_v.end(); it++ ) {
 		(*it)->label=label;
 	}
 	return ;
 }
+
+void append( std::vector <GoTo *> & v1, std::vector <GoTo *> & v2) {
+	v1.insert(v1.end(), v2.begin(), v2.end());
+}
+
 
 ThreeAC::ThreeAC() : instr ( get_next_instr() ){ };
 
@@ -105,6 +110,14 @@ GoTo * create_new_goto() {
 	std::cout << *_goto;
 	return _goto;
 }
+
+GoTo * create_new_goto( Label * label) {
+	GoTo * _goto = new GoTo();
+	_goto->label = label;
+	std::cout << *_goto;
+	return _goto;
+}
+
 
 std::ostream& operator<<(std::ostream& os, const GoTo& g){
 	

@@ -48,7 +48,7 @@ all: $(TARGET)
 
 3ac: grammar patterns 
 	@mkdir -p $(TARGETDIR)
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) $(INCFLAGS) $(BUILDDIR)/lex.yy.c $(BUILDDIR)/y.tab.c $(SRCDIR)/parser.cpp $(SRCDIR)/ast.cpp $(SRCDIR)/symtab.cpp $(SRCDIR)/expression.cpp $(SRCDIR)/3ac.cpp -o $(TARGETDIR)/3ac 
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) $(INCFLAGS) $(BUILDDIR)/lex.yy.c $(BUILDDIR)/y.tab.c $(SRCDIR)/parser.cpp $(SRCDIR)/ast.cpp $(SRCDIR)/symtab.cpp $(SRCDIR)/expression.cpp $(SRCDIR)/3ac.cpp $(SRCDIR)/statement.cpp -o $(TARGETDIR)/3ac 
 
 grammar:
 	$(YACC) $(YFLAGS) $(GRAMMAR)
