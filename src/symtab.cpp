@@ -607,7 +607,7 @@ void Declaration::add_to_symbol_table( LocalSymbolTable &sym_tab ) {
                 P->add_child( a );
                 P->line_num = a->line_num;
                 P->column = a->column;
-		P->res = new Address ( a->value, ID3);
+                P->res = new Address ( a->value, ID3);
                 Expression *ae = create_assignment_expression(
                     P, ( *i )->eq, ( *i )->init_expr );
                 add_child( ae );
@@ -659,6 +659,10 @@ void Declaration::add_to_symbol_table( LocalSymbolTable &sym_tab ) {
                        declaration_specifiers->type_specifier[0]->column );
             continue;
         }
+        size_t size = e->type.get_size();
+        e->offset = sym_tab.offset;
+        sym_tab.offset = sym_tab.offset + size + ( size % WORD_SIZE );
+        sym_tab.reqd_size = sym_tab.offset > sym_tab.reqd_size ? sym_tab.offset : sym_tab.reqd_size;
         sym_tab.add_to_table( e, ( *i )->id );
     }
 }
@@ -1506,6 +1510,10 @@ void ParameterDeclaration::create_type() {
             pointer_level = abstract_declarator->get_pointer_level();
             type = Type( type_index, pointer_level, is_const );
         }
+    } else {
+        type = Type( type_index, 0, is_const );
+        type.is_array = false;
+        type.is_pointer = false;
     }
 };
 
@@ -2043,6 +2051,8 @@ void LocalSymbolTable::clear_current_level() {
         if ( !entry ) {
             continue;
         } else if ( entry->level == current_level ) {
+            //Reduce the offset to the min offset in this level;
+            offset = offset > entry->offset ? entry->offset : offset;
             it->second.pop_front();
         }
     }
@@ -2066,7 +2076,7 @@ void LocalSymbolTable::add_to_table( SymTabEntry *symbol, Identifier *id ) {
         sym_table.insert( {symbol->name, q} );
         // CSV
         ss << "local," << function_name << "," << id->value << ","
-           << symbol->type.get_name() << "," << current_level << "\n";
+           << symbol->type.get_name() << "," << symbol->offset << "\n";
     } else {
         std::deque<SymTabEntry *> &q = it->second;
         if ( q.front() && ( q.front() )->level == current_level ) {
@@ -2092,7 +2102,7 @@ void LocalSymbolTable::add_to_table( SymTabEntry *symbol, Identifier *id ) {
             q.push_front( symbol );
             // CSV
             ss << "local," << function_name << "," << id->value << ","
-               << symbol->type.get_name() << "," << current_level << "\n";
+               << symbol->type.get_name() << "," << symbol->offset << "\n";
         }
     }
 }
@@ -2308,7 +2318,7 @@ void write_to_symtab_file( std::string s ) { sym_file << s; }
 
 SymTabEntry::SymTabEntry( std::string _name, unsigned int _line_num,
                           unsigned int _column )
-    : name( _name ), line_num( _line_num ), column( _column ){};
+    : name( _name ), line_num( _line_num ), column( _column ), offset(0) {};
 
 //##############################################################################
 //############################## ERROR MESSAGE #################################

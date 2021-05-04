@@ -32,6 +32,8 @@ enum PrimitiveTypes {
 
 extern unsigned int line_num;
 extern unsigned int column;
+extern unsigned int prev_line_num;
+extern unsigned int prev_column;
 
 extern std::stringstream text;
 extern std::vector<std::string> code;
@@ -104,8 +106,6 @@ class Type {
     Type();
 
     Type( int idx, int p_lvl, bool is_con );
-    
-    int Type2(bool is_int,bool is_unsign);
     bool is_const;
     bool isPrimitive();
     std::string get_name();
@@ -141,6 +141,7 @@ class SymTabEntry {
     Type type;
     unsigned int line_num;
     unsigned int column;
+    size_t offset;
 
     // TODO: This needs to be expanded
     SymTabEntry( std::string name_parameter, unsigned int line_num,
@@ -181,6 +182,8 @@ class LocalSymbolTable : public SymbolTable {
   public:
     std::map<std::string, std::deque<SymTabEntry *> &> sym_table;
     std::string function_name;
+    size_t offset;
+    size_t reqd_size;
     int current_level;
     void increase_level();
     void clear_current_level();

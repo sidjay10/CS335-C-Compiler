@@ -19,7 +19,7 @@ class TopLevelExpression;
 class Expression : public Non_Terminal {
   public:
     Type type;
-    /* Change this late */
+    /* Change this later */
     int num_operands;
     // Expression( Types * type, int num_op );
 	Address  * res;
@@ -362,6 +362,8 @@ union data{
     unsigned long ul;
     float f;
     double d;
+    char c;
+    unsigned char uc;
 };
 class Constant : public Terminal {
   public:
@@ -372,7 +374,8 @@ class Constant : public Terminal {
     Type getConstantType() {
         return ConstantType;
     }
-
+    void negate();
+  
 };
 
 Constant* create_constant( const char *name ,const char* value, unsigned int line_num, unsigned int column);

@@ -134,6 +134,19 @@ std::ostream& operator<<(std::ostream& os, const Label& l);
 
 std::ostream& operator<<(std::ostream& os, const GoTo& g);
 
+class Return : public ThreeAC {
+	public : 
+		Address * retval;
+		Return();
+		std::string print();
+		~Return();
+};
+
+Return * create_new_return(Address * retval);
+
+std::ostream& operator<<(std::ostream& os, const Return& r);
+
+
 void backpatch( std::vector <GoTo * > & go_v, Label * label );
 
 // Append v2 at the end of vector 1

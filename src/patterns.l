@@ -22,6 +22,7 @@ extern "C" int yylex();
 extern TOKEN_DATA token_data;
 
 void count();
+void count_wspace();
 void comment();
 int main();
 void parse();
@@ -30,14 +31,17 @@ int yylex();
 
 unsigned int column = 1;
 unsigned int line_num=1;
+unsigned int prev_column = 0;
+unsigned int prev_line_num=0;
+bool wspace = false;
 
 std::stringstream text;
 std::vector < std::string > code;
 %}
 
 %%
-"/*"			{ comment(); }
-"//"[^\n]*\n		{ code.push_back(text.str()); text.clear(); text.str(std::string()); column=1; line_num++;  }
+"/*"			{ wspace = true; comment(); }
+"//"[^\n]*\n	{ wspace = true; code.push_back(text.str()); text.clear(); text.str(std::string()); column=1; line_num++;  }
 
 "auto"			{ count(); return(AUTO); }
 "break"			{ count(); return(BREAK); }
@@ -77,7 +81,7 @@ std::vector < std::string > code;
 0[xX]{H}+{IS}?		{  yylval.constant = create_constant("CONSTANT HEX", yytext, line_num, column); count(); return(CONSTANT); }
 0{D}+{IS}?		{  yylval.constant = create_constant("CONSTANT INT", yytext, line_num, column); count(); return(CONSTANT); }
 {D}+{IS}?		{  yylval.constant = create_constant("CONSTANT INT", yytext, line_num, column); count(); return(CONSTANT); }
-L?'(\\.|[^\\'])+'	{  yylval.constant = create_constant("CONSTANT", yytext, line_num, column); count(); return(CONSTANT); }
+L?'(\\.|[^\\'])+'	{  count(); yylval.constant = create_constant("CONSTANT CHAR", yytext, line_num, prev_column); return(CONSTANT); }
 
 {D}+{E}{FS}?		{  yylval.constant = create_constant("CONSTANT EXP", yytext, line_num, column); count(); return(CONSTANT); }
 {D}*"."{D}+({E})?{FS}?	{  yylval.constant = create_constant("CONSTANT FLOAT", yytext, line_num, column); count(); return(CONSTANT); }
@@ -132,7 +136,7 @@ L?\"(\\.|[^\\"])*\"	{ count(); return(STRING_LITERAL); }
 "|"			{ count(); return('|'); }
 "?"			{ count(); return('?'); }
 
-[ \t\v\n\f]		{ count(); }
+[ \t\v\n\f]		{ count_wspace(); }
 .			{ /* ignore bad characters */ }
 
 %%
@@ -166,17 +170,21 @@ loop:
 void count()
 {
 	int i;
-	token_data.column_num = column;
-	token_data.line_num = line_num;
+	if ( !wspace ) {
+		prev_column = column;
+		prev_line_num = line_num;
+	}
+	wspace = false;
 	token_data.lexeme = strdup(yytext);
 
 	
 
 	for (i = 0; yytext[i] != '\0'; i++) {
 		if (yytext[i] == '\n')
-			{column = 1;
+			{
+				column = 1;
 				code.push_back(text.str());
-text.clear(); text.str(std::string());
+				text.clear(); text.str(std::string());
 	
 
 			line_num++;}
@@ -188,6 +196,32 @@ text.clear(); text.str(std::string());
 
 	text << yytext[i];
 	}
+	}
+}
+
+void count_wspace()
+{
+	int i;
+	if ( !wspace ) {
+		prev_column = column;
+		prev_line_num = line_num;
+	}
+	wspace = true;
+
+	for (i = 0; yytext[i] != '\0'; i++) {
+		if (yytext[i] == '\n') {
+				column = 1;
+				line_num++;
+				code.push_back(text.str());
+				text.clear(); text.str(std::string());
+		}
+		else if (yytext[i] == '\t') {
+			column += 8 - (column % 8) ;
+			text << yytext[i];
+		} else {
+			column++; 
+			text << yytext[i];
+		}
 	}
 }
 

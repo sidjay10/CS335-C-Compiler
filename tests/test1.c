@@ -1,12 +1,12 @@
 //#include <stdio.h>
 //
-void quick_sort (long *data, long n) 
+void quick_sort (long * data, long n) 
     {
         long i, j, p, t;
         if (n < 2)
             return;
         p = data[n / 2];
-        for (i = 0, j = n - 1;; i++, j--) {
+        for (i = 0l, j = n - 1;; i++, j--) {
             while (data[i] < p)
                 i++;
             while (p < data[j])

@@ -18,7 +18,9 @@
 
 std::map<std::string,Label *> label_iden;
 std::map<std::string,std::vector<GoTo *> & > goto_iden;
-
+std::map<std::string, Label *> switch_label;
+Type* switch_type=nullptr;
+Label* switch_temp=nullptr;
 //##############################################################################
 //############################# STATEMENT #####################################
 //##############################################################################
@@ -68,48 +70,61 @@ Statement *create_selection_statement_if( Expression *ex, GoTo * _false, Label *
 		append(S->continuelist,st2->continuelist);
 		append(S->caselist,st2->caselist);
     }
-
+	switch_temp=nullptr;
     return S;
 }
 
-#if 0
 
-Statement *create_selection_statement_switch(Expression *ex1, Statement* st1){
-    SelectionStatement * S= new SelectionStatement();
+Statement *create_selection_statement_switch(GoTo * _test, Expression *ex1, Statement* st1, GoTo * _next ){
+	SelectionStatement * S= new SelectionStatement();
 	S->name="SWITCH";
 	S->add_children(ex1,st1);
 	Type t = ex1->type;
-	if (! t.isINT())
-	{error_msg("switch expression wrong return type.")
+	if (! t.isInt() )
+	{
+		error_msg("Invalid Type " + t.get_name() + " in Switch Case",line_num);
 	}
-	for(auto i:switch_label){
-		Address *t1, *t2, *res;
-		t1=ex1->res;
-		t2=Address(i->first, CON );
-		emit( res , "==",t1,t2 );
-		GoTo *_goto=new GoTo(i->second);
-		_goto->res=res;
-		S->nextlist.push_back( _goto );
+
+	S->nextlist.push_back(_next);
+
+	Address *t1, *t2;
+	t1=ex1->res;
+	t2= new_temp();
+	_test->label = create_new_label();
+	Label * default_label = nullptr;
+    for(auto i:switch_label){
+		if (i.first == "" ) {
+			default_label = i.second;
+			continue;
+		}
+		Address * con = new_3const(0);
+		con->name=i.first;
+		emit( t2 , "==",t1,con );
+		GoTo *_goto=create_new_goto_cond(t2,true);
+		_goto->label=i.second;
 	}
-	switch_label.erase()
+	if ( default_label != nullptr ) {
+		create_new_goto(default_label);
+	}
+	switch_label.clear();
 	switch_type=nullptr; 
-	append(S->nextlist,ex1->falselist);
-	if ( st1 != nullptr ) {
-			append(S->nextlist,st1->nextlist);
-			append(S->breaklist,st1->breaklist);
-			append(S->continuelist,st1->continuelist);
-			append(S->caselist,st1->caselist);
-	}
+	append(S->nextlist,st1->breaklist);
+    append(S->nextlist,st1->nextlist);
+	append(S->continuelist,st1->continuelist);
+	append(S->caselist,st1->caselist);
+	switch_temp=nullptr;
 	return S;
 }
 
-#endif
 
 
 
 /// ------------Expression Statement-----------------------//
 Statement* create_expression_statement(Expression* ex1)
 {
+	if ( ex1 == nullptr ) {
+		return nullptr;
+	}
 	ExpressionStatement *S= new ExpressionStatement();
 	S->add_child(ex1);
 	append(S->nextlist,ex1->truelist); 
@@ -230,19 +245,19 @@ Statement* create_jump_statement_go_to(Identifier *id)
 
 Statement* create_jump_statement(int _type){
 	JumpStatement *S=new JumpStatement();
-	GoTo * _goto = create_new_goto();
 	if (_type == CONTINUE){
+		GoTo * _goto = create_new_goto();
 		S->name="continue";
 		S->continuelist.push_back(_goto);
 	}
 	else if(_type == BREAK){
+		GoTo * _goto = create_new_goto();
 		S->name="break";
 		S->breaklist.push_back(_goto);
 	}
 	else if (_type == RETURN ) {
 		S->name="return";
-		// TODO : Implement this
-		//S->nextlist.push_back(_goto);
+		create_new_return(nullptr);
 	}
 	return S;
 }
@@ -251,9 +266,7 @@ Statement* create_jump_statement_exp(Expression *ex)
 {	JumpStatement *S=new JumpStatement();
 	S->name="return expression";
 	S->add_child(ex);
-	GoTo * _goto = create_new_goto();
-	// TODO : Implement this
-	// S->nextlist.push_back(_goto);
+	create_new_return(ex->res);
 	return S;
 }
 ///--------------Labelled Statement-------------------///
@@ -278,43 +291,56 @@ Statement* create_labeled_statement_iden( Identifier *id, Label* l, Statement* s
 	return S;
 }
 
-#if 0
 
 Statement* create_labeled_statement_case(Constant *con,Label* l,Statement* s1){
 	IterationStatement *S = new IterationStatement();
 	S->add_children( con ,s1);
 	S->name = "CASE";
 	if (! con->ConstantType.isInt()) {
-		error_msg("Wrong type value in case.");
+		error_msg("Case label not an interger constant.",con->line_num,con->column);
 		}
 	if (switch_type==NULL)
-		{switch_type=con->ConstantType;}
+		{switch_type=&(con->ConstantType);}
 	std::string s="";
 	if (con->ConstantType.isUnsigned() && con->ConstantType.isInt()){
-		s=to_string(con->val.ui);
+		s=std::to_string(con->val.ui);
 		}
 	else if (con->ConstantType.isInt()){
-		s=to_string(con->val.i);
+		s=std::to_string(con->val.i);
 		}
 	auto it=switch_label.find(s);
 	if (it!=switch_label.end()){
-		error_msg("Case value already present.");
+		error_msg("Duplicate case value",con->line_num,con->column);
 	}
 	else{
 		switch_label.insert({s,l});
 		}
+	//switch_temp=l;
+    append(S->breaklist, s1->breaklist);
+	append(S->nextlist,s1->nextlist);
+	append(S->caselist, s1->caselist);
 	return S;
 }
 
 Statement* create_labeled_statement_def(Label* l, Statement* s1){
+	if(switch_temp!=NULL){
+		backpatch(s1->nextlist,switch_temp);
+	}
 	IterationStatement *S = new IterationStatement();
 	S->add_child(s1);
 	S->name = "DEFAULT";
 	switch_label.insert({"",l});
+	append(S->nextlist, s1->breaklist);
+	append(S->caselist, s1->caselist);
+	//error_msg("case",s1->line_num);
+	switch_temp=l;
+    append(S->breaklist, s1->breaklist);
+	append(S->nextlist,s1->nextlist);
+	append(S->caselist, s1->caselist);
 	return S;
 } 
 
-#endif
+
 
 //--------------Statement List--------------------------///
 

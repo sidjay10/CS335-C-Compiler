@@ -18,5 +18,8 @@ etc/*
 scripts/*
 
 .clang-format
+*.output
+*.s
+*.csv
 *.dot
 *.png

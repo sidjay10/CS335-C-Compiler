@@ -187,6 +187,34 @@ std::ostream& operator<<(std::ostream& os, const GoTo& g){
 	return os;
 }
 
+
+Return::Return() : ThreeAC(), retval(nullptr) {};
+
+Return::~Return() {};
+
+std::string Return::print() {
+	std::stringstream ss;
+	ss << *this;
+	return ss.str();
+}
+
+std::ostream& operator<<(std::ostream& os, const Return& r){
+	if ( r.retval == nullptr ) {
+		os << "return";
+		return os;
+	}
+
+	os << "return " << *r.retval;
+	return os;
+}
+
+Return * create_new_return( Address * retval ){
+	Return * _return = new Return();
+	_return->retval = retval;
+	ta_code.push_back(_return);
+	return _return;
+}
+
 void dump_and_reset_3ac() {
 	for ( auto it = ta_code.begin(); it != ta_code.end(); it++ ){
 		std::cout << "3AC: " << (*it)->print() << "\n";

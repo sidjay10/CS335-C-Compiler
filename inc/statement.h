@@ -51,9 +51,10 @@ class ExpressionStatement : public Statement{
 Statement* create_expression_statement(Expression* e1);
 
 class SelectionStatement : public Statement{
+    public :
 };
 Statement *create_selection_statement_if( Expression *ex, GoTo * _false, Label * l1, Statement *st1, GoTo * _goto, Label * l2, Statement *st2 );
-Statement *create_selection_statement_switch(Expression *ex1,GoTo* _goto, Statement* st1);
+Statement *create_selection_statement_switch(GoTo * _test, Expression *ex1, Statement* st1, GoTo * _goto);
 
 class IterationStatement : public Statement {
     public:
@@ -97,13 +98,14 @@ class LabeledStatement: public Statement{
 };
 
 Statement* create_labeled_statement_iden(Identifier *id,Label * l1, Statement* s1);
-Statement* create_labeled_statement_case(std::string st,Expression *ex,Statement* s1);
-Statement* create_labeled_statement_def(std::string st,Statement* s1);
+Statement* create_labeled_statement_case(Constant *con,Label* l,Statement* s1);
+Statement* create_labeled_statement_def(Label *l,Statement* s1);
 
 extern std::map<std::string,Label *> label_iden;
 extern std::map<std::string,std::vector<GoTo *> & > goto_iden;
 extern std::map<std::string, Label *> switch_label;
 extern Type* switch_type;
+extern Label * switch_temp;
 class CompoundStatement : public Statement{
     public:
         StatementList *sl1;

@@ -74,7 +74,7 @@
 
 %token <terminal> SIZEOF
 %token <identifier> IDENTIFIER
-%token <constant> CONSTANT
+%token <constant> CONSTANT 
 %token <string_literal> STRING_LITERAL
 %type <expression> expression
 %type <expression> assignment_expression
@@ -163,6 +163,8 @@
 
 %type <label> M_LABEL
 %type <_goto> M_GOTO M_FALSE
+
+%type <constant> neg_constant
 
 %start translation_unit
 %%
@@ -511,7 +513,7 @@ direct_abstract_declarator
 
 initializer_list
 	:  initializer	 { $$ = create_non_term("initializer", $1); }
-	|  initializer_list ',' initializer	 { $$ = create_non_term("initializer_list", $1, $3); }
+	|  initializer_list ',' ini$ = $2;tializer	 { $$ = create_non_term("initializer_list", $1, $3); }
 	;
 */
 statement
@@ -525,8 +527,13 @@ statement
 
 labeled_statement
 	:  IDENTIFIER ':' M_LABEL statement	 		{ $$ = create_labeled_statement_iden($1, $3, $4); }
-/*	|  CASE constant_expression ':' M_LABEL statement		{ $$ = create_labeled_statement_case($2,$4,$5); }*/
-/*	|  DEFAULT ':' M_LABEL statement	 		{ $$ = create_labeled_statement_def($3,$4); }*/
+	|  CASE neg_constant ':' M_LABEL statement		{ $$ = create_labeled_statement_case($2,$4,$5); }
+	|  DEFAULT ':' M_LABEL statement	 		{ $$ = create_labeled_statement_def($3,$4); }
+	;
+
+neg_constant
+	: 	CONSTANT	{ $$ = $1; }
+	|	'-' CONSTANT { $2->negate();  $$ = $2; }
 	;
 
 compound_statement
@@ -550,12 +557,13 @@ statement_list
 expression_statement
 	:  ';'			 	 { $$ = NULL; }
 	|  expression ';'	 { $$ = $1; }
+	|  expression { error_msg("Missing ';'",prev_line_num,prev_column); } error  { $$ = $1; }
 	;
 
 selection_statement
 	:  IF '(' expression M_FALSE ')' M_LABEL statement	 			{ $$ = create_selection_statement_if( $3, $4, $6, $7, NULL, NULL, NULL);}
 	|  IF '(' expression M_FALSE ')' M_LABEL statement  ELSE M_GOTO M_LABEL statement	{ $$ = create_selection_statement_if( $3, $4, $6, $7, $9, $10, $11 );}
-/*	|  SWITCH '(' expression ')' statement	 				{ $$ = create_selection_statement_switch($3,$4,$6); } */
+	|  SWITCH '(' M_GOTO expression ')' statement M_GOTO			 { $$ = create_selection_statement_switch($3,$4,$6,$7); } 
 	;
 
 iteration_statement
@@ -575,6 +583,11 @@ jump_statement
 	|  BREAK ';'	 		 { $$ = create_jump_statement( BREAK ); }
 	|  RETURN ';'	 		 { $$ = create_jump_statement( RETURN ); }
 	|  RETURN expression ';'  { $$ = create_jump_statement_exp( $2 ); }
+	|  GOTO IDENTIFIER { error_msg("Missing ';'",prev_line_num,prev_column);} error { $$ = NULL; }
+	|  CONTINUE { error_msg("Missing ';'",prev_line_num,prev_column);} error { $$ = NULL; }
+	|  BREAK { error_msg("Missing ';'",prev_line_num,prev_column);} error { $$ = NULL; }
+	|  RETURN { error_msg("Missing ';'",prev_line_num,prev_column);} error { $$ = NULL; }
+	|  RETURN  expression { error_msg("Missing ';'",prev_line_num,prev_column);} error { $$ = NULL; }
 	;
 
 translation_unit

@@ -16,10 +16,14 @@ int max(int num1, int num2) {
    return result; 
 }
 
+
+int x;
+
 int main()
 {
-    int x=4,y=5;
-    printf("The maximum of x and y is %d",max(x,y));
+    int y=5;
+    x = max ( x, y);
+    x++;
     return 0;
 }
 /*****

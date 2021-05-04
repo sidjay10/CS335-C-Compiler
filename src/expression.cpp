@@ -1569,11 +1569,33 @@ unsigned stou( std::string const &str, size_t *idx = 0, int base = 10 ) {
     }
     return result;
 }
+
+void Constant::negate(){
+    value = '-'+value;
+    switch(ConstantType.typeIndex){
+        case U_CHAR_T:
+            val.uc=-val.uc; break;
+       case CHAR_T: 
+			val.c = -val.c ; break;
+        case U_INT_T: 
+			val.ui = -val.ui ; break;
+        case INT_T: 
+			val.i = -val.i ; break;
+        case U_LONG_T: 
+			val.ul = -val.ul ; break;
+        case LONG_T: 
+			val.l = -val.l ; break;
+        case FLOAT_T: 
+			val.f = -val.f ; break;
+        case DOUBLE_T: 
+			val.d = -val.d ; break;
+    }
+}
 Constant::Constant( const char *_name, const char *_value,
                     unsigned int _line_num, unsigned int _column )
     : Terminal( _name, _value, _line_num, _column ) {
 
-    ConstantType = Type( 2, 0, false );
+    ConstantType = Type( -1, 0, false );
     int length = value.length();
     if ( name == "CONSTANT HEX" || name == "CONSTANT INT" ) {
 
@@ -1655,6 +1677,24 @@ Constant::Constant( const char *_name, const char *_value,
         ConstantType.typeIndex = PrimitiveTypes::LONG_T;
         val.l = std::stol( value );
         return;
+    } else if ( name == "CONSTANT CHAR" ) {
+        if ( value[1] == '\\') {
+            
+            switch (value[2]) {
+                case 'n' : val.c = '\n'; break;
+                case 'r' : val.c = '\r'; break;
+                case 't' : val.c = '\t'; break;
+                case '\\' :val.c = '\\'; break;
+                case '0' : val.c = '\0'; break;
+                default:
+                    error_msg("Invalid Escape Sequence",line_num,column);
+            }
+            ConstantType.typeIndex = PrimitiveTypes::CHAR_T;
+            return;
+        }
+
+        ConstantType.typeIndex = PrimitiveTypes::CHAR_T;
+        val.c = value[1];
     } else {
         // ------TODO---------
         // return retT;
