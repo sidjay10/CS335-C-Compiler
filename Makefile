@@ -8,7 +8,8 @@ YACC = bison -y
 #TARGET = scanner
 #TARGET = parser
 #TARGET = symtab
-TARGET = 3ac
+#TARGET = 3ac
+TARGET = compiler
 
 #DIRECTORIES
 ##Source code
@@ -34,6 +35,8 @@ INCFLAGS = $(addprefix -I, $(INCDIR))
 all: $(TARGET)
 
 
+
+
 # scanner: grammar patterns
 # 	@mkdir -p $(TARGETDIR)
 # 	$(CC) $(CFLAGS) $(LDFLAGS) $(INCFLAGS) $(BUILDDIR)/lex.yy.c $(BUILDDIR)/y.tab.c $(SRCDIR)/scanner.c -o $(TARGETDIR)/scanner  
@@ -46,9 +49,27 @@ all: $(TARGET)
 #	@mkdir -p $(TARGETDIR)
 #	$(CXX) $(CXXFLAGS) $(LDFLAGS) $(INCFLAGS) $(BUILDDIR)/lex.yy.c $(BUILDDIR)/y.tab.c $(SRCDIR)/parser.cpp $(SRCDIR)/ast.cpp $(SRCDIR)/symtab.cpp $(SRCDIR)/expression.cpp -o $(TARGETDIR)/symtab 
 
-3ac: grammar patterns 
+
+compiler: grammar patterns symtab expression 3ac
 	@mkdir -p $(TARGETDIR)
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) $(INCFLAGS) $(BUILDDIR)/lex.yy.c $(BUILDDIR)/y.tab.c $(SRCDIR)/parser.cpp $(SRCDIR)/ast.cpp $(SRCDIR)/symtab.cpp $(SRCDIR)/expression.cpp $(SRCDIR)/3ac.cpp $(SRCDIR)/statement.cpp -o $(TARGETDIR)/3ac 
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) $(INCFLAGS) $(BUILDDIR)/patterns.o $(BUILDDIR)/grammar.o $(BUILDDIR)/parser.o $(BUILDDIR)/ast.o $(BUILDDIR)/symtab.o $(BUILDDIR)/expression.o $(BUILDDIR)/3ac.o $(BUILDDIR)/statement.o -o $(TARGETDIR)/compiler 
+
+3ac: 
+	@mkdir -p $(BUILDDIR)
+	$(CXX) -c $(CXXFLAGS) $(LDFLAGS) $(INCFLAGS)  $(SRCDIR)/3ac.cpp  -o $(BUILDDIR)/3ac.o
+	$(CXX) -c $(CXXFLAGS) $(LDFLAGS) $(INCFLAGS)  $(SRCDIR)/statement.cpp -o $(BUILDDIR)/statement.o
+
+expression:
+	@mkdir -p $(BUILDDIR)
+	$(CXX) -c $(CXXFLAGS) $(LDFLAGS) $(INCFLAGS) $(SRCDIR)/expression.cpp  -o $(BUILDDIR)/expression.o 
+
+symtab:
+	@mkdir -p $(BUILDDIR)
+	$(CXX) -c $(CXXFLAGS) $(LDFLAGS) $(INCFLAGS) $(BUILDDIR)/y.tab.c -o $(BUILDDIR)/grammar.o 
+	$(CXX) -c $(CXXFLAGS) $(LDFLAGS) $(INCFLAGS) $(BUILDDIR)/lex.yy.c -o $(BUILDDIR)/patterns.o 
+	$(CXX) -c $(CXXFLAGS) $(LDFLAGS) $(INCFLAGS) $(SRCDIR)/ast.cpp -o $(BUILDDIR)/ast.o 
+	$(CXX) -c $(CXXFLAGS) $(LDFLAGS) $(INCFLAGS) $(SRCDIR)/parser.cpp -o $(BUILDDIR)/parser.o 
+	$(CXX) -c $(CXXFLAGS) $(LDFLAGS) $(INCFLAGS) $(SRCDIR)/symtab.cpp -o $(BUILDDIR)/symtab.o 
 
 grammar:
 	$(YACC) $(YFLAGS) $(GRAMMAR)
