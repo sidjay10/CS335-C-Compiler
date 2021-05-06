@@ -121,9 +121,10 @@ class Type {
     size_t get_size();
 
     friend bool operator==( Type &obj1, Type &obj2 );
+    friend bool operator!=( Type &obj1, Type &obj2 );
 };
 
-// Type INVALID_TYPE;
+extern Type INVALID_TYPE;
 
 extern std::vector<Types *> type_specifiers;
 
@@ -182,9 +183,10 @@ class LocalSymbolTable : public SymbolTable {
   public:
     std::map<std::string, std::deque<SymTabEntry *> &> sym_table;
     std::string function_name;
+    int current_level;
     size_t offset;
     size_t reqd_size;
-    int current_level;
+	Type return_type;
     void increase_level();
     void clear_current_level();
     void empty_table();

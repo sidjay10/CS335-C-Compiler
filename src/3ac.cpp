@@ -12,6 +12,7 @@ std::vector< ThreeAC * > ta_code;
 
 
 Label::Label() : ThreeAC(false) {
+	dead = false;
 	name = "L"+std::to_string(labels++);
 	instructions_id = instructions;
 }
@@ -37,7 +38,18 @@ std::ostream& operator<<(std::ostream& os, const Label& l){
 }
 	
 
-Quad::Quad ( Address * _result, std::string _operation, Address * _arg1, Address * _arg2 ) : result(_result), operation(_operation), arg1(_arg1), arg2(_arg2) {};
+Quad::Quad ( Address * _result, std::string _operation, Address * _arg1, Address * _arg2 ) : result(_result), operation(_operation), arg1(_arg1), arg2(_arg2) { 
+	if( arg1 != nullptr && arg1->ta_instr!=nullptr) {
+		arg1->ta_instr->dead = false;
+	}
+	if( arg2 != nullptr && arg2->ta_instr != nullptr) {
+		arg2->ta_instr->dead = false;
+	}
+	if ( operation == "()s" ) {
+		result->ta_instr->dead = false;
+		dead = false;
+	}
+};
 
 Quad::~Quad () {
 	delete result;
@@ -47,24 +59,38 @@ Quad::~Quad () {
 }
 
 std::ostream& operator<<(std::ostream& os, const Quad& q){
-	if ( q.arg2 != nullptr ) {
-	os << q.instr << ": " << *q.result << " = " << *q.arg1 << " " << q.operation << " " << *q.arg2 ;
+	if ( q.operation == "call" && q.result == nullptr ) {
+		os << q.instr << ": " << "call " << *q.arg1 << " " << *q.arg2;
+	} else if ( q.operation == "call") {
+		os << q.instr << ": " << *q.result << " = call " << *q.arg1 << " " << *q.arg2;
+	} else if ( q.arg2 != nullptr ) {
+		os << q.instr << ": " << *q.result << " = " << *q.arg1 << " " << q.operation << " " << *q.arg2 ;
 	} else if ( q.operation == "()" ) {
-	os << q.instr << ": " << *q.result << " = " <<  "(" << *q.arg1 << ")" ;
+		os << q.instr << ": " << *q.result << " = " <<  "(" << *q.arg1 << ")" ;
 	} else if ( q.operation == "()s" ) {
-	os << q.instr << ": " << "(" << *q.result << ")" << " = " << *q.arg1;
+		os << q.instr << ": " << "(" << *q.result << ")" << " = " << *q.arg1;
 	} else if ( q.operation == "=" ) {
-	os << q.instr << ": " <<  *q.result  << " = " << *q.arg1;
-
+		os << q.instr << ": " <<  *q.result  << " = " << *q.arg1;
+	} else if ( q.operation == "=s" ) {
+		os << q.instr << ": " <<  *q.result  << " = " << *q.arg1;
+	} else if ( q.operation == "push" ) {
+		os << q.instr << ": " <<  "push " << *q.arg1;
+	} else if ( q.operation.substr(0,3) == "arg" ) {
+		os << q.instr << ": " << q.operation  << " " << *q.arg1;
 	} else {
-	os << q.instr << ": " << *q.result << " = " << q.operation << " " << *q.arg1 ;
-
+		os << q.instr << ": " << *q.result << " = " << q.operation << " " << *q.arg1 ;
 	}
 	return os;
 }
 
 unsigned long long emit(  Address * result, std::string operation, Address * arg1, Address * arg2 ) {
 	Quad * q = new Quad(result,operation,arg1,arg2);
+	if ( result != nullptr ) {
+		result->ta_instr = q;
+	}
+	if ( result == nullptr || result->type == ID3 ) {
+		q->dead = false;
+	}
 	ta_code.push_back(q);
 	//std::cout << "3AC: " << *q << "\n";
 	return ta_code.size();
@@ -79,14 +105,14 @@ std::string Quad::print() {
 
 unsigned long long temporaries = 1;
 
-Address::Address(std::string _name, ADD_TYPE _type ) : name (_name) , type(_type) {};
+Address::Address(std::string _name, ADD_TYPE _type ) : name (_name) , type(_type), ta_instr(nullptr) {};
 
 Address * new_temp() {
 	return new Address("t" + std::to_string(temporaries++), TEMP);
 }
 
 Address * new_mem() {
-	return new Address("m" + std::to_string(temporaries++), MEM);
+	return new Address("t" + std::to_string(temporaries++), MEM);
 }
 
 
@@ -119,9 +145,9 @@ void append( std::vector <GoTo *> & v1, std::vector <GoTo *> & v2) {
 }
 
 
-ThreeAC::ThreeAC() : instr ( get_next_instr() ){ };
+ThreeAC::ThreeAC() : instr ( get_next_instr() ), dead(true) { };
 
-ThreeAC::ThreeAC(bool no_add ) : instr ( instructions ){ };
+ThreeAC::ThreeAC(bool no_add ) : instr ( instructions ), dead(true) { };
 
 ThreeAC::~ThreeAC () {};
 
@@ -129,7 +155,7 @@ unsigned long long get_next_instr() {
 	return instructions++;
 }
 
-GoTo::GoTo () : label(nullptr) , res(nullptr) {};
+GoTo::GoTo () : label(nullptr) , res(nullptr) { dead = false; };
 
 GoTo::~GoTo () {
 	delete label;
@@ -156,8 +182,19 @@ GoTo * create_new_goto_cond( Address * res, bool condition ) {
 	_goto->res = res;
 	_goto->condition = condition;
 	//std::cout << "3AC: " << *_goto << "\n";
+	if ( res != nullptr ) {
+		res->ta_instr->dead = false;
+	}
 	ta_code.push_back(_goto);
 	return _goto;
+}
+		
+void GoTo::set_res( Address * _res ){
+	res = _res;
+	if ( res != nullptr && res->ta_instr != nullptr ) {
+		res->ta_instr->dead = false;
+	}
+	
 }
 
 std::string GoTo::print() {
@@ -188,7 +225,7 @@ std::ostream& operator<<(std::ostream& os, const GoTo& g){
 }
 
 
-Return::Return() : ThreeAC(), retval(nullptr) {};
+Return::Return() : ThreeAC(), retval(nullptr) {dead = false;};
 
 Return::~Return() {};
 
@@ -215,9 +252,46 @@ Return * create_new_return( Address * retval ){
 	return _return;
 }
 
-void dump_and_reset_3ac() {
+
+void dead_code_eliminate() {
+	GoTo * _goto = nullptr;
+	Label * label = nullptr;
+	Label * label1 = nullptr;
+	Label * label2 = nullptr;
 	for ( auto it = ta_code.begin(); it != ta_code.end(); it++ ){
-		std::cout << "3AC: " << (*it)->print() << "\n";
+		label = dynamic_cast<Label* >(*it);
+		if ( _goto != nullptr && _goto->res == nullptr && label == nullptr ) {
+			(*it)->dead = true;
+			continue;
+		} else {
+			_goto = nullptr;
+		}
+		
+		if( _goto == nullptr ) {
+			_goto = dynamic_cast<GoTo *>(*it); 
+		}
+
+		if ( label1 != nullptr && label != nullptr ) {
+			(*it)->dead = true;
+			*label = *label1;
+			label->dead = true;
+		}
+		label1 = label;
+
+	}
+
+}
+
+void dump_and_reset_3ac() {
+
+
+	dead_code_eliminate();
+	for ( auto it = ta_code.begin(); it != ta_code.end(); it++ ){
+		std::cout << "3AC: " << (*it)->print();
+		if( (*it)->dead == true ) {
+			std::cout << " xxxx";
+		}
+		std::cout << "\n";
 	}
 	instructions = 1;
 	temporaries = 1;

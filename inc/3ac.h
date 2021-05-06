@@ -12,6 +12,7 @@ extern unsigned long long instructions;
 unsigned long long get_next_instr();
 
 
+
 extern unsigned long long temporaries;
 
 typedef enum ADD_TYPE_ {
@@ -21,10 +22,14 @@ typedef enum ADD_TYPE_ {
 	MEM = 4
 } ADD_TYPE;
 
+
+class ThreeAC;
+
 class Address {
 public:
 	std::string name;
 	ADD_TYPE type;
+	ThreeAC * ta_instr;
 	Address( std::string name, ADD_TYPE type);
 	
 };
@@ -46,6 +51,7 @@ Address * new_3id(std::string id);
 class ThreeAC {
 public:
 	unsigned int instr;
+	bool dead;
 	ThreeAC();
 	ThreeAC( bool no_add );
 	virtual std::string print() = 0;
@@ -71,11 +77,11 @@ public:
 
 #define MEM_EMIT(a,b) \
 	if ( (a)->res->type == MEM ) { \
-		(b) = new_temp(); \
+		(b) = (a)->res; \
 		emit((b),"()",(a)->res,nullptr); \
+		(a)->res->type = TEMP; \
 	} else if ( (a)->res->type == ID3 ) { \
-		(b) = new_temp(); \
-		emit((b),"()",(a)->res,nullptr); \
+		(b) = (a)->res; \
 	} else { \
 		(b) = (a)->res; \
 	}
@@ -90,10 +96,12 @@ public:
 }
 
 #define SAVE_REGS( E, t1, t2 ) { \
-    if ( (t1)->type == TEMP ) { \
+    if ( (t1)->type == TEMP || (t1)->type == MEM ) { \
         (E)->res = (t1); \
-    } else if ( (t2)->type == TEMP ){ \
+	(E)->res->type = TEMP; \
+    } else if ( (t2)->type == TEMP || (t2)->type == MEM ){ \
         (E)->res = (t2); \
+	(E)->res->type = TEMP; \
     } else { \
         (E)->res = new_temp(); \
     } \
@@ -116,13 +124,18 @@ extern unsigned long long labels;
 Label * create_new_label();
  
 class GoTo : public ThreeAC {
+		Address * res;
 	public : 
 		Label * label;
-		Address * res;
 		bool condition;
 		GoTo();
 		std::string print();
 		~GoTo();
+		void set_res( Address * res );
+		friend std::ostream& operator<<(std::ostream& os, const GoTo& g);
+		friend GoTo * create_new_goto_cond( Address * res, bool condition );
+		friend void dead_code_eliminate();
+
 };
 
 GoTo * create_new_goto();
@@ -153,4 +166,5 @@ void backpatch( std::vector <GoTo * > & go_v, Label * label );
 void append ( std::vector <GoTo *> & v1, std::vector <GoTo *> & v2);
 
 void dump_and_reset_3ac();
+void dead_code_eliminate();
 #endif

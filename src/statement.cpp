@@ -31,7 +31,7 @@ Statement *create_selection_statement_if( Expression *ex, GoTo * _false, Label *
 		S->name = "IF";
         S->add_children(ex,st1);
 		backpatch( ex->truelist, l1 );
-		_false->res = ex->res;
+		_false->set_res( ex->res ); 
 		ex->falselist.push_back(_false);
 		if( l2 != nullptr ) {
 			backpatch( ex->falselist, l2 );
@@ -54,7 +54,7 @@ Statement *create_selection_statement_if( Expression *ex, GoTo * _false, Label *
 		S->name = "IF ELSE";
     	S->add_children(ex,st1,st2);
 		backpatch( ex->truelist, l1 );
-		_false->res = ex->res;
+		_false->set_res( ex->res ); 
 		ex->falselist.push_back(_false);
 		backpatch( ex->falselist, l2 );
 
@@ -140,7 +140,7 @@ Statement* create_iteration_statement_while(Label * l1, Expression *ex1, GoTo * 
 	S->name = "WHILE";
 
 	backpatch(ex1->truelist,l2);
-	_false->res = ex1->res;
+	_false->set_res( ex1->res ); 
 	ex1->falselist.push_back(_false);
 	append(S->nextlist,ex1->falselist);
 	if ( st1 != nullptr ) {
@@ -161,7 +161,7 @@ Statement* create_iteration_statement_do_while(Label *l1,Statement *st1,Label *l
 	S->name="DO WHILE";
 	
 	backpatch(ex1->truelist,l1);
-	_false->res = ex1->res;
+	_false->set_res( ex1->res ); 
 	ex1->falselist.push_back(_false);
 	append(S->nextlist,ex1->falselist);
 	if ( st1 != nullptr ) {
@@ -266,6 +266,9 @@ Statement* create_jump_statement_exp(Expression *ex)
 {	JumpStatement *S=new JumpStatement();
 	S->name="return expression";
 	S->add_child(ex);
+	if ( ex->type != INVALID_TYPE && local_symbol_table.return_type != ex->type ) {
+		error_msg("Function expects return type of " + local_symbol_table.return_type.get_name() + ". Got " + ex->type.get_name(),line_num);
+	}
 	create_new_return(ex->res);
 	return S;
 }

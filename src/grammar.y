@@ -522,7 +522,7 @@ statement
 	|  expression_statement	 { $$ = create_expression_statement($1); }
 	|  selection_statement	 { $$ = $1; }
 	|  iteration_statement	 { $$ = $1; }
-	|  jump_statement	 	 { $$ = $1; }
+	|  jump_statement	 { $$ = $1; }
 	;
 
 labeled_statement

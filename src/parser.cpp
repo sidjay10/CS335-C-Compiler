@@ -21,7 +21,6 @@ std::ofstream sym_file;
 
 int main(int argc, char *argv[]) {
   FILE *fh;
-  FILE *fo;
 
   if (argc != 4){
 	  std::cout << "Incorrect usage. Usage : ./bin/parser <file>.c -o <file>.dot";

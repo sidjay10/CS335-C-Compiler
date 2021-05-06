@@ -321,6 +321,9 @@ bool Type::is_invalid() {
     return false;
 }
 
+bool operator!=( Type &obj1, Type &obj2 ) {
+	return !(obj1 == obj2);
+}
 bool operator==( Type &obj1, Type &obj2 ) {
 
     if ( obj1.typeIndex != obj2.typeIndex ) {
@@ -1584,7 +1587,6 @@ create_function_defintion( DeclarationSpecifiers *declaration_specifiers,
     FunctionDefinition *fd = new FunctionDefinition(
         declaration_specifiers, declarator, compound_statement );
     fd->add_children( declaration_specifiers, declarator, compound_statement );
-    declaration_specifiers->create_type();
     global_symbol_table.add_symbol( declaration_specifiers, declarator,
                                     &( fd->error ) );
     local_symbol_table.add_function( declaration_specifiers, declarator,
@@ -2028,7 +2030,7 @@ SymTabEntry *SymbolTable::get_symbol_from_table( std::string name ) {
     return nullptr;
 }
 
-LocalSymbolTable::LocalSymbolTable() : current_level( 0 ){};
+LocalSymbolTable::LocalSymbolTable() : current_level( 0 ), offset(0), reqd_size(0), return_type(INVALID_TYPE) {};
 
 void LocalSymbolTable::increase_level() {
     for ( int i = 0; i < current_level; i++ ) {
@@ -2139,6 +2141,10 @@ void LocalSymbolTable::add_function(
         *error = -1;
         return;
     }
+
+
+	return_type = gte->type;
+	return_type.is_function = false;
     // std::cout << "L: " << function_name << " " <<
     // declaration_specifiers->type_index;
 
@@ -2326,7 +2332,7 @@ SymTabEntry::SymTabEntry( std::string _name, unsigned int _line_num,
 
 void error_msg( std::string str, unsigned int line_num, unsigned int column ) {
 
-    std::cout << "\n" << line_num << ":" << column << " ERROR: " << str << "\n";
+    std::cout << "\nLine: " << line_num << ":" << column << " ERROR: " << str << "\n";
     if ( line_num == ( code.size() + 1 ) ) {
 
         std::cout << "\t" << text.str();
@@ -2339,7 +2345,7 @@ void error_msg( std::string str, unsigned int line_num, unsigned int column ) {
 
 void error_msg( std::string str, unsigned int line_num ) {
 
-    std::cout << "\n" << line_num << " ERROR: " << str << "\n";
+    std::cout << "\nLine: " << line_num << " ERROR: " << str << "\n";
     if ( line_num == ( code.size() + 1 ) ) {
 
         std::cout << "\t" << text.str();
@@ -2354,7 +2360,7 @@ void error_msg( std::string str, unsigned int line_num ) {
 void warning_msg( std::string str, unsigned int line_num,
                   unsigned int column ) {
 
-    std::cout << "\n"
+    std::cout << "\nLine: "
               << line_num << ":" << column << " WARNING: " << str << "\n";
     if ( line_num == ( code.size() + 1 ) ) {
 
@@ -2368,7 +2374,7 @@ void warning_msg( std::string str, unsigned int line_num,
 
 void warning_msg( std::string str, unsigned int line_num ) {
 
-    std::cout << "\n" << line_num << " WARNING: " << str << "\n";
+    std::cout << "\nLine: " << line_num << " WARNING: " << str << "\n";
     if ( line_num == ( code.size() + 1 ) ) {
 
         std::cout << "\t" << text.str();
