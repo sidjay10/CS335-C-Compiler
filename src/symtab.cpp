@@ -610,7 +610,7 @@ void Declaration::add_to_symbol_table( LocalSymbolTable &sym_tab ) {
                 P->add_child( a );
                 P->line_num = a->line_num;
                 P->column = a->column;
-                P->res = new Address ( a->value, ID3);
+                P->res = new_3id( e );
                 Expression *ae = create_assignment_expression(
                     P, ( *i )->eq, ( *i )->init_expr );
                 add_child( ae );
@@ -710,10 +710,11 @@ void Declaration::add_to_symbol_table( GlobalSymbolTable &sym_tab ) {
                 P->add_child( a );
                 P->line_num = a->line_num;
                 P->column = a->column;
-		P->res = new Address ( a->value, ID3);
-                Expression *ae = create_assignment_expression(
-                    P, ( *i )->eq, ( *i )->init_expr );
-                add_child( ae );
+//FIXME: Intialised global data;
+		//P->res = new Address ( a->value, ID3);
+                //Expression *ae = create_assignment_expression(
+                //    P, ( *i )->eq, ( *i )->init_expr );
+                //add_child( ae );
             }
         } else if ( dd->type == ARRAY ) {
             e->type = Type( type_index, dd->array_dims.size(), true );
@@ -2022,7 +2023,7 @@ EnumeratorList *add_to_enumerator_list( EnumeratorList *enumerator_list,
 //############################ LOCAL SYMBOL TABLE ##############################
 //##############################################################################
 
-SymbolTable::SymbolTable(){};
+SymbolTable::SymbolTable() : symbol_id(0) {};
 
 void SymbolTable::add_to_table( SymTabEntry * ) { assert( 0 ); }
 
@@ -2074,6 +2075,8 @@ void LocalSymbolTable::add_to_table( SymTabEntry *symbol, Identifier *id ) {
     if ( it == sym_table.end() ) {
         std::deque<SymTabEntry *> &q = *new std::deque<SymTabEntry *>;
         symbol->level = current_level;
+	symbol->id = (LOCAL_SYM_MASK | symbol_id++);
+		//MSB 0 -> LOCAL_SYMBOL 
         q.push_front( symbol );
         sym_table.insert( {symbol->name, q} );
         // CSV
@@ -2086,21 +2089,10 @@ void LocalSymbolTable::add_to_table( SymTabEntry *symbol, Identifier *id ) {
             error_msg( "Redeclaration of symbol " + it->first +
                            " in this scope",
                        id->line_num, id->column );
-            std::cout << "\tPrevious declaration of " << it->first << " at "
-                      << ( q.front() )->line_num << ":" << ( q.front() )->column
-                      << "\n";
-            //            std::cout << "\n" << id->line_num << ":" << id->column
-            //            << " ERROR: Redeclaration of symbol " << it->first <<
-            //            " in this scope\n";
-            if ( ( q.front() )->line_num == ( code.size() + 1 ) ) {
-                std::cout << "\t" << text.str();
-            } else {
-                std::cout << "\t" << code[( q.front() )->line_num - 1];
-            }
-            printf( "\n\t%*s\n", ( q.front() )->column, "^" );
-            // exit( 1 );
         } else {
             symbol->level = current_level;
+			symbol->id = (LOCAL_SYM_MASK | symbol_id++);
+			//MSB 0 -> LOCAL_SYMBOL 
             q.push_front( symbol );
             // CSV
             ss << "local," << function_name << "," << id->value << ","
@@ -2127,6 +2119,8 @@ void LocalSymbolTable::add_function(
     int *error ) {
 
     sym_table.clear();
+	symbol_id = 0;
+	offset = 0;
     ss.clear();
     ss.str( std::string() );
     if ( *error == -1 ) {
@@ -2268,6 +2262,8 @@ void GlobalSymbolTable::add_symbol(
         e->type.num_args = 0;
     }
 
+	e->id = (GLOBAL_SYM_MASK | symbol_id++);
+	//MSB 1 -> GLOBAL_SYMBOL 
     add_to_table( e, true, declarator->id );
     ss << "global,"
        << "-," << declarator->id->value << ",fun:" << e->type.get_name()
@@ -2294,20 +2290,22 @@ void GlobalSymbolTable::add_to_table( SymTabEntry *symbol, bool redef,
 
     auto it = sym_table.find( symbol->name );
     if ( it == sym_table.end() ) {
+		symbol->id = (GLOBAL_SYM_MASK | symbol_id++);
+		//MSB 1 -> GLOBAL_SYMBOL 
         sym_table.insert( {symbol->name, symbol} );
     } else if ( !( it->second->type == symbol->type ) ) {
 
         // Can't insert two symbols with same name at the same level
         error_msg( "Conflicting types for " + it->first, id->line_num,
                    id->column );
-        std::cout << "\tPrevious declaration of " << it->first << " at "
-                  << it->second->line_num << ":" << it->second->column << "\n";
-        if ( it->second->line_num == ( code.size() + 1 ) ) {
-            std::cout << "\t" << text.str();
-        } else {
-            std::cout << "\t" << code[it->second->line_num - 1];
-        }
-        printf( "\n\t%*s\n", it->second->column, "^" );
+//        std::cout << "\tPrevious declaration of " << it->first << " at "
+//                  << it->second->line_num << ":" << it->second->column << "\n";
+//        if ( it->second->line_num == ( code.size() + 1 ) ) {
+//            std::cout << "\t" << text.str();
+//        } else {
+//            std::cout << "\t" << code[it->second->line_num - 1];
+//        }
+//        printf( "\n\t%*s\n", it->second->column, "^" );
     }
 }
 

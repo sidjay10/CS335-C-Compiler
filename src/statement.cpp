@@ -90,18 +90,18 @@ Statement *create_selection_statement_switch(GoTo * _test, Expression *ex1, Stat
 	Address *t1, *t2;
 	t1=ex1->res;
 	t2= new_temp();
-	_test->label = create_new_label();
+	backpatch(_test, create_new_label());
 	Label * default_label = nullptr;
     for(auto i:switch_label){
 		if (i.first == "" ) {
 			default_label = i.second;
 			continue;
 		}
-		Address * con = new_3const(0);
+		Address * con = new_3const(0, INT3);
 		con->name=i.first;
 		emit( t2 , "==",t1,con );
 		GoTo *_goto=create_new_goto_cond(t2,true);
-		_goto->label=i.second;
+		backpatch(_goto, i.second);
 	}
 	if ( default_label != nullptr ) {
 		create_new_goto(default_label);
@@ -202,8 +202,8 @@ Statement* create_iteration_statement_for( Expression * ex1, Label * l1, Express
 		backpatch( ex2->truelist, l3 );
 		append(S->nextlist, ex2->falselist);
 	}
-	_goto1->label = l3;
-	_goto2->label = l1;
+	backpatch(_goto1, l3);
+	backpatch(_goto2, l1);
 
 	if ( st1 != nullptr ) {
 		backpatch(st1->nextlist,l2);

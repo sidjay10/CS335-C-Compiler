@@ -4,20 +4,33 @@
 #include <symtab.h>
 #include <sstream>
 #include <3ac.h>
+#include <vector>
+#include <assert.h>
+#include <algorithm>
 
 unsigned long long instructions = 1;
 unsigned long long labels = 1;
 
 std::vector< ThreeAC * > ta_code;
+std::map< unsigned int, TacInfo > tac_info_table;
 
 
 Label::Label() : ThreeAC(false) {
+	reference_count = 0;
 	dead = false;
 	name = "L"+std::to_string(labels++);
-	instructions_id = instructions;
+	instruction_id = instructions;
 }
 
 Label::~Label() {}
+
+//void Label::update_targets( Label * label ) {
+//	for ( auto it = references.begin(); it != references.end(); it ++ ) {
+//		(*it)->label = label;
+//		label->references.push_back(*it);
+//		label->reference_count++;
+//	}
+//}
 
 Label* create_new_label(){
 	Label* l = new Label();
@@ -105,19 +118,30 @@ std::string Quad::print() {
 
 unsigned long long temporaries = 1;
 
-Address::Address(std::string _name, ADD_TYPE _type ) : name (_name) , type(_type), ta_instr(nullptr) {};
+Address::Address(std::string _name, ADD_TYPE _type ) : name (_name) , type(_type), ta_instr(nullptr), alive(true), next_use(nullptr)  {};
 
 Address * new_temp() {
-	return new Address("t" + std::to_string(temporaries++), TEMP);
+	Address * t = new Address("t" + std::to_string(temporaries), TEMP );
+	t->table_id = TEMP_ID_MASK | temporaries;
+	temporaries++;
+	tac_info_table.insert({t->table_id,TacInfo()});
+	return t;
 }
 
 Address * new_mem() {
-	return new Address("t" + std::to_string(temporaries++), MEM);
+	Address * t = new Address("t" + std::to_string(temporaries), MEM );
+	t->table_id = TEMP_ID_MASK | temporaries;
+	temporaries++;
+	tac_info_table.insert({t->table_id,TacInfo()});
+	return t;
 }
 
 
-Address * new_3id(std::string id){
-	return new Address(id, ID3);
+Address * new_3id(SymTabEntry * symbol) {
+	Address * a = new Address(symbol->name, ID3);
+	a->table_id = symbol->id;
+	tac_info_table.insert({a->table_id,TacInfo(symbol)});
+	return a;
 }
 
 std::ostream& operator<<(std::ostream& os, const Address& a){
@@ -125,6 +149,12 @@ std::ostream& operator<<(std::ostream& os, const Address& a){
 		os << a.name;
 	} else {
 		os << a.name;
+	}
+
+	if ( a.alive == true ) {
+		os << "(L)";
+	} else {
+		os << "(D)";
 	}
 
 	return os;
@@ -136,7 +166,19 @@ void backpatch(std::vector<GoTo*> & go_v, Label* label){
 	}
 	for ( auto it = go_v.begin(); it != go_v.end(); it++ ) {
 		(*it)->label=label;
+		label->reference_count++;
+		//label->references.push_back(*it);
 	}
+	return ;
+}
+
+void backpatch(GoTo * _goto, Label* label){
+	if ( label == nullptr ) {
+		return;
+	}
+	_goto->label=label;
+	label->reference_count++;
+	//label->references.push_back(_goto);
 	return ;
 }
 
@@ -145,7 +187,7 @@ void append( std::vector <GoTo *> & v1, std::vector <GoTo *> & v2) {
 }
 
 
-ThreeAC::ThreeAC() : instr ( get_next_instr() ), dead(true) { };
+ThreeAC::ThreeAC() : instr ( get_next_instr() ), dead(true) , bb_no(0) { };
 
 ThreeAC::ThreeAC(bool no_add ) : instr ( instructions ), dead(true) { };
 
@@ -253,41 +295,85 @@ Return * create_new_return( Address * retval ){
 }
 
 
-void dead_code_eliminate() {
-	GoTo * _goto = nullptr;
-	Label * label = nullptr;
+TacInfo::TacInfo() : alive(true), next_use(nullptr), symbol(nullptr) {};
+TacInfo::TacInfo(SymTabEntry * _symbol) : alive(true), next_use(nullptr), symbol(_symbol) {};
+
+
+
+TacInfo * create_tac_info(SymTabEntry * symbol){
+	TacInfo * t = new TacInfo();
+	t->symbol = symbol;
+	return t;
+}
+
+
+void optimise_pass1() {
+	GoTo * _goto1 = nullptr;
+	GoTo * _goto2 = nullptr;
 	Label * label1 = nullptr;
 	Label * label2 = nullptr;
 	for ( auto it = ta_code.begin(); it != ta_code.end(); it++ ){
-		label = dynamic_cast<Label* >(*it);
-		if ( _goto != nullptr && _goto->res == nullptr && label == nullptr ) {
+		if ( (*it)->dead == true ) {
+			continue;
+		}
+		_goto1 = dynamic_cast<GoTo *>(*it); 
+		if ( _goto1 != nullptr && _goto1->res != nullptr && _goto1->res->type == CON) {
+			int value = std::stoi(_goto1->res->name);
+			if (( value == 0 && _goto1->condition == false) || (value != 0 && _goto1->condition == true )){
+				// Always taken;
+				;
+			} else {
+				// Never taken;
+				_goto1->label->reference_count--;
+				_goto1->dead = true;
+				continue;
+			}
+			
+			if( _goto1->res->ta_instr != nullptr ) {
+				_goto1->res = nullptr;
+				_goto1->res->ta_instr->dead = true;
+			} else {
+				delete _goto1->res;
+				_goto1->res = nullptr;
+			}
+
+		}
+
+
+		label1 = dynamic_cast<Label* >(*it);
+		if( label1 != nullptr && label1->reference_count == 0 ) {
 			(*it)->dead = true;
 			continue;
-		} else {
-			_goto = nullptr;
 		}
-		
-		if( _goto == nullptr ) {
-			_goto = dynamic_cast<GoTo *>(*it); 
-		}
-
-		if ( label1 != nullptr && label != nullptr ) {
+		if ( _goto2 != nullptr && _goto2->res == nullptr && ( label1 == nullptr || label1->reference_count == 0)  ) {
 			(*it)->dead = true;
-			*label = *label1;
-			label->dead = true;
+			if ( _goto1 != nullptr ) {
+				_goto1->label->reference_count--;
+			}
+			continue;
 		}
-		label1 = label;
 
+		if ( label2 != nullptr && label1 != nullptr ) {
+			(*it)->dead = true;
+			*label1 = *label2;
+			label1->dead = true;
+			continue;
+		}
+
+		
+		_goto2 = _goto1; 
+		label2 = label1;
 	}
-
 }
 
 void dump_and_reset_3ac() {
 
-
-	dead_code_eliminate();
+	optimise_pass1();
+	create_basic_blocks();
+	create_next_use_info();
+	
 	for ( auto it = ta_code.begin(); it != ta_code.end(); it++ ){
-		std::cout << "3AC: " << (*it)->print();
+		std::cout << "3AC: " << (*it)->bb_no << ":  " << (*it)->print();
 		if( (*it)->dead == true ) {
 			std::cout << " xxxx";
 		}
@@ -296,4 +382,121 @@ void dump_and_reset_3ac() {
 	instructions = 1;
 	temporaries = 1;
 	ta_code.clear();
+	tac_info_table.clear();
+}
+
+void create_basic_blocks() {	
+	int basic_blks = 1;
+	bool incremented = true;
+	for ( auto it = ta_code.begin(); it != ta_code.end(); it++ ){
+		if ( (*it)->dead == true ) {
+			continue;
+		}
+		Label * label = dynamic_cast<Label *> (*it);
+		if ( label != nullptr && !incremented ) {
+			basic_blks++;
+			(*it)->bb_no = basic_blks;
+			continue;
+		}
+		incremented = false;
+		(*it)->bb_no = basic_blks;
+		GoTo * _goto = dynamic_cast<GoTo *> (*it);
+		Return * _return = dynamic_cast<Return *>(*it);
+		if( _goto != nullptr || _return != nullptr ) {
+			basic_blks++;
+			incremented = true;
+		}
+	}
+	
+}
+
+void create_next_use_info(){
+	auto it = ta_code.rbegin();
+	int basic_blk = (*it)->bb_no;
+	for ( ; it != ta_code.rend(); it++ ){
+		if ( (*it)->dead == true ) {
+			continue;
+		}
+
+		if ((*it)->bb_no != basic_blk ) {
+			reset_tac_info_table();
+			basic_blk = (*it)->bb_no;
+		}
+
+		Quad * q = dynamic_cast<Quad *>(*it);
+
+		if ( q != nullptr ) {
+		
+			if ( q->arg1 != nullptr && q->arg1->type != CON ) {
+				auto it = get_entry_from_table(q->arg1);
+				q->arg1->alive = it->second.alive;
+				q->arg1->next_use = it->second.next_use;
+			}
+			
+			if ( q->arg2 != nullptr && q->arg2->type != CON ) {
+				auto it = get_entry_from_table(q->arg2);
+				q->arg2->alive = it->second.alive;
+				q->arg2->next_use = it->second.next_use;
+			}
+			
+			if ( q->result != nullptr ) {
+				assert(q->result->type != CON);
+				auto it = get_entry_from_table(q->result);
+				q->result->alive = it->second.alive;
+				q->result->next_use = it->second.next_use;
+				it->second.alive = false;
+				it->second.next_use = nullptr;
+
+			}
+			if ( q->arg1 != nullptr && q->arg1->type != CON ) {
+				auto it = get_entry_from_table(q->arg1);
+				it->second.alive = true;
+				it->second.next_use = q;
+			}
+
+			if ( q->arg2 != nullptr && q->arg2->type != CON ) {
+				auto it = get_entry_from_table(q->arg2);
+				it->second.alive = true;
+				it->second.next_use = q;
+			}
+
+			continue;	
+
+		}
+
+		GoTo * g = dynamic_cast<GoTo *>(*it);
+
+		if ( g != nullptr && g->res != nullptr && g->res->type != CON ) {
+			auto it = get_entry_from_table(g->res);
+			it->second.alive = true;
+			it->second.next_use = g;
+			continue;
+
+		}
+		
+		Return * r = dynamic_cast<Return *>(*it);
+
+		if ( r != nullptr && r->retval != nullptr && r->retval->type != CON ) {
+			auto it = get_entry_from_table(r->retval);
+			it->second.alive = true;
+			it->second.next_use = r;
+			continue;
+		}
+	}
+}
+
+void reset_tac_info_table() {
+
+	for ( auto it = tac_info_table.begin(); it != tac_info_table.end(); it++ ) {
+		it->second.alive = true;
+		it->second.next_use = nullptr;
+	}
+}
+
+std::map <unsigned int, TacInfo >::iterator  get_entry_from_table( Address * a ) {
+	auto it = tac_info_table.find( a->table_id );
+	if ( it == tac_info_table.end() ) {
+		assert(0);
+	}
+	return it;
 }

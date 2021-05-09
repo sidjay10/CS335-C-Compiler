@@ -143,6 +143,7 @@ class SymTabEntry {
     unsigned int line_num;
     unsigned int column;
     size_t offset;
+	unsigned int id;
 
     // TODO: This needs to be expanded
     SymTabEntry( std::string name_parameter, unsigned int line_num,
@@ -163,12 +164,16 @@ class SymbolTable {
   public:
     SymbolTable();
 
+	unsigned int symbol_id;
     std::stringstream ss;
     virtual SymTabEntry *get_symbol_from_table( std::string name );
     void delete_from_table( SymTabEntry *symbol );
     void print_table();
     virtual void add_to_table( SymTabEntry *symbol );
 };
+
+#define LOCAL_SYM_MASK 0
+#define GLOBAL_SYM_MASK 0x80000000
 
 class GlobalSymbolTable : public SymbolTable {
   public:
@@ -180,6 +185,7 @@ class GlobalSymbolTable : public SymbolTable {
 };
 
 class LocalSymbolTable : public SymbolTable {
+
   public:
     std::map<std::string, std::deque<SymTabEntry *> &> sym_table;
     std::string function_name;
