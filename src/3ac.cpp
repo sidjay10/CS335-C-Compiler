@@ -309,8 +309,7 @@ TacInfo * create_tac_info(SymTabEntry * symbol){
 // int eval(){
 	
 // }
-
-int arithmetic_optimisation(Quad* q){
+void arithmetic_optimisation(Quad* q){
 	std:: string val1="";
 	std:: string val2="";
 	if(q->arg1!=nullptr){
@@ -485,8 +484,7 @@ void optimise_pass1() {
 		if(label1==nullptr && _goto1==nullptr){
 			q = dynamic_cast<Quad *>(*it);
 			if(q!=nullptr && q->arg1!=nullptr && q->arg2!=nullptr){
-				fl=arithmetic_optimisation(q);
-			if (fl==1) (*it)->dead=true;
+				arithmetic_optimisation(q);
 			}
 		}
 
