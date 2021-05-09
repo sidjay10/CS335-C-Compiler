@@ -7,13 +7,13 @@
 #include <vector>
 #include <assert.h>
 #include <algorithm>
-
+#include <unordered_map>
 unsigned long long instructions = 1;
 unsigned long long labels = 1;
 
 std::vector< ThreeAC * > ta_code;
 std::map< unsigned int, TacInfo > tac_info_table;
-
+std::unordered_set<std::string> var_rep;
 
 Label::Label() : ThreeAC(false) {
 	reference_count = 0;
@@ -426,7 +426,29 @@ void arithmetic_optimisation(Quad* q){
 
 	}
 }
+void repeat_var(Quad* q){
+	if(q->result!=nullptr){
+		if(var_rep.find(q->result->name)==var_rep.end()){
+		var_rep.insert(q->result->name);
+		}
+	}
+	if(q->arg1!=nullptr){
+		if(var_rep.find(q->arg1->name)!=var_rep.end()){
+		var_rep.erase(q->arg1->name);
+		}
+	}
+	if(q->arg2!=nullptr){
+		if(var_rep.find(q->arg2->name)!=var_rep.end()){
+		var_rep.erase(q->arg2->name);
+		}
+	}
+}
 
+void print_rep(){
+for(auto i:var_rep){
+	std::cout<<i<<" is redundant.\n";
+}
+}
 void optimise_pass1() {
 	GoTo * _goto1 = nullptr;
 	GoTo * _goto2 = nullptr;
@@ -483,6 +505,9 @@ void optimise_pass1() {
 		}
 		if(label1==nullptr && _goto1==nullptr){
 			q = dynamic_cast<Quad *>(*it);
+			if (q!=nullptr){
+				repeat_var(q);
+			}
 			if(q!=nullptr && q->arg1!=nullptr && q->arg2!=nullptr){
 				arithmetic_optimisation(q);
 			}
@@ -506,10 +531,12 @@ void dump_and_reset_3ac() {
 		}
 		std::cout << "\n";
 	}
+	print_rep();
 	instructions = 1;
 	temporaries = 1;
 	ta_code.clear();
 	tac_info_table.clear();
+	var_rep.clear();
 }
 
 void create_basic_blocks() {	

@@ -7,7 +7,7 @@
 #include <map>
 #include <string>
 #include <symtab.h>
-
+#include <unordered_set>
 extern unsigned long long instructions;
 unsigned long long get_next_instr();
 
@@ -20,7 +20,7 @@ typedef enum ADD_TYPE_ {
 	CON = 2,
 	TEMP = 3,
 	MEM = 4
-} ADD_TYPE;
+}ADD_TYPE;
 
 
 class ThreeAC;
@@ -197,7 +197,7 @@ Return * create_new_return(Address * retval);
 
 std::ostream& operator<<(std::ostream& os, const Return& r);
 
-
+extern std::unordered_set<std::string> var_rep;
 void backpatch( std::vector <GoTo * > & go_v, Label * label );
 void backpatch(GoTo* _goto, Label* label);
 
