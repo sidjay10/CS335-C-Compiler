@@ -2220,7 +2220,7 @@ void GlobalSymbolTable::add_symbol(
 
     declaration_specifiers->create_type();
     int type_index = declaration_specifiers->type_index;
-    bool is_const = declaration_specifiers->is_const;
+    //bool is_const = declaration_specifiers->is_const;
     int pointer_level = declarator->get_pointer_level();
 
     assert( type_index != -1 );

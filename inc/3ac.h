@@ -31,21 +31,30 @@ public:
 	std::string name;
 	ADD_TYPE type;
 	ThreeAC * ta_instr;
-	Address( std::string name, ADD_TYPE type);
-	bool alive;
-	ThreeAC * next_use;
 	unsigned int table_id;
 	
+	Address( std::string name, ADD_TYPE type);
+	
 };
+
+
+typedef enum _registers {
+	GP = 1,
+	SP = 2,
+	FP = 3
+} OFFSET_REGISTER;
 
 class TacInfo {
 	private:
 		bool alive;
 		ThreeAC* next_use;
 		SymTabEntry * symbol;
+		OFFSET_REGISTER base;
+		long offset;
 	public:
 		TacInfo();
 		TacInfo(SymTabEntry * );
+		TacInfo( bool );
 	friend TacInfo * create_tac_info(SymTabEntry * symbol);
 	friend void reset_tac_info_table();
 	friend void create_next_use_info();
@@ -94,16 +103,28 @@ extern std::vector< ThreeAC * > ta_code;
 
 class Quad : public ThreeAC {
 public:
-	Address * result;
+
+	struct _addresses {
+		Address * addr;
+		bool alive;
+		ThreeAC * next_use;
+	} result, arg1, arg2;
+
+//	Address * result;
 	std::string operation;
-	Address * arg1;
-	Address * arg2;
-	Quad * next;
+//	Address * arg1;
+//	Address * arg2;
+//	Quad * next;
+
+
 	Quad ( Address * result, std::string operation, Address * arg1, Address * arg2 );
 	std::string print();
 	~Quad();
 
 };
+
+
+std::ostream& operator<<(std::ostream& os, const Quad::_addresses & a);
 
 #define MEM_EMIT(a,b) \
 	if ( (a)->res->type == MEM ) { \
@@ -160,7 +181,11 @@ Label * create_new_label();
 class GoTo : public ThreeAC {
 		Label * label;
 	public : 
-		Address * res;
+		struct _addresses {
+			Address * addr;
+			bool alive;
+			ThreeAC * next_use;
+		} res;
 		bool condition;
 		GoTo();
 		std::string print();
@@ -176,6 +201,8 @@ class GoTo : public ThreeAC {
 
 };
 
+
+
 GoTo * create_new_goto();
 GoTo * create_new_goto(Label * label);
 GoTo * create_new_goto_cond(Address * res, bool condition);
@@ -185,17 +212,50 @@ std::ostream& operator<<(std::ostream& os, const Label& l);
 
 std::ostream& operator<<(std::ostream& os, const GoTo& g);
 
+class Call : public ThreeAC {
+	public:
+		struct _addresses {
+			Address * addr;
+			bool alive;
+			ThreeAC * next_use;
+		} retval;
+		std::string function_name;
+		
+
+		Call( Address * _addr, std::string f_name );
+		std::string print();
+		
+};
+
+std::ostream& operator<<(std::ostream& os, const Call& c);
+Call * create_new_call( Address * addr , std::string f_name );
+
 class Return : public ThreeAC {
 	public : 
-		Address * retval;
+		struct _addresses {
+			Address * addr;
+			bool alive;
+			ThreeAC * next_use;
+		} retval;
 		Return();
 		std::string print();
 		~Return();
+	friend Return * create_new_return( Address * retval );
 };
 
 Return * create_new_return(Address * retval);
 
 std::ostream& operator<<(std::ostream& os, const Return& r);
+
+
+class SaveLive : public ThreeAC {
+	public:
+		SaveLive();
+		std::string print();
+};
+
+SaveLive * create_new_save_live();
+std::ostream& operator<<(std::ostream& os, const SaveLive& s);
 
 
 void backpatch( std::vector <GoTo * > & go_v, Label * label );

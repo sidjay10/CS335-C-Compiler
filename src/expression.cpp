@@ -232,11 +232,12 @@ Expression *create_postfix_expr_voidfun( Identifier *fi ) {
     P->type.arg_types.clear();
 
 
+    create_new_save_live();
 	if ( P->type.isVoid() ) {
-		emit( nullptr, "call", new_3id( ste ), new_3const( 0, INT3 ) );
+        create_new_call( nullptr, fi->value );
 	} else {
 		P->res = new_temp();
-		emit( P->res, "call", new_3id( ste ), new_3const( 0, INT3 ) );
+        create_new_call( P->res, fi->value );
 	}
 
     return P;
@@ -251,6 +252,7 @@ Expression *create_postfix_expr_fun( Identifier *fi, ArgumentExprList *ae ) {
         P->type = Type( INT_T, 0, true );
         P->add_children( fi, ae );
         P->res = new_temp();
+        create_new_call( P->res, fi->value );
 //        emit( P->res, "call", new_3id( fi->value ), new_3const( 0, INT3 ) );
         return P;
     }
@@ -318,14 +320,15 @@ Expression *create_postfix_expr_fun( Identifier *fi, ArgumentExprList *ae ) {
 	for ( unsigned int i = 0; i <  arg_count ; i++ ) {
 		emit(nullptr, "arg" + std::to_string(i),  ae->args[i]->res, nullptr );
 	}
+    create_new_save_live();
 	for ( unsigned int i = ste->type.num_args - 1; i >= NUM_REG_ARGS; i-- ) {
 		emit(nullptr, "push" + std::to_string(i),  ae->args[i]->res, nullptr );
 	}
 	if ( P->type.isVoid() ) {
-		emit( nullptr, "call", new_3id( ste ), new_3const( ste->type.num_args , INT3) );
+        create_new_call( nullptr, fi->value );
 	} else {
 		P->res = new_temp();
-		emit( P->res, "call", new_3id( ste ), new_3const( ste->type.num_args , INT3) );
+        create_new_call( P->res, fi->value );
 	}
 
     return P;
@@ -444,17 +447,17 @@ Expression *create_postfix_expr_ido( Terminal *op, Expression *pe ) {
 	}
 
 	if ( pe->type.isPointer() ) {
-        P->res = new_mem();
+		P->res = new_mem();
 		P->type = pe->type;
 		Type t = pe->type;
 		t.ptr_level--;
 		inc_value = new_3const( t.get_size() , INT3);
 	} else if ( pe->type.isInt() ) {
-        P->res = new_temp();
+		P->res = new_temp();
 		P->type = pe->type;
 		inc_value = new_3const( 1, INT3 );
 	} else if ( pe->type.isFloat() ) {
-        P->res = new_temp();
+		P->res = new_temp();
 		P->type = pe->type;
 		inc_value = new_3const( 1.0 , FLOAT3 );
 	} else {
@@ -472,13 +475,11 @@ Expression *create_postfix_expr_ido( Terminal *op, Expression *pe ) {
 
     if ( pe->res->type == MEM ) {
         Address *t1 = new_temp();
-        Address *t2 = new_temp();
         emit( P->res, "()", pe->res, nullptr );
         emit( t1, "=", P->res, nullptr);
-        emit( t2, op_code, t1, inc_value );
-        emit( pe->res, "()s", t2, nullptr );
+        emit( t1, op_code, t1, inc_value );
+        emit( pe->res, "()s", t1, nullptr );
     } else if ( pe->res->type == ID3 ) {
-        P->res = new_temp();
         emit( P->res, "=", pe->res, nullptr );
         emit( pe->res, op_code, pe->res, inc_value );
     } else {

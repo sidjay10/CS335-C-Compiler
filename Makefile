@@ -50,9 +50,13 @@ all: $(TARGET)
 #	$(CXX) $(CXXFLAGS) $(LDFLAGS) $(INCFLAGS) $(BUILDDIR)/lex.yy.c $(BUILDDIR)/y.tab.c $(SRCDIR)/parser.cpp $(SRCDIR)/ast.cpp $(SRCDIR)/symtab.cpp $(SRCDIR)/expression.cpp -o $(TARGETDIR)/symtab 
 
 
-compiler: grammar patterns symtab expression 3ac
+compiler: grammar patterns symtab expression 3ac codegen
 	@mkdir -p $(TARGETDIR)
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) $(INCFLAGS) $(BUILDDIR)/patterns.o $(BUILDDIR)/grammar.o $(BUILDDIR)/parser.o $(BUILDDIR)/ast.o $(BUILDDIR)/symtab.o $(BUILDDIR)/expression.o $(BUILDDIR)/3ac.o $(BUILDDIR)/statement.o -o $(TARGETDIR)/compiler 
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) $(INCFLAGS) $(BUILDDIR)/patterns.o $(BUILDDIR)/grammar.o $(BUILDDIR)/parser.o $(BUILDDIR)/ast.o $(BUILDDIR)/symtab.o $(BUILDDIR)/expression.o $(BUILDDIR)/3ac.o $(BUILDDIR)/statement.o $(BUILDDIR)/codegen.o -o $(TARGETDIR)/compiler 
+
+codegen: 
+	@mkdir -p $(BUILDDIR)
+	$(CXX) -c $(CXXFLAGS) $(LDFLAGS) $(INCFLAGS)  $(SRCDIR)/codegen.cpp  -o $(BUILDDIR)/codegen.o
 
 3ac: 
 	@mkdir -p $(BUILDDIR)

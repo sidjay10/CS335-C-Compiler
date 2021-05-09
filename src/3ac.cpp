@@ -51,47 +51,73 @@ std::ostream& operator<<(std::ostream& os, const Label& l){
 }
 	
 
-Quad::Quad ( Address * _result, std::string _operation, Address * _arg1, Address * _arg2 ) : result(_result), operation(_operation), arg1(_arg1), arg2(_arg2) { 
-	if( arg1 != nullptr && arg1->ta_instr!=nullptr) {
-		arg1->ta_instr->dead = false;
+Quad::Quad ( Address * _result, std::string _operation, Address * _arg1, Address * _arg2 ) { 
+
+	operation = _operation;
+
+	result.addr = _result;
+	result.alive = true;
+	result.next_use = nullptr;
+
+	arg1.addr = _arg1;
+	arg1.alive = true;
+	arg1.next_use = nullptr;
+
+	arg2.addr = _arg2;
+	arg2.alive = true;
+	arg2.next_use = nullptr;
+
+	if( arg1.addr != nullptr && arg1.addr->ta_instr!=nullptr) {
+		arg1.addr->ta_instr->dead = false;
 	}
-	if( arg2 != nullptr && arg2->ta_instr != nullptr) {
-		arg2->ta_instr->dead = false;
+	if( arg2.addr != nullptr && arg2.addr->ta_instr != nullptr) {
+		arg2.addr->ta_instr->dead = false;
 	}
 	if ( operation == "()s" ) {
-		result->ta_instr->dead = false;
+		result.addr->ta_instr->dead = false;
 		dead = false;
 	}
 };
 
 Quad::~Quad () {
-	delete result;
-	delete arg1;
-	delete arg2;
+	delete result.addr;
+	delete arg1.addr;
+	delete arg2.addr;
 
 }
 
-std::ostream& operator<<(std::ostream& os, const Quad& q){
-	if ( q.operation == "call" && q.result == nullptr ) {
-		os << q.instr << ": " << "call " << *q.arg1 << " " << *q.arg2;
-	} else if ( q.operation == "call") {
-		os << q.instr << ": " << *q.result << " = call " << *q.arg1 << " " << *q.arg2;
-	} else if ( q.arg2 != nullptr ) {
-		os << q.instr << ": " << *q.result << " = " << *q.arg1 << " " << q.operation << " " << *q.arg2 ;
-	} else if ( q.operation == "()" ) {
-		os << q.instr << ": " << *q.result << " = " <<  "(" << *q.arg1 << ")" ;
-	} else if ( q.operation == "()s" ) {
-		os << q.instr << ": " << "(" << *q.result << ")" << " = " << *q.arg1;
-	} else if ( q.operation == "=" ) {
-		os << q.instr << ": " <<  *q.result  << " = " << *q.arg1;
-	} else if ( q.operation == "=s" ) {
-		os << q.instr << ": " <<  *q.result  << " = " << *q.arg1;
-	} else if ( q.operation == "push" ) {
-		os << q.instr << ": " <<  "push " << *q.arg1;
-	} else if ( q.operation.substr(0,3) == "arg" ) {
-		os << q.instr << ": " << q.operation  << " " << *q.arg1;
+std::ostream& operator<<(std::ostream& os, const Quad::_addresses & a){
+	os << *a.addr;
+
+	if ( a.addr->type == CON ) {
+		return os;
+	 }
+
+	if ( a.alive ) {
+		os << "(L)";
 	} else {
-		os << q.instr << ": " << *q.result << " = " << q.operation << " " << *q.arg1 ;
+		os << "(D)";
+	}
+	return os;
+}
+
+std::ostream& operator<<(std::ostream& os, const Quad& q){
+	if ( q.arg2.addr != nullptr ) {
+		os << q.instr << ": " << q.result << " = " << q.arg1 << " " << q.operation << " " << q.arg2 ;
+	} else if ( q.operation == "()" ) {
+		os << q.instr << ": " << q.result << " = " <<  "(" << q.arg1 << ")" ;
+	} else if ( q.operation == "()s" ) {
+		os << q.instr << ": " << "(" << q.result << ")" << " = " << q.arg1;
+	} else if ( q.operation == "=" ) {
+		os << q.instr << ": " <<  q.result  << " = " << q.arg1;
+	} else if ( q.operation == "=s" ) {
+		os << q.instr << ": " <<  q.result  << " = " << q.arg1;
+	} else if ( q.operation == "push" ) {
+		os << q.instr << ": " <<  "push " << q.arg1;
+	} else if ( q.operation.substr(0,3) == "arg" ) {
+		os << q.instr << ": " << q.operation  << " " << q.arg1;
+	} else {
+		os << q.instr << ": " << q.result << " = " << q.operation << " " << q.arg1 ;
 	}
 	return os;
 }
@@ -118,13 +144,13 @@ std::string Quad::print() {
 
 unsigned long long temporaries = 1;
 
-Address::Address(std::string _name, ADD_TYPE _type ) : name (_name) , type(_type), ta_instr(nullptr), alive(true), next_use(nullptr)  {};
+Address::Address(std::string _name, ADD_TYPE _type ) : name (_name) , type(_type), ta_instr(nullptr)  {};
 
 Address * new_temp() {
 	Address * t = new Address("t" + std::to_string(temporaries), TEMP );
 	t->table_id = TEMP_ID_MASK | temporaries;
 	temporaries++;
-	tac_info_table.insert({t->table_id,TacInfo()});
+	tac_info_table.insert({t->table_id,TacInfo(false)});
 	return t;
 }
 
@@ -132,7 +158,7 @@ Address * new_mem() {
 	Address * t = new Address("t" + std::to_string(temporaries), MEM );
 	t->table_id = TEMP_ID_MASK | temporaries;
 	temporaries++;
-	tac_info_table.insert({t->table_id,TacInfo()});
+	tac_info_table.insert({t->table_id,TacInfo(false)});
 	return t;
 }
 
@@ -149,12 +175,6 @@ std::ostream& operator<<(std::ostream& os, const Address& a){
 		os << a.name;
 	} else {
 		os << a.name;
-	}
-
-	if ( a.alive == true ) {
-		os << "(L)";
-	} else {
-		os << "(D)";
 	}
 
 	return os;
@@ -187,7 +207,7 @@ void append( std::vector <GoTo *> & v1, std::vector <GoTo *> & v2) {
 }
 
 
-ThreeAC::ThreeAC() : instr ( get_next_instr() ), dead(true) , bb_no(0) { };
+ThreeAC::ThreeAC() : instr ( get_next_instr() ), bb_no(0) , dead(true) { };
 
 ThreeAC::ThreeAC(bool no_add ) : instr ( instructions ), dead(true) { };
 
@@ -197,11 +217,11 @@ unsigned long long get_next_instr() {
 	return instructions++;
 }
 
-GoTo::GoTo () : label(nullptr) , res(nullptr) { dead = false; };
+GoTo::GoTo () : label(nullptr) , res({nullptr, true, nullptr}) { dead = false; };
 
 GoTo::~GoTo () {
 	delete label;
-	delete res;
+	delete res.addr;
 }
 
 GoTo * create_new_goto() {
@@ -221,7 +241,7 @@ GoTo * create_new_goto( Label * label) {
 
 GoTo * create_new_goto_cond( Address * res, bool condition ) {
 	GoTo * _goto = new GoTo();
-	_goto->res = res;
+	_goto->res.addr = res;
 	_goto->condition = condition;
 	//std::cout << "3AC: " << *_goto << "\n";
 	if ( res != nullptr ) {
@@ -232,9 +252,9 @@ GoTo * create_new_goto_cond( Address * res, bool condition ) {
 }
 		
 void GoTo::set_res( Address * _res ){
-	res = _res;
-	if ( res != nullptr && res->ta_instr != nullptr ) {
-		res->ta_instr->dead = false;
+	res.addr = _res;
+	if ( res.addr != nullptr && res.addr->ta_instr != nullptr ) {
+		res.addr->ta_instr->dead = false;
 	}
 	
 }
@@ -248,13 +268,21 @@ std::string GoTo::print() {
 std::ostream& operator<<(std::ostream& os, const GoTo& g){
 
 	os << g.instr <<": ";
-	if ( g.res == nullptr ) {
+	if ( g.res.addr == nullptr ) {
 		os << "goto";
 	} else {
 		if (g.condition == true ) {
-			os << "br.true " << *(g.res);
+			os << "br.true " << *(g.res.addr);
 		} else {
-			os << "br.false " << *(g.res);
+			os << "br.false " << *(g.res.addr);
+		}
+
+		if ( g.res.addr->type != CON ) {
+			if ( g.res.alive ) {
+				os << "(L)";
+			} else {
+				os << "(D)";
+			}
 		}
 	} 
 	if ( g.label == nullptr ) {
@@ -266,8 +294,42 @@ std::ostream& operator<<(std::ostream& os, const GoTo& g){
 	return os;
 }
 
+Call::Call( Address * _addr, std::string f_name ) : ThreeAC(), retval({_addr, true, nullptr}), function_name( f_name)  {dead = false;};
 
-Return::Return() : ThreeAC(), retval(nullptr) {dead = false;};
+Call * create_new_call( Address * addr, std::string f_name ) {
+	Call * c = new Call(addr, f_name);
+	ta_code.push_back(c);
+	return c;
+}
+
+std::string Call::print() {
+	std::stringstream ss;
+	ss << *this;
+	return ss.str();
+}
+
+std::ostream& operator<<(std::ostream& os, const Call& c){
+	os << c.instr <<": ";
+	if ( c.retval.addr != nullptr ) {
+		os << *c.retval.addr;
+
+		assert ( c.retval.addr->type != CON );
+		
+		if ( c.retval.alive ) { 
+			os << "(L)"; 
+		} else { 
+			os << "(D)";
+		}
+
+		os << " = ";
+	}
+	os << "call " << c.function_name; 
+	return os;
+
+}
+
+
+Return::Return() : ThreeAC(), retval({nullptr, true, nullptr}) {dead = false;};
 
 Return::~Return() {};
 
@@ -278,18 +340,30 @@ std::string Return::print() {
 }
 
 std::ostream& operator<<(std::ostream& os, const Return& r){
-	if ( r.retval == nullptr ) {
+	os << r.instr << ": ";
+
+	if ( r.retval.addr == nullptr ) {
 		os << "return";
 		return os;
 	}
 
-	os << "return " << *r.retval;
+	os << "return " << *r.retval.addr;
+
+	if ( r.retval.addr->type != CON ) {
+
+		if ( r.retval.alive ) {
+			os << "(L)";
+		} else {
+			os << "(D)";
+		}
+	}
+
 	return os;
 }
 
 Return * create_new_return( Address * retval ){
 	Return * _return = new Return();
-	_return->retval = retval;
+	_return->retval.addr = retval;
 	ta_code.push_back(_return);
 	return _return;
 }
@@ -297,6 +371,7 @@ Return * create_new_return( Address * retval ){
 
 TacInfo::TacInfo() : alive(true), next_use(nullptr), symbol(nullptr) {};
 TacInfo::TacInfo(SymTabEntry * _symbol) : alive(true), next_use(nullptr), symbol(_symbol) {};
+TacInfo::TacInfo( bool _alive ) : alive(_alive), next_use(nullptr), symbol(nullptr) {};
 
 
 
@@ -305,6 +380,30 @@ TacInfo * create_tac_info(SymTabEntry * symbol){
 	t->symbol = symbol;
 	return t;
 }
+
+
+SaveLive::SaveLive() : ThreeAC(false) { dead = false;};
+
+
+SaveLive * create_new_save_live() {
+	SaveLive * s = new SaveLive();
+	ta_code.push_back(s);
+	return s;
+}
+
+std::string SaveLive::print() {
+	std::stringstream ss;
+	ss << *this;
+	return ss.str();
+}
+
+std::ostream& operator<<(std::ostream& os, const SaveLive& s){
+	os << "Save Live";
+	return os;
+}
+
+
+
 
 
 void optimise_pass1() {
@@ -317,8 +416,8 @@ void optimise_pass1() {
 			continue;
 		}
 		_goto1 = dynamic_cast<GoTo *>(*it); 
-		if ( _goto1 != nullptr && _goto1->res != nullptr && _goto1->res->type == CON) {
-			int value = std::stoi(_goto1->res->name);
+		if ( _goto1 != nullptr && _goto1->res.addr != nullptr && _goto1->res.addr->type == CON) {
+			int value = std::stoi(_goto1->res.addr->name);
 			if (( value == 0 && _goto1->condition == false) || (value != 0 && _goto1->condition == true )){
 				// Always taken;
 				;
@@ -329,12 +428,12 @@ void optimise_pass1() {
 				continue;
 			}
 			
-			if( _goto1->res->ta_instr != nullptr ) {
-				_goto1->res = nullptr;
-				_goto1->res->ta_instr->dead = true;
+			if( _goto1->res.addr->ta_instr != nullptr ) {
+				_goto1->res.addr = nullptr;
+				_goto1->res.addr->ta_instr->dead = true;
 			} else {
-				delete _goto1->res;
-				_goto1->res = nullptr;
+				delete _goto1->res.addr;
+				_goto1->res.addr = nullptr;
 			}
 
 		}
@@ -345,7 +444,7 @@ void optimise_pass1() {
 			(*it)->dead = true;
 			continue;
 		}
-		if ( _goto2 != nullptr && _goto2->res == nullptr && ( label1 == nullptr || label1->reference_count == 0)  ) {
+		if ( _goto2 != nullptr && _goto2->res.addr == nullptr && ( label1 == nullptr || label1->reference_count == 0)  ) {
 			(*it)->dead = true;
 			if ( _goto1 != nullptr ) {
 				_goto1->label->reference_count--;
@@ -367,7 +466,6 @@ void optimise_pass1() {
 }
 
 void dump_and_reset_3ac() {
-
 	optimise_pass1();
 	create_basic_blocks();
 	create_next_use_info();
@@ -386,7 +484,7 @@ void dump_and_reset_3ac() {
 }
 
 void create_basic_blocks() {	
-	int basic_blks = 1;
+	unsigned int basic_blks = 1;
 	bool incremented = true;
 	for ( auto it = ta_code.begin(); it != ta_code.end(); it++ ){
 		if ( (*it)->dead == true ) {
@@ -402,17 +500,17 @@ void create_basic_blocks() {
 		(*it)->bb_no = basic_blks;
 		GoTo * _goto = dynamic_cast<GoTo *> (*it);
 		Return * _return = dynamic_cast<Return *>(*it);
-		if( _goto != nullptr || _return != nullptr ) {
+		Call * call = dynamic_cast<Call *>(*it);
+		if(  call != nullptr || _goto != nullptr || _return != nullptr ) {
 			basic_blks++;
 			incremented = true;
 		}
 	}
-	
 }
 
 void create_next_use_info(){
 	auto it = ta_code.rbegin();
-	int basic_blk = (*it)->bb_no;
+	unsigned int basic_blk = (*it)->bb_no;
 	for ( ; it != ta_code.rend(); it++ ){
 		if ( (*it)->dead == true ) {
 			continue;
@@ -427,35 +525,35 @@ void create_next_use_info(){
 
 		if ( q != nullptr ) {
 		
-			if ( q->arg1 != nullptr && q->arg1->type != CON ) {
-				auto it = get_entry_from_table(q->arg1);
-				q->arg1->alive = it->second.alive;
-				q->arg1->next_use = it->second.next_use;
+			if ( q->arg1.addr != nullptr && q->arg1.addr->type != CON ) {
+				auto it = get_entry_from_table(q->arg1.addr);
+				q->arg1.alive = it->second.alive;
+				q->arg1.next_use = it->second.next_use;
 			}
 			
-			if ( q->arg2 != nullptr && q->arg2->type != CON ) {
-				auto it = get_entry_from_table(q->arg2);
-				q->arg2->alive = it->second.alive;
-				q->arg2->next_use = it->second.next_use;
+			if ( q->arg2.addr != nullptr && q->arg2.addr->type != CON ) {
+				auto it = get_entry_from_table(q->arg2.addr);
+				q->arg2.alive = it->second.alive;
+				q->arg2.next_use = it->second.next_use;
 			}
 			
-			if ( q->result != nullptr ) {
-				assert(q->result->type != CON);
-				auto it = get_entry_from_table(q->result);
-				q->result->alive = it->second.alive;
-				q->result->next_use = it->second.next_use;
+			if ( q->result.addr != nullptr ) {
+				assert(q->result.addr->type != CON);
+				auto it = get_entry_from_table(q->result.addr);
+				q->result.alive = it->second.alive;
+				q->result.next_use = it->second.next_use;
 				it->second.alive = false;
 				it->second.next_use = nullptr;
 
 			}
-			if ( q->arg1 != nullptr && q->arg1->type != CON ) {
-				auto it = get_entry_from_table(q->arg1);
+			if ( q->arg1.addr != nullptr && q->arg1.addr->type != CON ) {
+				auto it = get_entry_from_table(q->arg1.addr);
 				it->second.alive = true;
 				it->second.next_use = q;
 			}
 
-			if ( q->arg2 != nullptr && q->arg2->type != CON ) {
-				auto it = get_entry_from_table(q->arg2);
+			if ( q->arg2.addr != nullptr && q->arg2.addr->type != CON ) {
+				auto it = get_entry_from_table(q->arg2.addr);
 				it->second.alive = true;
 				it->second.next_use = q;
 			}
@@ -466,8 +564,10 @@ void create_next_use_info(){
 
 		GoTo * g = dynamic_cast<GoTo *>(*it);
 
-		if ( g != nullptr && g->res != nullptr && g->res->type != CON ) {
-			auto it = get_entry_from_table(g->res);
+		if ( g != nullptr && g->res.addr != nullptr && g->res.addr->type != CON ) {
+			auto it = get_entry_from_table(g->res.addr);
+			g->res.alive = it->second.alive;
+			g->res.next_use = it->second.next_use;
 			it->second.alive = true;
 			it->second.next_use = g;
 			continue;
@@ -476,10 +576,23 @@ void create_next_use_info(){
 		
 		Return * r = dynamic_cast<Return *>(*it);
 
-		if ( r != nullptr && r->retval != nullptr && r->retval->type != CON ) {
-			auto it = get_entry_from_table(r->retval);
+		if ( r != nullptr && r->retval.addr != nullptr && r->retval.addr->type != CON ) {
+			auto it = get_entry_from_table(r->retval.addr);
+			r->retval.alive = it->second.alive;
+			r->retval.next_use = it->second.next_use;
 			it->second.alive = true;
 			it->second.next_use = r;
+			continue;
+		}
+
+
+		Call * c = dynamic_cast<Call *>(*it);
+		if ( c != nullptr && c->retval.addr != nullptr && c->retval.addr->type != CON ) {
+			auto it = get_entry_from_table(c->retval.addr);
+			c->retval.alive = it->second.alive;
+			c->retval.next_use = it->second.next_use;
+			it->second.alive = false;
+			it->second.next_use = nullptr;
 			continue;
 		}
 	}
@@ -488,8 +601,13 @@ void create_next_use_info(){
 void reset_tac_info_table() {
 
 	for ( auto it = tac_info_table.begin(); it != tac_info_table.end(); it++ ) {
-		it->second.alive = true;
+		if ( it->first & TEMP_ID_MASK ) {
+			it->second.alive = false;
+		} else {
+			it->second.alive = true;
+		}
 		it->second.next_use = nullptr;
+		
 	}
 }
 
