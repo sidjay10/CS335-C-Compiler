@@ -306,12 +306,135 @@ TacInfo * create_tac_info(SymTabEntry * symbol){
 	return t;
 }
 
+// int eval(){
+	
+// }
+
+int arithmetic_optimisation(Quad* q){
+	std:: string val1="";
+	std:: string val2="";
+	if(q->arg1!=nullptr){
+	val1= q->arg1->name;
+	}
+	if(q->arg2!=nullptr){
+	val2 = q->arg2->name;
+	}
+
+	// constant folding
+	if(q->arg1->type == CON && q->arg2->type == CON){
+		
+		int x = std::stoi(q->arg1->name);
+		int y = std::stoi(q->arg2->name);
+		std::string oper=q->operation;
+		if(oper=="+"){
+			q->arg2=nullptr;
+			q->arg1->name = std::to_string(x+y);
+		}
+		else if(oper=="-"){
+			q->arg2=nullptr;
+			q->arg1->name=std::to_string(x-y);	
+		}
+		else if(oper=="*"){
+			q->arg2=nullptr;
+			q->arg1->name=std::to_string(x*y);
+		}
+		else if(oper=="/"){
+			q->arg2=nullptr;
+			if(y==0){
+				error_msg("Division by zero not possible",line_num);
+			}
+			q->arg2->name=std::to_string(x/y);
+		}
+		else if(oper==">>"){
+			q->arg2=nullptr;
+			q->arg1->name=std::to_string(x>>y);
+		}
+		else if(q->operation =="<<"){
+			q->arg2=nullptr;
+			q->arg1->name=std::to_string(x<<y);
+		}
+		else if(oper=="|"){
+			q->arg2=nullptr;
+			q->arg1->name=std::to_string(x|y);
+		}
+		else if(oper=="&"){
+			q->arg2=nullptr;
+			q->arg1->name=std::to_string(x&y);
+		}
+		q->operation="";
+		if(q->result->type==TEMP){
+			q->dead=true;
+		}
+	}
+	else{
+		q->dead=true;
+	//+-0
+		if((q->arg2->name=="0" || q->arg2->name=="0.0") && (q->operation=="+" || q->operation=="-")){
+			q->operation="";
+			q->arg2=nullptr;
+		}
+		else if((q->arg1->name=="0" || q->arg1->name=="0.0") && (q->operation=="+" || q->operation=="-")){
+			q->operation="";
+			q->arg1=q->arg2;
+			q->arg2=nullptr;
+		}
+		//*0
+		
+		else if((q->arg2->name=="0" || q->arg2->name=="0.0") && q->operation=="*"){
+			q->operation="";
+			q->arg2=nullptr;
+		}
+		else if((q->arg1->name=="0" || q->arg1->name=="0.0") && q->operation=="*"){
+			q->operation="";
+			q->arg1=q->arg2;
+			q->arg2=nullptr;
+		}
+		//"0/0"
+		else if((q->arg2->name=="0" || q->arg2->name=="0.0") && q->operation=="/"){
+			error_msg( "Division by zero not possible:", line_num );
+		}
+		else if((q->arg1->name=="0" || q->arg1->name=="0") && q->operation=="/"){
+			q->operation="";
+			q->arg2=nullptr;
+		}
+		//*/1
+		else if((q->arg2->name=="1" || q->arg2->name=="1.0") && (q->operation=="*"|| q->operation=="/")){
+			q->operation="";
+			q->arg2=nullptr;
+		}
+		else if((q->arg1->name=="1" || q->arg1->name=="1.0") && q->operation=="*"){
+			q->operation="";
+			q->arg1=q->arg2;
+			q->arg2=nullptr;
+		}
+		//2*x
+		else if((q->arg2->name=="2" || q->arg2->name=="2.0") && q->operation=="*"){
+			q->operation="+";
+			q->arg2=q->arg1;
+		}
+		else if((q->arg1->name=="2" || q->arg1->name=="2.0") && q->operation=="*"){
+			q->operation="+";
+			q->arg1=q->arg2;
+		}	
+		//0.5x
+		else if((q->arg2->name=="2" || q->arg2->name=="2.0") && q->operation=="/"){
+			q->operation=">>";
+			q->arg2->name="1";
+		}
+		else{
+			q->dead=false;
+		}
+
+	}
+}
 
 void optimise_pass1() {
 	GoTo * _goto1 = nullptr;
 	GoTo * _goto2 = nullptr;
 	Label * label1 = nullptr;
 	Label * label2 = nullptr;
+	Quad * q = nullptr;
+	int fl;
 	for ( auto it = ta_code.begin(); it != ta_code.end(); it++ ){
 		if ( (*it)->dead == true ) {
 			continue;
@@ -359,8 +482,14 @@ void optimise_pass1() {
 			label1->dead = true;
 			continue;
 		}
+		if(label1==nullptr && _goto1==nullptr){
+			q = dynamic_cast<Quad *>(*it);
+			if(q!=nullptr && q->arg1!=nullptr && q->arg2!=nullptr){
+				fl=arithmetic_optimisation(q);
+			if (fl==1) (*it)->dead=true;
+			}
+		}
 
-		
 		_goto2 = _goto1; 
 		label2 = label1;
 	}
