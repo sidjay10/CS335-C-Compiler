@@ -21,7 +21,7 @@ typedef enum ADD_TYPE_ {
 	CON = 2,
 	TEMP = 3,
 	MEM = 4
-} ADD_TYPE;
+}ADD_TYPE;
 
 
 class ThreeAC;

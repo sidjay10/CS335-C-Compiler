@@ -7,13 +7,13 @@
 #include <vector>
 #include <assert.h>
 #include <algorithm>
-
+#include <unordered_map>
 unsigned long long instructions = 1;
 unsigned long long labels = 1;
 
 std::vector< ThreeAC * > ta_code;
 std::map< unsigned int, TacInfo > tac_info_table;
-
+// DK: std::unordered_set<std::string> var_rep;
 
 Label::Label() : ThreeAC(false) {
 	reference_count = 0;
@@ -382,6 +382,148 @@ TacInfo * create_tac_info(SymTabEntry * symbol){
 	return t;
 }
 
+// int eval(){
+	
+// }
+
+#if 0
+
+void arithmetic_optimisation(Quad* q){
+	std:: string val1="";
+	std:: string val2="";
+	if(q->arg1!=nullptr){
+	val1= q->arg1->name;
+	}
+	if(q->arg2!=nullptr){
+	val2 = q->arg2->name;
+	}
+
+	// constant folding
+	if(q->arg1->type == CON && q->arg2->type == CON){
+		
+		int x = std::stoi(q->arg1->name);
+		int y = std::stoi(q->arg2->name);
+		std::string oper=q->operation;
+		if(oper=="+"){
+			q->arg2=nullptr;
+			q->arg1->name = std::to_string(x+y);
+		}
+		else if(oper=="-"){
+			q->arg2=nullptr;
+			q->arg1->name=std::to_string(x-y);	
+		}
+		else if(oper=="*"){
+			q->arg2=nullptr;
+			q->arg1->name=std::to_string(x*y);
+		}
+		else if(oper=="/"){
+			q->arg2=nullptr;
+			if(y==0){
+				error_msg("Division by zero not possible",line_num);
+			}
+			q->arg2->name=std::to_string(x/y);
+		}
+		else if(oper==">>"){
+			q->arg2=nullptr;
+			q->arg1->name=std::to_string(x>>y);
+		}
+		else if(q->operation =="<<"){
+			q->arg2=nullptr;
+			q->arg1->name=std::to_string(x<<y);
+		}
+		else if(oper=="|"){
+			q->arg2=nullptr;
+			q->arg1->name=std::to_string(x|y);
+		}
+		else if(oper=="&"){
+			q->arg2=nullptr;
+			q->arg1->name=std::to_string(x&y);
+		}
+		q->operation="";
+		if(q->result->type==TEMP){
+			q->dead=true;
+		}
+	}
+	else{
+		q->dead=true;
+	//+-0
+		if((q->arg2->name=="0" || q->arg2->name=="0.0") && (q->operation=="+" || q->operation=="-")){
+			q->operation="";
+			q->arg2=nullptr;
+		}
+		else if((q->arg1->name=="0" || q->arg1->name=="0.0") && (q->operation=="+" || q->operation=="-")){
+			q->operation="";
+			q->arg1=q->arg2;
+			q->arg2=nullptr;
+		}
+		//*0
+		
+		else if((q->arg2->name=="0" || q->arg2->name=="0.0") && q->operation=="*"){
+			q->operation="";
+			q->arg2=nullptr;
+		}
+		else if((q->arg1->name=="0" || q->arg1->name=="0.0") && q->operation=="*"){
+			q->operation="";
+			q->arg1=q->arg2;
+			q->arg2=nullptr;
+		}
+		//"0/0"
+		else if((q->arg2->name=="0" || q->arg2->name=="0.0") && q->operation=="/"){
+			error_msg( "Division by zero not possible:", line_num );
+		}
+		else if((q->arg1->name=="0" || q->arg1->name=="0") && q->operation=="/"){
+			q->operation="";
+			q->arg2=nullptr;
+		}
+		//*/1
+		else if((q->arg2->name=="1" || q->arg2->name=="1.0") && (q->operation=="*"|| q->operation=="/")){
+			q->operation="";
+			q->arg2=nullptr;
+		}
+		else if((q->arg1->name=="1" || q->arg1->name=="1.0") && q->operation=="*"){
+			q->operation="";
+			q->arg1=q->arg2;
+			q->arg2=nullptr;
+		}
+		//2*x
+		else if((q->arg2->name=="2" || q->arg2->name=="2.0") && q->operation=="*"){
+			q->operation="+";
+			q->arg2=q->arg1;
+		}
+		else if((q->arg1->name=="2" || q->arg1->name=="2.0") && q->operation=="*"){
+			q->operation="+";
+			q->arg1=q->arg2;
+		}	
+		//0.5x
+		else if((q->arg2->name=="2" || q->arg2->name=="2.0") && q->operation=="/"){
+			q->operation=">>";
+			q->arg2->name="1";
+		}
+		else{
+			q->dead=false;
+		}
+
+	}
+}
+void repeat_var(Quad* q){
+	if(q->result!=nullptr){
+		if(var_rep.find(q->result->name)==var_rep.end()){
+		var_rep.insert(q->result->name);
+		}
+	}
+	if(q->arg1!=nullptr){
+		if(var_rep.find(q->arg1->name)!=var_rep.end()){
+		var_rep.erase(q->arg1->name);
+		}
+	}
+	if(q->arg2!=nullptr){
+		if(var_rep.find(q->arg2->name)!=var_rep.end()){
+		var_rep.erase(q->arg2->name);
+		}
+	}
+}
+
+#endif
 
 SaveLive::SaveLive() : ThreeAC(false) { dead = false;};
 
@@ -407,11 +549,19 @@ std::ostream& operator<<(std::ostream& os, const SaveLive& s){
 
 
 
+//void print_rep(){
+//for(auto i:var_rep){
+//	std::cout<<i<<" is redundant.\n";
+//}
+
+
 void optimise_pass1() {
 	GoTo * _goto1 = nullptr;
 	GoTo * _goto2 = nullptr;
 	Label * label1 = nullptr;
 	Label * label2 = nullptr;
+	Quad * quad = nullptr;
+//	int fl;
 	for ( auto it = ta_code.begin(); it != ta_code.end(); it++ ){
 		if ( (*it)->dead == true ) {
 			continue;
@@ -460,7 +610,12 @@ void optimise_pass1() {
 			continue;
 		}
 
-		
+		quad = dynamic_cast<Quad *>(*it);
+		if (quad!=nullptr){
+//			arithmetic_optimise(quad);
+			;
+			
+		}
 		_goto2 = _goto1; 
 		label2 = label1;
 	}
@@ -479,10 +634,12 @@ void dump_and_reset_3ac() {
 		std::cout << "\n";
 	}
 	gen_asm_code();
+	//print_rep();
 	instructions = 1;
 	temporaries = 1;
 	ta_code.clear();
 	tac_info_table.clear();
+	//var_rep.clear();
 }
 
 void create_basic_blocks() {	
