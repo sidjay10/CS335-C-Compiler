@@ -603,7 +603,6 @@ void Declaration::add_to_symbol_table( LocalSymbolTable &sym_tab ) {
     }
 
     for ( auto i = dec.begin(); i != dec.end(); i++ ) {
-	PrimaryExpression *P = nullptr;
         int pointer_level = ( *i )->get_pointer_level();
 
         SymTabEntry *e = new SymTabEntry(
@@ -613,7 +612,11 @@ void Declaration::add_to_symbol_table( LocalSymbolTable &sym_tab ) {
         if ( dd->type == ID ) {
             e->type = Type( type_index, pointer_level, is_const );
             if ( ( *i )->init_expr != nullptr ) {
-                P = new PrimaryExpression();
+		// This should now be unreachable since we don't allow for 
+		// initialising while declaring.
+		assert(0);
+#if 0
+		PrimaryExpression *P = nullptr = new PrimaryExpression();
                 P->isTerminal = 1;
                 Identifier *a = new Identifier( "" );
                 *a = *( *i )->id;
@@ -636,6 +639,7 @@ void Declaration::add_to_symbol_table( LocalSymbolTable &sym_tab ) {
                     P, ( *i )->eq, ( *i )->init_expr );
                 add_child( ae );
 		continue;
+#endif
             }
         } else if ( dd->type == ARRAY ) {
             e->type = Type( type_index, dd->array_dims.size(), true );
@@ -721,6 +725,10 @@ void Declaration::add_to_symbol_table( GlobalSymbolTable &sym_tab ) {
         if ( dd->type == ID ) {
             e->type = Type( type_index, pointer_level, is_const );
             if ( ( *i )->init_expr != nullptr ) {
+		// This should now be unreachable since we don't allow for 
+		// initialising while declaring.
+		assert(0);
+#if 0
                 PrimaryExpression *P = new PrimaryExpression();
                 P->isTerminal = 1;
                 Identifier *a = new Identifier( "" );
@@ -732,11 +740,11 @@ void Declaration::add_to_symbol_table( GlobalSymbolTable &sym_tab ) {
                 P->add_child( a );
                 P->line_num = a->line_num;
                 P->column = a->column;
-//FIXME: Intialised global data;
 		//P->res = new Address ( a->value, ID3);
                 //Expression *ae = create_assignment_expression(
                 //    P, ( *i )->eq, ( *i )->init_expr );
                 //add_child( ae );
+#endif
             }
         } else if ( dd->type == ARRAY ) {
             e->type = Type( type_index, dd->array_dims.size(), true );
@@ -782,6 +790,9 @@ void Declaration::add_to_symbol_table( GlobalSymbolTable &sym_tab ) {
             continue;
         }
 
+        size_t size = e->type.get_size();
+        e->offset = sym_tab.offset;
+        sym_tab.offset = sym_tab.offset + size + ( size % WORD_SIZE );
         sym_tab.add_to_table( e, true, ( *i )->id );
         sym_tab.ss << "global,"
                    << "-," << ( *i )->id->value << "," << e->type.get_name()

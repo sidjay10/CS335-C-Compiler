@@ -15,6 +15,7 @@ class Statement : public Non_Terminal {
         std::vector<GoTo*> breaklist;
         std::vector<GoTo*> continuelist;
         std::vector<GoTo*> caselist;
+        std::vector<GoTo*> returnlist;
     Statement() : Non_Terminal("") {};   
     ~Statement() {
         nextlist.clear();

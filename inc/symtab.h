@@ -179,6 +179,7 @@ class SymbolTable {
 
 class GlobalSymbolTable : public SymbolTable {
   public:
+	size_t offset;
     std::map<std::string, SymTabEntry *> sym_table;
     void add_symbol( DeclarationSpecifiers *declaration_specifiers,
                      Declarator *declarator, int *error );

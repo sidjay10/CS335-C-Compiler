@@ -42,6 +42,7 @@ Statement *create_selection_statement_if( Expression *ex, GoTo * _false, Label *
 			append(S->breaklist,st1->breaklist);
 			append(S->continuelist,st1->continuelist);
 			append(S->caselist,st1->caselist);
+			append(S->returnlist,st1->returnlist);
 		}
 		if ( _goto != nullptr ) {
 			S->nextlist.push_back( _goto );
@@ -63,12 +64,14 @@ Statement *create_selection_statement_if( Expression *ex, GoTo * _false, Label *
 			append(S->breaklist,st1->breaklist);
 			append(S->continuelist,st1->continuelist);
 			append(S->caselist,st1->caselist);
+			append(S->returnlist,st1->returnlist);
 		}
 		S->nextlist.push_back( _goto );
 		append(S->nextlist,st2->nextlist);
 		append(S->breaklist,st2->breaklist);
 		append(S->continuelist,st2->continuelist);
 		append(S->caselist,st2->caselist);
+		append(S->returnlist,st2->returnlist);
     }
 	switch_temp=nullptr;
     return S;
@@ -109,9 +112,10 @@ Statement *create_selection_statement_switch(GoTo * _test, Expression *ex1, Stat
 	switch_label.clear();
 	switch_type=nullptr; 
 	append(S->nextlist,st1->breaklist);
-    append(S->nextlist,st1->nextlist);
+	append(S->nextlist,st1->nextlist);
 	append(S->continuelist,st1->continuelist);
 	append(S->caselist,st1->caselist);
+	append(S->returnlist,st1->returnlist);
 	switch_temp=nullptr;
 	return S;
 }
@@ -147,6 +151,7 @@ Statement* create_iteration_statement_while(Label * l1, Expression *ex1, GoTo * 
 		backpatch(st1->nextlist,l1);
 		backpatch(st1->continuelist,l1);
 		append(S->nextlist,st1->breaklist);
+		append(S->returnlist,st1->returnlist);
 	}
 	GoTo * _goto = create_new_goto(l1);
 
@@ -168,6 +173,7 @@ Statement* create_iteration_statement_do_while(Label *l1,Statement *st1,Label *l
 		backpatch(st1->nextlist,l2);
 		backpatch(st1->continuelist,l2);
 		append(S->nextlist,st1->breaklist);
+		append(S->returnlist,st1->returnlist);
 	}
 	GoTo * _goto = create_new_goto(l1);
 	return S;
@@ -186,6 +192,7 @@ Statement* create_iteration_statement_for(Expression * ex1, Label * l1, Expressi
 		backpatch(st1->nextlist,l1);
 		backpatch(st1->continuelist,l1);
 		append(S->nextlist, st1->breaklist);
+		append(S->returnlist,st1->returnlist);
 	}
 	GoTo * _goto = create_new_goto(l1);
 	return S;
@@ -210,6 +217,7 @@ Statement* create_iteration_statement_for( Expression * ex1, Label * l1, Express
 		backpatch(st1->continuelist,l2);
 		append(S->nextlist, st1->breaklist);
 		append(S->caselist, st1->caselist);
+		append(S->returnlist,st1->returnlist);
 	}
 	GoTo * _goto = create_new_goto(l2);
 	return S;
@@ -258,6 +266,8 @@ Statement* create_jump_statement(int _type){
 	else if (_type == RETURN ) {
 		S->name="return";
 		create_new_return(nullptr);
+		GoTo * _goto = create_new_goto();
+		S->returnlist.push_back(_goto);
 	}
 	return S;
 }
@@ -270,6 +280,8 @@ Statement* create_jump_statement_exp(Expression *ex)
 		error_msg("Function expects return type of " + local_symbol_table.return_type.get_name() + ". Got " + ex->type.get_name(),line_num);
 	}
 	create_new_return(ex->res);
+	GoTo * _goto = create_new_goto();
+	S->returnlist.push_back(_goto);
 	return S;
 }
 ///--------------Labelled Statement-------------------///
@@ -319,9 +331,10 @@ Statement* create_labeled_statement_case(Constant *con,Label* l,Statement* s1){
 		switch_label.insert({s,l});
 		}
 	//switch_temp=l;
-    append(S->breaklist, s1->breaklist);
+	append(S->breaklist, s1->breaklist);
 	append(S->nextlist,s1->nextlist);
 	append(S->caselist, s1->caselist);
+	append(S->returnlist,s1->returnlist);
 	return S;
 }
 
@@ -337,9 +350,10 @@ Statement* create_labeled_statement_def(Label* l, Statement* s1){
 	append(S->caselist, s1->caselist);
 	//error_msg("case",s1->line_num);
 	switch_temp=l;
-    append(S->breaklist, s1->breaklist);
+	append(S->breaklist, s1->breaklist);
 	append(S->nextlist,s1->nextlist);
 	append(S->caselist, s1->caselist);
+	append(S->returnlist,s1->returnlist);
 	return S;
 } 
 
@@ -359,6 +373,7 @@ Statement* create_statement_list( Statement * st1 ){
 	append(S->continuelist,st1->continuelist);
 	append(S->breaklist,st1->breaklist);
 	append(S->caselist,st1->caselist);
+	append(S->returnlist,st1->returnlist);
 
 	return S;
 
@@ -376,6 +391,7 @@ Statement* add_to_statement_list( Statement * stl, Statement * st1 ) {
 	append(stl->continuelist,st1->continuelist);
 	append(stl->breaklist,st1->breaklist);
 	append(stl->caselist,st1->caselist);
+	append(stl->returnlist,st1->returnlist);
 	return stl;
 
 }

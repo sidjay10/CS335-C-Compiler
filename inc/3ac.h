@@ -186,6 +186,7 @@ class GoTo : public ThreeAC {
 	friend void backpatch(std::vector<GoTo*> & go_v, Label* label);
 	friend void backpatch(GoTo* _goto, Label* label);
 	friend GoTo * create_new_goto( Label * label);
+	friend void process_goto( GoTo * g );
 //	friend void Label::update_targets( Label * label );
 
 };
@@ -201,12 +202,24 @@ std::ostream& operator<<(std::ostream& os, const Label& l);
 
 std::ostream& operator<<(std::ostream& os, const GoTo& g);
 
+class Arg : public ThreeAC {
+	public:
+		ADDRESS arg;
+		int num;
+		
+		Arg( Address * _addr, int count );
+		std::string print();
+		
+};
+
+std::ostream& operator<<(std::ostream& os, const Arg& a );
+Arg * create_new_arg( Address * addr , int count );
+
 class Call : public ThreeAC {
 	public:
 		ADDRESS retval;
 		std::string function_name;
 		
-
 		Call( Address * _addr, std::string f_name );
 		std::string print();
 		

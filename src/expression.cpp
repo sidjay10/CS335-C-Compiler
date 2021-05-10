@@ -22,7 +22,6 @@ extern unsigned int column;
 
 Type INVALID_TYPE;
 
-#define NUM_REG_ARGS 4
 
 //##############################################################################
 //############################# EXPRESSION #####################################
@@ -320,11 +319,13 @@ Expression *create_postfix_expr_fun( Identifier *fi, ArgumentExprList *ae ) {
 		Rest go on to the stack in reverse order 	 */
 	unsigned int arg_count = ste->type.num_args < NUM_REG_ARGS ? ste->type.num_args : NUM_REG_ARGS; 
 	for ( unsigned int i = 0; i <  arg_count ; i++ ) {
-		emit(nullptr, "arg" + std::to_string(i),  ae->args[i]->res, nullptr );
+        create_new_arg(ae->args[i]->res, i );
+		//emit(nullptr, "arg" + std::to_string(i),  ae->args[i]->res, nullptr );
 	}
     create_new_save_live();
 	for ( unsigned int i = ste->type.num_args - 1; i >= NUM_REG_ARGS; i-- ) {
-		emit(nullptr, "push" + std::to_string(i),  ae->args[i]->res, nullptr );
+        create_new_arg(ae->args[i]->res, i );
+		//emit(nullptr, "push" + std::to_string(i),  ae->args[i]->res, nullptr );
 	}
 	if ( P->type.isVoid() ) {
         create_new_call( nullptr, fi->value );
