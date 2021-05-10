@@ -111,7 +111,7 @@ class AsmInstr {
 extern std::vector< AsmInstr > asm_code;
 
 
-void gen_asm_code();
+void gen_asm_code( );
 void issue_load( ARCH_REG r, OFFSET_REGISTER base, long offset );
 void issue_store( ARCH_REG r, OFFSET_REGISTER base, long offset );
 
@@ -133,5 +133,6 @@ void process_arg( Arg * a );
 void process_return( Return * r );
 void process_save_live( SaveLive * s );
 void gen_epilogue();
+void gen_prologue( );
 
 #endif
