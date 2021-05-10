@@ -8,6 +8,7 @@
 #include <symtab.h>
 #include <vector>
 #include <3ac.h>
+#include <codegen.h>
 #include <statement.h>
 #include <y.tab.h>
 #include <iostream>
@@ -130,6 +131,7 @@ Expression *create_postfix_expr_arr( Expression *pe, Expression *e ) {
         return P;
     }
 
+    create_new_save_live();
 	if ( pe->type.is_array ) {
 		P->type = pe->type;
 		P->type.ptr_level--;

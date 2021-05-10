@@ -321,6 +321,19 @@ bool Type::is_invalid() {
     return false;
 }
 
+bool Type::is_ea() {
+	
+	if ( is_array ) {
+		return true;
+	} else if ( !isPrimitive() && ptr_level == 0 ) {
+		return true;
+	} else {
+		return false;
+	}
+
+    return false;
+}
+
 bool operator!=( Type &obj1, Type &obj2 ) {
 	return !(obj1 == obj2);
 }
@@ -590,6 +603,7 @@ void Declaration::add_to_symbol_table( LocalSymbolTable &sym_tab ) {
     }
 
     for ( auto i = dec.begin(); i != dec.end(); i++ ) {
+	PrimaryExpression *P = nullptr;
         int pointer_level = ( *i )->get_pointer_level();
 
         SymTabEntry *e = new SymTabEntry(
@@ -599,7 +613,7 @@ void Declaration::add_to_symbol_table( LocalSymbolTable &sym_tab ) {
         if ( dd->type == ID ) {
             e->type = Type( type_index, pointer_level, is_const );
             if ( ( *i )->init_expr != nullptr ) {
-                PrimaryExpression *P = new PrimaryExpression();
+                P = new PrimaryExpression();
                 P->isTerminal = 1;
                 Identifier *a = new Identifier( "" );
                 *a = *( *i )->id;
@@ -610,10 +624,18 @@ void Declaration::add_to_symbol_table( LocalSymbolTable &sym_tab ) {
                 P->add_child( a );
                 P->line_num = a->line_num;
                 P->column = a->column;
-                P->res = new_3id( e );
+		
+		size_t size = e->type.get_size();
+		e->offset = sym_tab.offset;
+		sym_tab.offset = sym_tab.offset + size + ( size % WORD_SIZE );
+		sym_tab.reqd_size = sym_tab.offset > sym_tab.reqd_size ? sym_tab.offset : sym_tab.reqd_size;
+		sym_tab.add_to_table( e, ( *i )->id , false );
+		
+		P->res = new_3id( e );
                 Expression *ae = create_assignment_expression(
                     P, ( *i )->eq, ( *i )->init_expr );
                 add_child( ae );
+		continue;
             }
         } else if ( dd->type == ARRAY ) {
             e->type = Type( type_index, dd->array_dims.size(), true );
@@ -666,7 +688,7 @@ void Declaration::add_to_symbol_table( LocalSymbolTable &sym_tab ) {
         e->offset = sym_tab.offset;
         sym_tab.offset = sym_tab.offset + size + ( size % WORD_SIZE );
         sym_tab.reqd_size = sym_tab.offset > sym_tab.reqd_size ? sym_tab.offset : sym_tab.reqd_size;
-        sym_tab.add_to_table( e, ( *i )->id );
+        sym_tab.add_to_table( e, ( *i )->id , false );
     }
 }
 
@@ -2069,15 +2091,18 @@ void LocalSymbolTable::clear_current_level() {
     ss.str( std::string() );
 }
 
-void LocalSymbolTable::add_to_table( SymTabEntry *symbol, Identifier *id ) {
+void LocalSymbolTable::add_to_table( SymTabEntry *symbol, Identifier *id , bool is_arg ) {
 
     auto it = sym_table.find( symbol->name );
     if ( it == sym_table.end() ) {
         std::deque<SymTabEntry *> &q = *new std::deque<SymTabEntry *>;
         symbol->level = current_level;
-	symbol->id = (LOCAL_SYM_MASK | symbol_id++);
-		//MSB 0 -> LOCAL_SYMBOL 
-        q.push_front( symbol );
+	if ( is_arg ) {
+		symbol->id = (FUN_ARG_MASK | symbol_id++);
+	} else {
+		symbol->id = (LOCAL_SYM_MASK | symbol_id++);
+        }
+	q.push_front( symbol );
         sym_table.insert( {symbol->name, q} );
         // CSV
         ss << "local," << function_name << "," << id->value << ","
@@ -2202,7 +2227,8 @@ void LocalSymbolTable::add_function(
             ( *it )->declarator->id->column );
 
         symbol->type = t;
-        add_to_table( symbol, ( *it )->declarator->id );
+        add_to_table( symbol, ( *it )->declarator->id , true );
+
     }
     current_level = 0;
     write_to_symtab_file( ss.str() );

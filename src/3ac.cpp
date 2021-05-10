@@ -86,7 +86,7 @@ Quad::~Quad () {
 
 }
 
-std::ostream& operator<<(std::ostream& os, const Quad::_addresses & a){
+std::ostream& operator<<(std::ostream& os, const ADDRESS & a){
 	os << *a.addr;
 
 	if ( a.addr->type == CON ) {
@@ -162,11 +162,14 @@ Address * new_mem() {
 	return t;
 }
 
-
 Address * new_3id(SymTabEntry * symbol) {
 	Address * a = new Address(symbol->name, ID3);
 	a->table_id = symbol->id;
 	tac_info_table.insert({a->table_id,TacInfo(symbol)});
+	mmu.memory_locations.insert({a->table_id,create_memory_location( symbol->id, symbol->offset )});
+	if ( symbol->type.is_ea() ) {
+		set_is_ea( symbol->id );
+	}
 	return a;
 }
 
@@ -176,9 +179,7 @@ std::ostream& operator<<(std::ostream& os, const Address& a){
 	} else {
 		os << a.name;
 	}
-
 	return os;
-
 }
 void backpatch(std::vector<GoTo*> & go_v, Label* label){
 	if ( label == nullptr ) {
@@ -477,6 +478,7 @@ void dump_and_reset_3ac() {
 		}
 		std::cout << "\n";
 	}
+	gen_asm_code();
 	instructions = 1;
 	temporaries = 1;
 	ta_code.clear();
@@ -525,17 +527,17 @@ void create_next_use_info(){
 
 		if ( q != nullptr ) {
 		
-			if ( q->arg1.addr != nullptr && q->arg1.addr->type != CON ) {
-				auto it = get_entry_from_table(q->arg1.addr);
-				q->arg1.alive = it->second.alive;
-				q->arg1.next_use = it->second.next_use;
-			}
-			
-			if ( q->arg2.addr != nullptr && q->arg2.addr->type != CON ) {
-				auto it = get_entry_from_table(q->arg2.addr);
-				q->arg2.alive = it->second.alive;
-				q->arg2.next_use = it->second.next_use;
-			}
+	//		if ( q->arg1.addr != nullptr && q->arg1.addr->type != CON ) {
+	//			auto it = get_entry_from_table(q->arg1.addr);
+	//			q->arg1.alive = it->second.alive;
+	//			q->arg1.next_use = it->second.next_use;
+	//		}
+	//		
+	//		if ( q->arg2.addr != nullptr && q->arg2.addr->type != CON ) {
+	//			auto it = get_entry_from_table(q->arg2.addr);
+	//			q->arg2.alive = it->second.alive;
+	//			q->arg2.next_use = it->second.next_use;
+	//		}
 			
 			if ( q->result.addr != nullptr ) {
 				assert(q->result.addr->type != CON);
@@ -548,14 +550,18 @@ void create_next_use_info(){
 			}
 			if ( q->arg1.addr != nullptr && q->arg1.addr->type != CON ) {
 				auto it = get_entry_from_table(q->arg1.addr);
+				q->arg1.alive = it->second.alive;
+				q->arg1.next_use = it->second.next_use;
 				it->second.alive = true;
-				it->second.next_use = q;
+				it->second.next_use = &q->arg1;
 			}
 
 			if ( q->arg2.addr != nullptr && q->arg2.addr->type != CON ) {
 				auto it = get_entry_from_table(q->arg2.addr);
+				q->arg2.alive = it->second.alive;
+				q->arg2.next_use = it->second.next_use;
 				it->second.alive = true;
-				it->second.next_use = q;
+				it->second.next_use = &q->arg2;
 			}
 
 			continue;	
@@ -569,7 +575,7 @@ void create_next_use_info(){
 			g->res.alive = it->second.alive;
 			g->res.next_use = it->second.next_use;
 			it->second.alive = true;
-			it->second.next_use = g;
+			it->second.next_use = &g->res;
 			continue;
 
 		}
@@ -581,7 +587,7 @@ void create_next_use_info(){
 			r->retval.alive = it->second.alive;
 			r->retval.next_use = it->second.next_use;
 			it->second.alive = true;
-			it->second.next_use = r;
+			it->second.next_use = &r->retval;
 			continue;
 		}
 

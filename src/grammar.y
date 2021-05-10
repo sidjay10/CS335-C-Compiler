@@ -328,14 +328,14 @@ declaration_specifiers
 init_declarator_list
 	: init_declarator				 { $$ = create_init_declarator_list( $1 ); }
 	| init_declarator_list ',' init_declarator	 { $$ = add_to_init_declarator_list ( $1, $3 ); }
-	| error							{ $$ = NULL; }
-	| init_declarator_list ',' error 			{ $$ = $1; }
+/*	| error						 { $$ = NULL; }*/
+	| init_declarator_list ',' error ','		 { $$ = $1; }
 	;
 
 init_declarator
 	: declarator			 { $$ = $1; }
 	/*| declarator '=' initializer	 { $$ = add_initializer_to_declarator( $1, $2, $3 ); }*/
-	| declarator '=' assignment_expression	 { $$ = add_initializer_to_declarator( $1, $2, $3 ); }
+	| declarator '=' { error_msg("Invalid Initialisation of declaration",line_num,column); } assignment_expression	 {  $$ = $1; /* add_initializer_to_declarator( $1, $2, $3 );*/ }
 	;
 
 storage_class_specifier
@@ -550,6 +550,7 @@ declaration_list
 
 statement_list
 	:  statement			 	 { $$ = create_statement_list( $1 ); }
+	|  error statement			 { $$ = create_statement_list( $2 ); }
 	|  statement_list { if ( $1 != nullptr && $1->nextlist.size() != 0 ) { backpatch($1->nextlist,create_new_label()); } } statement	 { $$ = add_to_statement_list( $1, $3 ); }
 	;
 
@@ -626,7 +627,7 @@ void yyerror(const char *s)
 //char *s;
 {
 	fflush(stdout);
-	printf("%d:%d ERROR : %s\n",line_num,column,s);
+	printf("Line %d:%d ERROR : %s\n",line_num,column,s);
 	std::cout << text.str(); 
 	printf("\n%*s\n", column, "^");
 }

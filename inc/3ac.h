@@ -7,6 +7,7 @@
 #include <map>
 #include <string>
 #include <symtab.h>
+#include <codegen.h>
 
 extern unsigned long long instructions;
 unsigned long long get_next_instr();
@@ -25,32 +26,28 @@ typedef enum ADD_TYPE_ {
 
 class ThreeAC;
 
-#define TEMP_ID_MASK 0xc0000000
+#define TEMP_ID_MASK 0x80000000
 class Address {
 public:
 	std::string name;
 	ADD_TYPE type;
 	ThreeAC * ta_instr;
 	unsigned int table_id;
-	
 	Address( std::string name, ADD_TYPE type);
 	
 };
 
-
-typedef enum _registers {
-	GP = 1,
-	SP = 2,
-	FP = 3
-} OFFSET_REGISTER;
+typedef struct _addresses {
+	Address * addr;
+	bool alive;
+	struct _addresses * next_use;
+} ADDRESS;
 
 class TacInfo {
 	private:
 		bool alive;
-		ThreeAC* next_use;
+		ADDRESS * next_use;
 		SymTabEntry * symbol;
-		OFFSET_REGISTER base;
-		long offset;
 	public:
 		TacInfo();
 		TacInfo(SymTabEntry * );
@@ -104,11 +101,7 @@ extern std::vector< ThreeAC * > ta_code;
 class Quad : public ThreeAC {
 public:
 
-	struct _addresses {
-		Address * addr;
-		bool alive;
-		ThreeAC * next_use;
-	} result, arg1, arg2;
+	ADDRESS result, arg1, arg2;
 
 //	Address * result;
 	std::string operation;
@@ -124,7 +117,7 @@ public:
 };
 
 
-std::ostream& operator<<(std::ostream& os, const Quad::_addresses & a);
+std::ostream& operator<<(std::ostream& os, const ADDRESS & a);
 
 #define MEM_EMIT(a,b) \
 	if ( (a)->res->type == MEM ) { \
@@ -181,11 +174,7 @@ Label * create_new_label();
 class GoTo : public ThreeAC {
 		Label * label;
 	public : 
-		struct _addresses {
-			Address * addr;
-			bool alive;
-			ThreeAC * next_use;
-		} res;
+		ADDRESS res;
 		bool condition;
 		GoTo();
 		std::string print();
@@ -214,11 +203,7 @@ std::ostream& operator<<(std::ostream& os, const GoTo& g);
 
 class Call : public ThreeAC {
 	public:
-		struct _addresses {
-			Address * addr;
-			bool alive;
-			ThreeAC * next_use;
-		} retval;
+		ADDRESS retval;
 		std::string function_name;
 		
 
@@ -232,11 +217,7 @@ Call * create_new_call( Address * addr , std::string f_name );
 
 class Return : public ThreeAC {
 	public : 
-		struct _addresses {
-			Address * addr;
-			bool alive;
-			ThreeAC * next_use;
-		} retval;
+		ADDRESS retval;
 		Return();
 		std::string print();
 		~Return();

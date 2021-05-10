@@ -119,6 +119,7 @@ class Type {
     void make_signed();
     void make_unsigned();
     size_t get_size();
+	bool is_ea();
 
     friend bool operator==( Type &obj1, Type &obj2 );
     friend bool operator!=( Type &obj1, Type &obj2 );
@@ -172,8 +173,9 @@ class SymbolTable {
     virtual void add_to_table( SymTabEntry *symbol );
 };
 
-#define LOCAL_SYM_MASK 0
-#define GLOBAL_SYM_MASK 0x80000000
+#define LOCAL_SYM_MASK 	0x10000000
+#define GLOBAL_SYM_MASK 0x20000000
+#define FUN_ARG_MASK 	0x40000000
 
 class GlobalSymbolTable : public SymbolTable {
   public:
@@ -197,7 +199,7 @@ class LocalSymbolTable : public SymbolTable {
     void clear_current_level();
     void empty_table();
     LocalSymbolTable();
-    void add_to_table( SymTabEntry *symbol, Identifier *id );
+    void add_to_table( SymTabEntry *symbol, Identifier *id , bool is_fun_arg );
     SymTabEntry *get_symbol_from_table( std::string name );
     void add_function( DeclarationSpecifiers *declaration_specifiers,
                        Declarator *declarator, int *error );
