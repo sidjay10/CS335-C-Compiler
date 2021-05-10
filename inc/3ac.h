@@ -8,6 +8,7 @@
 #include <string>
 #include <symtab.h>
 #include <codegen.h>
+#include <unordered_set>
 
 extern unsigned long long instructions;
 unsigned long long get_next_instr();
@@ -238,7 +239,7 @@ class SaveLive : public ThreeAC {
 SaveLive * create_new_save_live();
 std::ostream& operator<<(std::ostream& os, const SaveLive& s);
 
-
+extern std::unordered_set<std::string> var_rep;
 void backpatch( std::vector <GoTo * > & go_v, Label * label );
 void backpatch(GoTo* _goto, Label* label);
 

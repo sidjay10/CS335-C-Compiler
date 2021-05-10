@@ -1,4 +1,5 @@
 #include <ast.h>
+#include <bits/stdc++.h>
 #include <iostream>
 #include <expression.h>
 #include <symtab.h>
@@ -7,13 +8,14 @@
 #include <vector>
 #include <assert.h>
 #include <algorithm>
-#include <unordered_map>
+#include <unordered_set>
+#include <bits/stdc++.h>
 unsigned long long instructions = 1;
 unsigned long long labels = 1;
 
 std::vector< ThreeAC * > ta_code;
 std::map< unsigned int, TacInfo > tac_info_table;
-// DK: std::unordered_set<std::string> var_rep;
+std::unordered_set<std::string> var_rep;
 
 Label::Label() : ThreeAC(false) {
 	reference_count = 0;
@@ -386,144 +388,187 @@ TacInfo * create_tac_info(SymTabEntry * symbol){
 	
 // }
 
-#if 0
 
-void arithmetic_optimisation(Quad* q){
+
+void arithmetic_optimise(Quad* q){
 	std:: string val1="";
 	std:: string val2="";
-	if(q->arg1!=nullptr){
-	val1= q->arg1->name;
+	if(q->arg1.addr==nullptr || q->arg2.addr==nullptr){
+		if(q->arg1.addr!=nullptr && q->result.addr->name == q->arg1.addr->name && q->operation =="="){
+			q->dead=true;
+		}
+		return;
 	}
-	if(q->arg2!=nullptr){
-	val2 = q->arg2->name;
+
+
+	if(q->arg1.addr!=nullptr){
+	val1= q->arg1.addr->name;
+	}
+	if(q->arg2.addr!=nullptr){
+	val2 = q->arg2.addr->name;
 	}
 
 	// constant folding
-	if(q->arg1->type == CON && q->arg2->type == CON){
+	if(q->arg1.addr->type == CON && q->arg2.addr->type == CON){
 		
-		int x = std::stoi(q->arg1->name);
-		int y = std::stoi(q->arg2->name);
+		int x = std::stoi(q->arg1.addr->name);
+		int y = std::stoi(q->arg2.addr->name);
 		std::string oper=q->operation;
 		if(oper=="+"){
-			q->arg2=nullptr;
-			q->arg1->name = std::to_string(x+y);
+			q->arg2.addr=nullptr;
+			q->arg1.addr->name = std::to_string(x+y);
 		}
 		else if(oper=="-"){
-			q->arg2=nullptr;
-			q->arg1->name=std::to_string(x-y);	
+			q->arg2.addr=nullptr;
+			q->arg1.addr->name=std::to_string(x-y);	
 		}
 		else if(oper=="*"){
-			q->arg2=nullptr;
-			q->arg1->name=std::to_string(x*y);
+			q->arg2.addr=nullptr;
+			q->arg1.addr->name=std::to_string(x*y);
 		}
 		else if(oper=="/"){
-			q->arg2=nullptr;
+			
 			if(y==0){
 				error_msg("Division by zero not possible",line_num);
+				return;
 			}
-			q->arg2->name=std::to_string(x/y);
+			else{
+				q->arg2.addr=nullptr;
+				q->arg1.addr->name=std::to_string(x/y);
+			}
 		}
 		else if(oper==">>"){
-			q->arg2=nullptr;
-			q->arg1->name=std::to_string(x>>y);
+			q->arg2.addr=nullptr;
+			q->arg1.addr->name=std::to_string(x>>y);
 		}
 		else if(q->operation =="<<"){
-			q->arg2=nullptr;
-			q->arg1->name=std::to_string(x<<y);
+			q->arg2.addr=nullptr;
+			q->arg1.addr->name=std::to_string(x<<y);
 		}
 		else if(oper=="|"){
-			q->arg2=nullptr;
-			q->arg1->name=std::to_string(x|y);
+			q->arg2.addr=nullptr;
+			q->arg1.addr->name=std::to_string(x|y);
 		}
 		else if(oper=="&"){
-			q->arg2=nullptr;
-			q->arg1->name=std::to_string(x&y);
+			q->arg2.addr=nullptr;
+			q->arg1.addr->name=std::to_string(x&y);
 		}
 		q->operation="";
-		if(q->result->type==TEMP){
+		if(q->result.addr->type==TEMP){
 			q->dead=true;
+			*q->result.addr = *q->arg1.addr;
 		}
 	}
 	else{
-		q->dead=true;
+		
 	//+-0
-		if((q->arg2->name=="0" || q->arg2->name=="0.0") && (q->operation=="+" || q->operation=="-")){
-			q->operation="";
-			q->arg2=nullptr;
+		if((q->arg2.addr->name=="0" || q->arg2.addr->name=="0.0") && (q->operation=="+" || q->operation=="-")){
+			q->operation="";			
+			q->arg2.addr=nullptr;
+			*q->result.addr = *q->arg1.addr;
+			q->dead=true;
 		}
-		else if((q->arg1->name=="0" || q->arg1->name=="0.0") && (q->operation=="+" || q->operation=="-")){
+		else if((q->arg1.addr->name=="0" || q->arg1.addr->name=="0.0") && (q->operation=="+" || q->operation=="-")){
 			q->operation="";
 			q->arg1=q->arg2;
-			q->arg2=nullptr;
+			q->arg2.addr=nullptr;
+
+			*q->result.addr = *q->arg1.addr;
+			q->dead=true;
 		}
 		//*0
 		
-		else if((q->arg2->name=="0" || q->arg2->name=="0.0") && q->operation=="*"){
+		else if((q->arg2.addr->name=="0" || q->arg2.addr->name=="0.0") && q->operation=="*"){
 			q->operation="";
-			q->arg2=nullptr;
+			q->arg2.addr=nullptr;
+			*q->result.addr = *q->arg1.addr;
+			q->dead=true;
 		}
-		else if((q->arg1->name=="0" || q->arg1->name=="0.0") && q->operation=="*"){
+		else if((q->arg1.addr->name=="0" || q->arg1.addr->name=="0.0") && q->operation=="*"){
 			q->operation="";
 			q->arg1=q->arg2;
-			q->arg2=nullptr;
+			q->arg2.addr=nullptr;
+			*q->result.addr = *q->arg1.addr;
+			q->dead=true;
 		}
 		//"0/0"
-		else if((q->arg2->name=="0" || q->arg2->name=="0.0") && q->operation=="/"){
+		else if((q->arg2.addr->name=="0" || q->arg2.addr->name=="0.0") && q->operation=="/"){
 			error_msg( "Division by zero not possible:", line_num );
 		}
-		else if((q->arg1->name=="0" || q->arg1->name=="0") && q->operation=="/"){
+		else if((q->arg1.addr->name=="0" || q->arg1.addr->name=="0.0") && q->operation=="/"){
 			q->operation="";
-			q->arg2=nullptr;
+			q->arg2.addr=nullptr;
+			q->arg1.addr->name="0";
+			*q->result.addr = *q->arg1.addr;
+			q->dead=true;
 		}
-		//*/1
-		else if((q->arg2->name=="1" || q->arg2->name=="1.0") && (q->operation=="*"|| q->operation=="/")){
+		// /*1 
+		
+		else if((q->arg2.addr->name=="1" || q->arg2.addr->name=="1.0") && (q->operation=="*"|| q->operation=="/")){
 			q->operation="";
-			q->arg2=nullptr;
+			q->arg2.addr=nullptr;
+			*q->result.addr = *q->arg1.addr;
+			q->dead=true;
 		}
-		else if((q->arg1->name=="1" || q->arg1->name=="1.0") && q->operation=="*"){
+		else if((q->arg1.addr->name=="1" || q->arg1.addr->name=="1.0") && q->operation=="*"){
 			q->operation="";
 			q->arg1=q->arg2;
-			q->arg2=nullptr;
+			q->arg2.addr=nullptr;
+			*q->result.addr = *q->arg1.addr;
+			q->dead=true;
 		}
 		//2*x
-		else if((q->arg2->name=="2" || q->arg2->name=="2.0") && q->operation=="*"){
-			q->operation="+";
-			q->arg2=q->arg1;
+		else if(q->arg2.addr->type==CON && ceil(log2(std::stoi(q->arg2.addr->name))) == floor(log2(std::stoi(q->arg2.addr->name))) && q->operation=="*"){
+			q->operation="<<";
+			q->arg2.addr->name=std::to_string((int)ceil(log2(stoi(q->arg2.addr->name))));
 		}
-		else if((q->arg1->name=="2" || q->arg1->name=="2.0") && q->operation=="*"){
-			q->operation="+";
+		else if(q->arg1.addr->type==CON && ceil(log2(std::stoi(q->arg1.addr->name))) == floor(log2(std::stoi(q->arg1.addr->name))) && q->operation=="*"){
+			q->operation="<<";
 			q->arg1=q->arg2;
-		}	
+			q->arg2.addr->name=std::to_string((int)ceil(log2(stoi(q->arg1.addr->name))));
+		}
 		//0.5x
-		else if((q->arg2->name=="2" || q->arg2->name=="2.0") && q->operation=="/"){
+		else if(q->arg2.addr->type==CON && ceil(log2(std::stoi(q->arg2.addr->name))) == floor(log2(std::stoi(q->arg2.addr->name))) && q->operation=="/"){
 			q->operation=">>";
-			q->arg2->name="1";
+			q->arg2.addr->name=std::to_string((int)ceil(log2(stoi(q->arg2.addr->name))));
 		}
-		else{
-			q->dead=false;
+		//x/x
+		else if(q->arg2.addr->name==q->arg1.addr->name && q->operation=="/"){
+			q->operation="";
+			q->arg2.addr=nullptr;
+			q->arg1.addr->name="1";
+			*q->result.addr = *q->arg1.addr;
+			q->dead=true;
 		}
-
+		//x-x
+		else if(q->arg2.addr->name==q->arg1.addr->name && q->operation=="-"){
+			q->operation="";
+			q->arg2.addr=nullptr;
+			q->arg1.addr->name="0";
+			*q->result.addr = *q->arg1.addr;
+			q->dead=true;
+		}
 	}
 }
+/*
 void repeat_var(Quad* q){
-	if(q->result!=nullptr){
-		if(var_rep.find(q->result->name)==var_rep.end()){
-		var_rep.insert(q->result->name);
+	if(q->result.addr!=nullptr){
+		if(var_rep.find(q->result.addr->name)==var_rep.end()){
+		var_rep.insert(q->result.addr->name);
 		}
 	}
-	if(q->arg1!=nullptr){
-		if(var_rep.find(q->arg1->name)!=var_rep.end()){
-		var_rep.erase(q->arg1->name);
+	if(q->arg1.addr!=nullptr){
+		if(var_rep.find(q->arg1.addr->name)!=var_rep.end()){
+		var_rep.erase(q->arg1.addr->name);
 		}
 	}
-	if(q->arg2!=nullptr){
-		if(var_rep.find(q->arg2->name)!=var_rep.end()){
-		var_rep.erase(q->arg2->name);
+	if(q->arg2.addr!=nullptr){
+		if(var_rep.find(q->arg2.addr->name)!=var_rep.end()){
+		var_rep.erase(q->arg2.addr->name);
 		}
 	}
 }
-
-#endif
+*/
 
 SaveLive::SaveLive() : ThreeAC(false) { dead = false;};
 
@@ -548,12 +593,13 @@ std::ostream& operator<<(std::ostream& os, const SaveLive& s){
 
 
 
-
-//void print_rep(){
-//for(auto i:var_rep){
-//	std::cout<<i<<" is redundant.\n";
-//}
-
+/*
+void print_rep(){
+for(auto i:var_rep){
+	std::cout<<i<<" is redundant.\n";
+	}
+}
+*/
 
 void optimise_pass1() {
 	GoTo * _goto1 = nullptr;
@@ -612,7 +658,7 @@ void optimise_pass1() {
 
 		quad = dynamic_cast<Quad *>(*it);
 		if (quad!=nullptr){
-//			arithmetic_optimise(quad);
+			arithmetic_optimise(quad);
 			;
 			
 		}
