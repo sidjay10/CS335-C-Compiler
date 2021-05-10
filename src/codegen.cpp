@@ -191,7 +191,8 @@ void issue_store( ARCH_REG r, OFFSET_REGISTER base, long offset ){
 	std::cout << "ASM: ST: " << r << " " << offset << "(" << base << ")\n"; 
 }
 
-void gen_asm_code(){
+void gen_asm_code( ){
+	gen_prologue();
 	for ( auto i:ta_code ) {
 		if ( i->dead ) { 
 			continue; 
@@ -386,10 +387,11 @@ void process_return( Return * r ) {
 void process_arg( Arg * a) {
 	if ( a->num < NUM_REG_ARGS ) {
 		auto it = mmu.memory_locations.find( a->num | FUN_ARG_MASK );
-		assert( it != mmu.memory_locations.end() );
 		ARCH_REG arg_reg = static_cast<ARCH_REG>( a->num + a0 ); 
-		mmu.temp_stack.push_back( arg_reg );
-		std::cout << "ASM: " << "push a" << a->num << "\n";
+		if ( it != mmu.memory_locations.end() ) {
+			mmu.temp_stack.push_back( arg_reg );
+			std::cout << "ASM: " << "push a" << a->num << "\n";
+		}
 		if ( a->arg.addr->type == CON ) {
 			std::cout << "ASM: " << "li" << " a" << a->num << ", " << a->arg.addr->name <<"\n";
 		} else {
@@ -433,14 +435,50 @@ void process_goto( GoTo * g ) {
 	ARCH_REG reg = mmu.get_reg( tINV, g->res.addr, 2, true );
 	std::string str;
 	if ( g->condition == true ) {
-		str = "br.false";
-	} else {
 		str = "br.true";
+	} else {
+		str = "br.false";
 	}
 	std::cout << "ASM: " << str << " t" << reg << " " << g->label->name << "\n";
 }
 
+void process_save_live( SaveLive * s ){
+	
+
+
+}
+
 void gen_epilogue() {
 	// TODO: Implement return stack cleanup
-	std::cout << "ASM: " << "jr ra\n";
+	size_t reqd_size = local_symbol_table.reqd_size < 32 ? 32 : local_symbol_table.reqd_size;
+	reqd_size = reqd_size + mmu.temp_stack.size() * 4;
+	if ( reqd_size < 0x8000 ) {
+		reqd_size = reqd_size & 0xffff;
+		std::cout << "ASM: " << "addiu $sp, $sp, " << (short) reqd_size << "\n";
+	} else {
+		std::cout << "ASM: " << "lui $at, " << (short) (reqd_size >> 16) << "\n";
+		std::cout << "ASM: " << "li $at, " << (short)  (reqd_size & 0xffff ) << "\n";
+		std::cout << "ASM: " << "addu $sp, $sp, $at\n";
+	}
+	std::cout << "ASM: " << "pop $fp\n";
+	std::cout << "ASM: " << "pop $ra\n";
+	std::cout << "ASM: " << "jr $ra\n";
+}
+
+void gen_prologue( ) {
+	std::cout << "ASM: \t.text\n"; 
+	std::cout << "ASM: " <<  local_symbol_table.function_name << ":\n";
+	std::cout << "ASM: " << "addiu $sp, $sp," << -8 <<"\n";
+	std::cout << "ASM: " << "sw $ra, 4($sp)\n";
+	std::cout << "ASM: " << "sw $fp, 0($sp)\n";
+	std::cout << "ASM: " << "mv $fp, $sp\n";
+	size_t reqd_size = local_symbol_table.reqd_size < 32 ? 32 : local_symbol_table.reqd_size;
+	if ( reqd_size <= 0x8000 ) {
+		reqd_size = ( ~reqd_size + 1 ) & 0xffff;
+		std::cout << "ASM: " << "addiu $sp, $sp, " << (short) reqd_size << "\n";
+	} else {
+		std::cout << "ASM: " << "lui $at, " << (short) (reqd_size >> 16) << "\n";
+		std::cout << "ASM: " << "li $at, " << (short)  (reqd_size & 0xffff ) << "\n";
+		std::cout << "ASM: " << "subu $sp, $sp, $at\n";
+	}
 }

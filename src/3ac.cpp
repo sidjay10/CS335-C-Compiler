@@ -657,6 +657,16 @@ void optimise_pass1() {
 			continue;
 		}
 
+		if ( label2 != nullptr && _goto1 != nullptr && _goto1->res.addr == nullptr ) {
+			(*it)->dead = true;
+			label2->name = _goto1->label->name;
+			label2->instruction_id = _goto1->label->instruction_id;
+			_goto1->label->reference_count += label2->reference_count;
+			label2->dead = true;
+			_goto1->dead = true;
+			continue;
+		}
+
 		quad = dynamic_cast<Quad *>(*it);
 		if (quad!=nullptr){
 //			arithmetic_optimise(quad);
@@ -668,7 +678,7 @@ void optimise_pass1() {
 	}
 }
 
-void dump_and_reset_3ac() {
+void dump_and_reset_3ac( ) {
 	optimise_pass1();
 	create_basic_blocks();
 	create_next_use_info();
@@ -680,7 +690,7 @@ void dump_and_reset_3ac() {
 		}
 		std::cout << "\n";
 	}
-	gen_asm_code();
+	gen_asm_code( );
 	//print_rep();
 	instructions = 1;
 	temporaries = 1;

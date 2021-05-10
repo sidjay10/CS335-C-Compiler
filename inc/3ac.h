@@ -258,7 +258,7 @@ void backpatch(GoTo* _goto, Label* label);
 // Append v2 at the end of vector 1
 void append ( std::vector <GoTo *> & v1, std::vector <GoTo *> & v2);
 
-void dump_and_reset_3ac();
+void dump_and_reset_3ac(); 
 void optimise_pass1();
 void create_basic_blocks();
 void create_next_use_info();
