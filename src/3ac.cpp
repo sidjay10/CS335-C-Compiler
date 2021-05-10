@@ -237,6 +237,7 @@ GoTo * create_new_goto() {
 GoTo * create_new_goto( Label * label) {
 	GoTo * _goto = new GoTo();
 	_goto->label = label;
+	label->reference_count++;
 	//std::cout << "3AC: " << *_goto << "\n";
 	ta_code.push_back(_goto);
 	return _goto;
@@ -297,6 +298,45 @@ std::ostream& operator<<(std::ostream& os, const GoTo& g){
 	return os;
 }
 
+Arg::Arg( Address * _addr, int _num ) : ThreeAC(), arg({_addr, true, nullptr}), num(_num)  { 
+	dead = false;
+	if( arg.addr != nullptr && arg.addr->ta_instr!=nullptr) {
+		arg.addr->ta_instr->dead = false;
+	}
+
+};
+
+Arg * create_new_arg( Address * addr, int num ) {
+	Arg * a = new Arg(addr, num);
+	ta_code.push_back(a);
+	return a;
+}
+
+std::string Arg::print() {
+	std::stringstream ss;
+	ss << *this;
+	return ss.str();
+}
+
+std::ostream& operator<<(std::ostream& os, const Arg& a){
+	os << a.instr <<": ";
+	if ( a.arg.addr != nullptr ) {
+		os << "arg " << a.num << " = ";	
+	
+		os << *a.arg.addr;
+
+		if ( a.arg.alive ) { 
+			os << "(L)"; 
+		} else { 
+			os << "(D)";
+		}
+
+	}
+	return os;
+
+}
+
+
 Call::Call( Address * _addr, std::string f_name ) : ThreeAC(), retval({_addr, true, nullptr}), function_name( f_name)  {dead = false;};
 
 Call * create_new_call( Address * addr, std::string f_name ) {
@@ -310,6 +350,7 @@ std::string Call::print() {
 	ss << *this;
 	return ss.str();
 }
+
 
 std::ostream& operator<<(std::ostream& os, const Call& c){
 	os << c.instr <<": ";
@@ -332,7 +373,12 @@ std::ostream& operator<<(std::ostream& os, const Call& c){
 }
 
 
-Return::Return() : ThreeAC(), retval({nullptr, true, nullptr}) {dead = false;};
+Return::Return() : ThreeAC(), retval({nullptr, true, nullptr}) {
+	dead = false;
+	if( retval.addr != nullptr && retval.addr->ta_instr!=nullptr) {
+		retval.addr->ta_instr->dead = false;
+	}
+}
 
 Return::~Return() {};
 
@@ -802,6 +848,16 @@ void create_next_use_info(){
 			c->retval.next_use = it->second.next_use;
 			it->second.alive = false;
 			it->second.next_use = nullptr;
+			continue;
+		}
+
+		Arg * a = dynamic_cast<Arg *>(*it);
+		if ( a != nullptr && a->arg.addr != nullptr && a->arg.addr->type != CON ) {
+			auto it = get_entry_from_table(a->arg.addr);
+			a->arg.alive = it->second.alive;
+			a->arg.next_use = it->second.next_use;
+			it->second.alive = true;
+			it->second.next_use = &a->arg;
 			continue;
 		}
 	}

@@ -606,7 +606,7 @@ function_declaration
 	;
 
 function_definition
-	:  function_declaration compound_statement	 { $$ = add_stmt_to_function_definition( $1, $2 ); dump_and_reset_3ac(); }
+	:  function_declaration compound_statement	 { $$ = add_stmt_to_function_definition( $1, $2 ); backpatch( $2->returnlist, create_new_label()); dump_and_reset_3ac(); }
 	;
 /*	:  declaration_specifiers declarator compound_statement	 { $$ = create_function_defintion($1, $2, $3); }*/
 /*	|  declarator compound_statement	 { $$ = create_non_term("function_definition", $2); }*/

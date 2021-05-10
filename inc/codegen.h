@@ -5,7 +5,9 @@
 #include<vector>
 #include<set>
 
-#define NUM_ARCH_REGS 10
+#define NUM_ARCH_REGS 20
+#define NUM_TEMP_REGS 10
+#define NUM_REG_ARGS 4
 
 
 
@@ -27,7 +29,9 @@ typedef enum ARCH_REG_ {
 	a0 = 10,
 	a1 = 11,
 	a2 = 12,
-	a3 = 13
+	a3 = 13,
+	v0 = 14,
+	v1 = 15
 } ARCH_REG;
 
 typedef enum _registers {
@@ -76,7 +80,7 @@ public:
 	std::map<unsigned int, MemoryLocation > memory_locations;
 
 	MemManUnit();
-	ARCH_REG get_reg( Address* a, int mem_valid /* 0 -> false, 1->true, 2->dont't change */ , bool load );
+	ARCH_REG get_reg(ARCH_REG dest, Address* a, int mem_valid /* 0 -> false, 1->true, 2->dont't change */ , bool load );
 	ARCH_REG get_empty_reg( );
 	void free_reg ( ARCH_REG reg );
 	void store_and_free_reg ( ARCH_REG reg );
@@ -111,5 +115,23 @@ void gen_asm_code();
 void issue_load( ARCH_REG r, OFFSET_REGISTER base, long offset );
 void issue_store( ARCH_REG r, OFFSET_REGISTER base, long offset );
 
+
+
+class Quad;
+class Return;
+class Label;
+class Call;
+class Arg;
+class SaveLive;
+class GoTo;
+
+void process_quad( Quad * q );
+void process_label( Label * l );
+void process_goto( GoTo * g );
+void process_call( Call * c );
+void process_arg( Arg * a );
+void process_return( Return * r );
+void process_save_live( SaveLive * s );
+void gen_epilogue();
 
 #endif
