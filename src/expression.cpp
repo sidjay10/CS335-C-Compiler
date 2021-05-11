@@ -16,6 +16,7 @@
 #include <utility>
 #include <string>
 #include <iterator>
+#include <string.h>
 
 extern unsigned int line_num;
 extern unsigned int column;
@@ -67,7 +68,7 @@ Expression *create_primary_constant( Constant *a ) {
 
     P->name = "primary_expression";
     P->add_child( a );
-long value = (long ) a->val.l;
+	int value = ( int ) a->val.i;
     P->res = new Address( value, CON );
 
     return P;
@@ -131,7 +132,7 @@ Expression *create_postfix_expr_arr( Expression *pe, Expression *e ) {
         return P;
     }
 
-    create_new_save_live();
+//    create_new_save_live();
 	if ( pe->type.is_array ) {
 		P->type = pe->type;
 		P->type.ptr_level--;
@@ -234,7 +235,7 @@ Expression *create_postfix_expr_voidfun( Identifier *fi ) {
     P->type.arg_types.clear();
 
 
-    create_new_save_live();
+//    create_new_save_live();
 	if ( P->type.isVoid() ) {
         create_new_call( nullptr, fi->value );
 	} else {
@@ -321,14 +322,22 @@ Expression *create_postfix_expr_fun( Identifier *fi, ArgumentExprList *ae ) {
 	unsigned int arg_count = ste->type.num_args < NUM_REG_ARGS ? ste->type.num_args : NUM_REG_ARGS; 
 	for ( unsigned int i = 0; i <  arg_count ; i++ ) {
 	Address * t1;
-	MEM_EMIT(ae->args[i], t1);
+	if ( ste->type.arg_types[i].isPointer() ) {
+		t1 = ae->args[i]->res;
+	} else {
+		MEM_EMIT(ae->args[i], t1);
+	}
         create_new_arg(t1, i );
 		//emit(nullptr, "arg" + std::to_string(i),  ae->args[i]->res, nullptr );
 	}
     create_new_save_live();
 	for ( unsigned int i = ste->type.num_args - 1; i >= NUM_REG_ARGS; i-- ) {
 	Address * t1;
-	MEM_EMIT(ae->args[i], t1);
+	if ( ste->type.arg_types[i].isPointer() ) {
+		t1 = ae->args[i]->res;
+	} else {
+		MEM_EMIT(ae->args[i], t1);
+	}
         create_new_arg(t1, i );
 		//emit(nullptr, "push" + std::to_string(i),  ae->args[i]->res, nullptr );
 	}
@@ -1695,7 +1704,7 @@ void Constant::negate(){
 Constant::Constant( const char *_name, const char *_value,
                     unsigned int _line_num, unsigned int _column )
     : Terminal( _name, _value, _line_num, _column ) {
-
+	memset(&val, 0, sizeof(union data));
     ConstantType = Type( -1, 0, false );
     int length = value.length();
     if ( name == "CONSTANT HEX" || name == "CONSTANT INT" ) {

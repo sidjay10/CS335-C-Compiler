@@ -55,7 +55,9 @@ class SelectionStatement : public Statement{
     public :
 };
 Statement *create_selection_statement_if( Expression *ex, GoTo * _false, Label * l1, Statement *st1, GoTo * _goto, Label * l2, Statement *st2 );
-Statement *create_selection_statement_switch(GoTo * _test, Expression *ex1, Statement* st1, GoTo * _goto);
+
+void create_switch( Expression * ex );
+Statement *create_selection_statement_switch(Expression *ex1, GoTo * _test, Statement* st1, GoTo * _goto);
 
 class IterationStatement : public Statement {
     public:

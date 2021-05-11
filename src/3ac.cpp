@@ -514,13 +514,22 @@ void arithmetic_optimise(Quad* q){
 			*q->result.addr = *q->arg1.addr;
 			q->dead=true;
 		}
-		else if((q->arg1.addr->name=="0" || q->arg1.addr->name=="0.0") && (q->operation=="+" || q->operation=="-")){
+		else if((q->arg1.addr->name=="0" || q->arg1.addr->name=="0.0") && q->operation=="+" ){
 			q->operation="";
 			q->arg1=q->arg2;
 			q->arg2.addr=nullptr;
 
 			*q->result.addr = *q->arg1.addr;
 			q->dead=true;
+		}
+		else if((q->arg1.addr->name=="0" || q->arg1.addr->name=="0.0") && q->operation=="-"){
+			;
+			//q->operation="";
+			//q->arg1=q->arg2;
+			//q->arg2.addr=nullptr;
+
+			//*q->result.addr = *q->arg1.addr;
+			//q->dead=true;
 		}
 		//*0
 		
@@ -539,7 +548,7 @@ void arithmetic_optimise(Quad* q){
 		}
 		//"0/0"
 		else if((q->arg2.addr->name=="0" || q->arg2.addr->name=="0.0") && q->operation=="/"){
-			error_msg( "Division by zero not possible:", line_num );
+			;
 		}
 		else if((q->arg1.addr->name=="0" || q->arg1.addr->name=="0.0") && q->operation=="/"){
 			q->operation="";
@@ -703,13 +712,13 @@ void optimise_pass1() {
 		}
 
 		if ( label2 != nullptr && _goto1 != nullptr && _goto1->res.addr == nullptr ) {
-			(*it)->dead = true;
+			//(*it)->dead = true;
 			label2->name = _goto1->label->name;
 			label2->instruction_id = _goto1->label->instruction_id;
 			_goto1->label->reference_count += label2->reference_count;
 			label2->dead = true;
-			_goto1->dead = true;
-			continue;
+//			_goto1->dead = true;
+			//continue;
 		}
 
 		quad = dynamic_cast<Quad *>(*it);

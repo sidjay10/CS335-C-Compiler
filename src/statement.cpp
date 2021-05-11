@@ -78,7 +78,22 @@ Statement *create_selection_statement_if( Expression *ex, GoTo * _false, Label *
 }
 
 
-Statement *create_selection_statement_switch(GoTo * _test, Expression *ex1, Statement* st1, GoTo * _next ){
+void create_switch( Expression * ex ){
+	Identifier * id = new Identifier(("switch:"+std::to_string(line_num)).c_str(), line_num, column);
+	SymTabEntry * symbol = new SymTabEntry("switch:"+std::to_string(line_num), line_num, column  );
+	symbol->type = Type(INT_T, 0, false);
+	size_t size = symbol->type.get_size();
+	local_symbol_table.offset += WORD_SIZE;
+	local_symbol_table.reqd_size = local_symbol_table.offset > local_symbol_table.reqd_size ? local_symbol_table.offset : local_symbol_table.reqd_size;
+	local_symbol_table.add_to_table( symbol, id, false);
+	Address* t2 = new_3id(symbol);
+	Address * t1;
+	MEM_EMIT(ex,t1);
+	emit(t2,"=",t1,nullptr);
+	ex->res = t2;
+}
+
+Statement *create_selection_statement_switch(Expression *ex1, GoTo * _test, Statement* st1, GoTo * _next ){
 	SelectionStatement * S= new SelectionStatement();
 	S->name="SWITCH";
 	S->add_children(ex1,st1);
@@ -91,7 +106,7 @@ Statement *create_selection_statement_switch(GoTo * _test, Expression *ex1, Stat
 	S->nextlist.push_back(_next);
 
 	Address *t1, *t2;
-	t1=ex1->res;
+	MEM_EMIT(ex1,t1);
 	t2= new_temp();
 	backpatch(_test, create_new_label());
 	Label * default_label = nullptr;

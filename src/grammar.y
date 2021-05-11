@@ -564,7 +564,7 @@ expression_statement
 selection_statement
 	:  IF '(' expression M_FALSE ')' M_LABEL statement	 			{ $$ = create_selection_statement_if( $3, $4, $6, $7, NULL, NULL, NULL);}
 	|  IF '(' expression M_FALSE ')' M_LABEL statement  ELSE M_GOTO M_LABEL statement	{ $$ = create_selection_statement_if( $3, $4, $6, $7, $9, $10, $11 );}
-	|  SWITCH '(' M_GOTO expression ')' statement M_GOTO			 { $$ = create_selection_statement_switch($3,$4,$6,$7); } 
+	|  SWITCH '(' expression { create_switch($3); } M_GOTO ')' statement M_GOTO			 { $$ = create_selection_statement_switch($3,$5,$7,$8); } 
 	;
 
 iteration_statement

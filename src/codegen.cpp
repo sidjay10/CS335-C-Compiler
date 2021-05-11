@@ -39,7 +39,7 @@ MemoryLocation create_memory_location(unsigned int id,  long offset){
 		}
 	} else if ( id & LOCAL_SYM_MASK ){
 		ml.base_reg = FP;
-		ml.offset = local_symbol_table.reqd_size - offset;
+		ml.offset = -local_symbol_table.reqd_size + offset;
 	} else {
 		assert(0);
 	}
@@ -210,6 +210,8 @@ void issue_load( ARCH_REG r, OFFSET_REGISTER base, long offset ) {
 		ss << offset << "($fp)\n"; 
 	} else if ( base == GP ) {
 		ss << offset << "($gp)\n"; 
+	} else {
+		 assert(0);
 	}
 	std::cout << ss.str();
 }
@@ -477,8 +479,7 @@ void gen_asm_instr_imm(std::string operation, ADDRESS & result, ADDRESS & arg1, 
 			assert(0);
 		}
 	} else {
-		ss << "ASM: \t" << "lui $v1, " << (short) (value >> 16) << "\n";
-		ss << "ASM: \t" << "li $v1, "  << (short)  (value & 0xffff ) << "\n";
+		ss << "ASM: \t" << "li $v1, "  << value << "\n";
 		if ( operation == "+" ) {
 			ss << "ASM: \t" << "addiu" << " " << dest <<", " << src1 << ", " << v1 <<"\n";
 		} else if ( operation == "-" ) {
@@ -547,7 +548,7 @@ void gen_asm_instr(std::string operation, ADDRESS & result, ADDRESS & arg1){
 
 	if ( operation == "=" ) {
 		if ( dest != src1 ) {
-			ss << "ASM: \t" << "mov" << " " << dest <<", " << src1 <<"\n";
+			ss << "ASM: \t" << "move" << " " << dest <<", " << src1 <<"\n";
 		}
 	} else if ( operation == "()" ) {
 		// TODO: Implement load sizes;
@@ -573,16 +574,22 @@ void gen_asm_instr_imm(std::string operation, ADDRESS & result , ADDRESS & arg1)
 	if ( !result.alive ) {
 		ss << "ASM: xxxx\t";
 	}
-	ARCH_REG dest = mmu.get_reg( tINV, result.addr, 0, false);
+	ARCH_REG dest;
+	 if ( operation == "()s" ) {
+		dest = mmu.get_reg( tINV, result.addr, 2, true);
+		assert( dest != tINV );
+	 } else {
+		dest = mmu.get_reg( dest, result.addr, 0, false);
+	}
 	int value = ( int ) std::stoi(arg1.addr->name);
 
 	if ( operation == "=" ) {
-		if ( value >= (int) -0x8000 && value < (int) 0x8000 ) {
-			ss << "ASM: \t" << "li "<< dest << ", " << (short) value << "\n";
-		} else {
-			ss << "ASM: \t" << "lui "<< dest << ", " << (short) ( value >> 16 ) << "\n";
-			ss << "ASM: \t" << "li "<< dest << ", " << (short) ( value & 0xffff )<< "\n";
-		}
+			ss << "ASM: \t" << "li "<< dest << ", " << value << "\n";
+	} else if ( operation == "()s" ) {
+			ss << "ASM: \t" << "li $v1, " << value << "\n";
+		// TODO: Implement  store  sizes;
+		ss << "ASM: \t" << "sw" << " $v1, 0(" << dest << ")\n";
+
 	} else {
 		std::cerr << "PANIC: unknown operation " << operation << "\n";
 		assert(0);
@@ -600,12 +607,7 @@ void process_return( Return * r ) {
 	if (r->retval.addr != nullptr) {
 		if ( r->retval.addr->type == CON ) {
 			int value = ( int ) std::stoi(r->retval.addr->name);
-			if ( value >= -0x8000 && value < 0x80000 ) {
-				ss << "ASM: \t" << "li $v0, " << (short)  (value & 0xffff ) << "\n";
-			} else {
-				ss << "ASM: \t" << "lui $v0, " << (short) (value >> 16) << "\n";
-				ss << "ASM: \t" << "li $v0, "  << (short)  (value & 0xffff ) << "\n";
-			}
+				ss << "ASM: \t" << "li $v0, " << value << "\n";
 		} else {
 			ARCH_REG reg = mmu.get_reg( tINV, r->retval.addr, 2, true );
 			ss << "ASM: \t" << "move $v0, " << reg <<"\n";
@@ -624,17 +626,12 @@ void process_arg( Arg * a) {
 		ARCH_REG arg_reg = static_cast<ARCH_REG>( a->num + a0 ); 
 		if ( it != mmu.memory_locations.end() ) {
 			mmu.temp_stack.push_back( arg_reg );
-			int offset = 4*mmu.temp_stack.size();
-			ss << "ASM: \t" << "sw " << arg_reg << ", " << offset << "($sp)\n";
+			ss << "ASM: \t" << "addiu $sp, $sp, -4\n"; 
+			ss << "ASM: \t" << "sw " << arg_reg << ", " << 0 << "($sp)\n";
 		}
 		if ( a->arg.addr->type == CON ) {
-			unsigned long value = (unsigned long ) std::stol(a->arg.addr->name);
-			if ( value <= 0xffff ) {
-				ss << "ASM: \t" << "li " << arg_reg << ", " << (short)  (value & 0xffff ) << "\n";
-			} else {
-				ss << "ASM: \t" << "lui " << arg_reg << ", " << (short) (value >> 16) << "\n";
-				ss << "ASM: \t" << "li " << arg_reg << ", "<< (short)  (value & 0xffff ) << "\n";
-			}
+			int value = std::stoi(a->arg.addr->name);
+				ss << "ASM: \t" << "li " << arg_reg << ", " << value << "\n";
 			std::cout << ss.str(); 
 		} else {
 			ARCH_REG reg = mmu.get_reg( tINV, a->arg.addr, 2, true );
@@ -651,22 +648,17 @@ void process_arg( Arg * a) {
 		}
 	} else {
 		if ( a->arg.addr->type == CON ) {
-			unsigned long value = (unsigned long ) std::stol(a->arg.addr->name);
-			if ( value <= 0xffff ) {
-				ss << "ASM: \t" << "li $v1, " << (short)  (value & 0xffff ) << "\n";
-			} else {
-				ss << "ASM: \t" << "lui $v1, " << (short) (value >> 16) << "\n";
-				ss << "ASM: \t" << "li $v1, "  << (short)  (value & 0xffff ) << "\n";
-				mmu.temp_stack.push_back( at );
-				int offset = 4*mmu.temp_stack.size();
-				ss << "ASM: \t" << "sw $v1, " << offset << "($sp)\n";
-			}
+			int value = std::stoi(a->arg.addr->name);
+			ss << "ASM: \t" << "li $v1, " << value << "\n";
+			mmu.temp_stack.push_back( at );
+			ss << "ASM: \t" << "addiu $sp, $sp, -4\n"; 
+			ss << "ASM: \t" << "sw $v1, " << 0 << "($sp)\n";
 			std::cout << ss.str(); 
 		} else {
 			ARCH_REG reg = mmu.get_reg( tINV, a->arg.addr, 2, true );
 			mmu.temp_stack.push_back( at );
-			int offset = 4*mmu.temp_stack.size();
-			ss << "ASM: \t" << "sw " << reg << ", " << offset << "($sp)\n";
+			ss << "ASM: \t" << "addiu $sp, $sp, -4\n"; 
+			ss << "ASM: \t" << "sw " << reg << ", " << 0 << "($sp)\n";
 			std::cout << ss.str();
 			if ( !a->arg.alive ) {
 				mmu.free_reg( reg );
@@ -689,8 +681,8 @@ void process_call( Call * c) {
 	while ( !mmu.temp_stack.empty() ) {
 		ARCH_REG r = mmu.temp_stack.back();
 		if ( r != at ) {
-			int offset = 4*mmu.temp_stack.size();
-			ss << "ASM: \t" << "lw " << r << ", " << offset << "($sp)\n";
+			ss << "ASM: \t" << "lw " << r << ", " << 0 << "($sp)\n";
+			ss << "ASM: \t" << "addiu $sp, $sp, 4\n"; 
 		}
 		mmu.temp_stack.pop_back();
 	}
@@ -733,8 +725,8 @@ void process_save_live( SaveLive * s ){
 				// Put this on the stack;
 				assert ( reg != tINV && reg <= t9 && reg >= t0 );
 				mmu.temp_stack.push_back( reg );
-				int offset = 4*mmu.temp_stack.size();
-				ss << "ASM: \t" << "sw " << reg << ", " << offset << "($sp)\n";
+				ss << "ASM: \t" << "addiu $sp, $sp, -4\n"; 
+				ss << "ASM: \t" << "sw " << reg << ", " << 0 << "($sp)\n";
 		} else if ( mmu.reg_alloc_info[ r % NUM_TEMP_REGS ] != 0 ) {
 			mmu.store_and_free_reg( reg );
 		}
@@ -756,14 +748,13 @@ void gen_epilogue() {
 		reqd_size = reqd_size & 0xffff;
 		ss << "ASM: \t" << "addiu $sp, $sp, " << (short) reqd_size << "\n";
 	} else {
-		ss << "ASM: \t" << "lui $v1, " << (short) (reqd_size >> 16) << "\n";
-		ss << "ASM: \t" << "li $v1, " << (short)  (reqd_size & 0xffff ) << "\n";
+		ss << "ASM: \t" << "li $v1, " << reqd_size  << "\n";
 		ss << "ASM: \t" << "addu $sp, $sp, $v1\n";
 	}
-	ss << "ASM: \t" << "lw $ra, 4($sp)\n";
+	ss << "ASM: \t" << "move $sp, $fp\n";
 	ss << "ASM: \t" << "lw $fp, 0($sp)\n";
+	ss << "ASM: \t" << "lw $ra, 4($sp)\n";
 	ss << "ASM: \t" << "addiu $sp, $sp, " << 8 <<"\n";
-	ss << "ASM: \t" << "move $fp, $sp\n";
 	ss << "ASM: \t" << "jr $ra\n";
 	std::cout << ss.str();
 }
@@ -782,8 +773,7 @@ void gen_prologue( ) {
 		reqd_size = ( ~reqd_size + 1 ) & 0xffff;
 		ss << "ASM: \t" << "addiu $sp, $sp, " << (short) reqd_size << "\n";
 	} else {
-		ss << "ASM: \t" << "lui $v1, " << (short) (reqd_size >> 16) << "\n";
-		ss << "ASM: \t" << "li $v1, " << (short)  (reqd_size & 0xffff ) << "\n";
+		ss << "ASM: \t" << "li $v1, " << reqd_size << "\n";
 		ss << "ASM: \t" << "subu $sp, $sp, $v1\n";
 	}
 	std::cout << ss.str();

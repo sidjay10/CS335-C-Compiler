@@ -356,10 +356,10 @@ class PostfixExpression : public Expression {
 };
 
 union data{
+    unsigned long ul;
     int i;
     unsigned int ui;
     long l;
-    unsigned long ul;
     float f;
     double d;
     char c;
