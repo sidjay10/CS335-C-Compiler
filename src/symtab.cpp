@@ -783,7 +783,7 @@ void Declaration::add_to_symbol_table( GlobalSymbolTable &sym_tab ) {
             assert( 0 );
         }
 
-        if ( e->type.isVoid() ) {
+        if ( e->type.isVoid()  && dd->type != FUNCTION ) {
             error_msg( "Invalid type void for variable " + ( *i )->id->value,
                        declaration_specifiers->type_specifier[0]->line_num,
                        declaration_specifiers->type_specifier[0]->column );

@@ -115,9 +115,9 @@ std::ostream& operator<<(std::ostream& os, const Quad& q){
 	} else if ( q.operation == "=s" ) {
 		os << q.instr << ": " <<  q.result  << " = " << q.arg1;
 	} else if ( q.operation == "push" ) {
-		os << q.instr << ": " <<  "push " << q.arg1;
+		assert(0);
 	} else if ( q.operation.substr(0,3) == "arg" ) {
-		os << q.instr << ": " << q.operation  << " " << q.arg1;
+		assert(0);
 	} else {
 		os << q.instr << ": " << q.result << " = " << q.operation << " " << q.arg1 ;
 	}
@@ -147,6 +147,7 @@ std::string Quad::print() {
 unsigned long long temporaries = 1;
 
 Address::Address(std::string _name, ADD_TYPE _type ) : name (_name) , type(_type), ta_instr(nullptr)  {};
+Address::Address(long _value, ADD_TYPE _type ) : name (std::to_string(_value)) , type(_type), ta_instr(nullptr) {};
 
 Address * new_temp() {
 	Address * t = new Address("t" + std::to_string(temporaries), TEMP );
@@ -802,8 +803,13 @@ void create_next_use_info(){
 				auto it = get_entry_from_table(q->result.addr);
 				q->result.alive = it->second.alive;
 				q->result.next_use = it->second.next_use;
-				it->second.alive = false;
-				it->second.next_use = nullptr;
+				if( q->operation == "()s" ) {
+					it->second.alive = true;
+					it->second.next_use = &q->result;
+				} else {
+					it->second.alive = false;
+					it->second.next_use = nullptr;
+				}
 
 			}
 			if ( q->arg1.addr != nullptr && q->arg1.addr->type != CON ) {
@@ -848,7 +854,7 @@ void create_next_use_info(){
 			} else {
 				r->retval.alive = true;
 			}
-			it->second.alive = false;
+			it->second.alive = true;
 			it->second.next_use = &r->retval;
 			continue;
 		}

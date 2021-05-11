@@ -73,6 +73,11 @@ ARCH_REG MemManUnit::get_reg( ARCH_REG dest, Address * a , int mem_valid , bool 
 	auto it = memory_locations.find( a->table_id );
 	if ( it != memory_locations.end() ) {
 		if ( it->second.reg != tINV ) {
+			if ( mem_valid == 1 ) {
+				it->second.in_mem = true;
+			} else if ( mem_valid == 0 ) {
+				it->second.in_mem = false;
+			}
 			return it->second.reg;
 		}
 
@@ -87,6 +92,8 @@ ARCH_REG MemManUnit::get_reg( ARCH_REG dest, Address * a , int mem_valid , bool 
 		it->second.reg = r;
 		if ( load && it->second.in_mem && !it->second.is_ea ) {
 			issue_load(r, it->second.base_reg, it->second.offset );
+		} else if ( load && it->second.is_ea ) {
+			issue_load_ea(r, it->second );
 		} else if ( load ) {
 			std::cerr << "PANIC : Loading value not in memory\n";
 			assert(0);
@@ -204,6 +211,20 @@ void issue_load( ARCH_REG r, OFFSET_REGISTER base, long offset ) {
 	} else if ( base == GP ) {
 		ss << offset << "($gp)\n"; 
 	}
+	std::cout << ss.str();
+}
+
+void issue_load_ea( ARCH_REG r, MemoryLocation & ml ) {
+	//TODO: Implement different sizes
+	//TODO: Implement different offset sizes
+	std::stringstream ss;
+	ss << "ASM: \t" << "addiu " << r << ", ";
+	if ( ml.base_reg == FP ) {
+		ss << "$fp"; 
+	} else if ( ml.base_reg == GP ) {
+		ss << "$gp"; 
+	}
+	ss << ", " << ml.offset << "\n";
 	std::cout << ss.str();
 }
 
@@ -327,43 +348,22 @@ void process_quad ( Quad * q ) {
 
 	} else if ( q->arg1.addr != nullptr ) {
 		if ( q->arg1.addr->type != CON ) {
-			ARCH_REG src1 = mmu.get_reg( tINV, q->arg1.addr , 2, true);
-			ARCH_REG dest = tINV;
-			if ( !q->arg1.alive ) {
-				mmu.free_reg( src1 );
-				dest = src1;
-			} else if ( q->arg1.alive && q->arg1.next_use == nullptr ) {
-				mmu.store_and_free_reg( src1 );
-				dest = src1;
-			}
-			dest = mmu.get_reg(dest, q->result.addr, 0, false);
-			std::cout << "ASM: " << q->operation << " t" << dest << ", t" << src1 <<"\n";
-
-			if ( q->result.alive && q->result.next_use == nullptr ) {
-				mmu.store_and_free_reg( dest );
-			}
+			gen_asm_instr( q->operation, q->result, q->arg1);
 
 		} else {
-			ARCH_REG dest = mmu.get_reg(tINV, q->result.addr, 0, false);
-
-			std::cout << "ASM: " << q->operation << " t" << dest << " " <<  q->operation << " " << *q->arg1.addr << "\n"; 
-			if ( q->result.alive && q->result.next_use == nullptr ) {
-				mmu.store_and_free_reg( dest );
-			}
-			//Ideally this case should be optimised out
+			gen_asm_instr_imm( q->operation, q->result, q->arg1);
 			;
 		}
-
 	}  
-
 }
 
 
 void gen_asm_instr(std::string operation, ADDRESS & result, ADDRESS & arg1, ADDRESS & arg2){
 
 	std::stringstream ss;
-	if ( result.alive ) {
-		ss << "ASM: xxxx\n";
+
+	if ( !result.alive ) {
+		ss << "ASM: xxxx\t";
 	}
 
 
@@ -379,7 +379,7 @@ void gen_asm_instr(std::string operation, ADDRESS & result, ADDRESS & arg1, ADDR
 		dest = src2;
 	}
 
-	if ( arg1.alive ) {
+	if ( !arg1.alive ) {
 		mmu.free_reg( src1 );
 		dest = src1;
 	} 
@@ -428,11 +428,14 @@ void gen_asm_instr_imm(std::string operation, ADDRESS & result, ADDRESS & arg1, 
 	std::stringstream ss;
 
 	ARCH_REG src1 = mmu.get_reg(tINV, arg1.addr , 2, true);
+	if ( !result.alive ) {
+		ss << "ASM: xxxx\t";
+	}
 	
 	
 	ARCH_REG dest = tINV;
 
-	if ( arg1.alive ) {
+	if ( !arg1.alive ) {
 		mmu.free_reg( src1 );
 		dest = src1;
 	} 
@@ -468,7 +471,7 @@ void gen_asm_instr_imm(std::string operation, ADDRESS & result, ADDRESS & arg1, 
 		}  else if ( operation == ">>" ) {
 			ss << "ASM: \t" << "sra" << " " << dest <<", " << src1 << ", " << (short) value <<"\n";
 		}  else if ( operation == "<<" ) {
-			ss << "ASM: \t" << "sla" << " " << dest <<", " << src1 << ", " << (short) value <<"\n";
+			ss << "ASM: \t" << "sll" << " " << dest <<", " << src1 << ", " << (short) value <<"\n";
 		} else {
 			std::cerr << "PANIC: unknown operation " << operation << "\n";
 			assert(0);
@@ -515,8 +518,82 @@ void gen_asm_instr_imm(std::string operation, ADDRESS & result, ADDRESS & arg1, 
 }
 
 void gen_asm_instr_limm(std::string operation, ADDRESS & result, ADDRESS & arg1, ADDRESS & arg2);
-void gen_asm_instr(std::string operation, ADDRESS & result, ADDRESS & arg1);
-void gen_asm_instr_imm(std::string operation, ADDRESS & result, ADDRESS & arg1);
+
+void gen_asm_instr(std::string operation, ADDRESS & result, ADDRESS & arg1){
+
+	std::stringstream ss;
+	if ( operation != "()s" && !result.alive ) {
+		ss << "ASM: xxxx\t";
+	}
+	ARCH_REG src1 = mmu.get_reg(tINV, arg1.addr , 2, true);
+	ARCH_REG dest = tINV;
+
+	if ( operation != "()s" && !arg1.alive ) {
+		mmu.free_reg( src1 );
+		dest = src1;
+	} 
+	else if ( operation != "()s" &&  arg1.alive && arg1.next_use == nullptr  ) {
+		mmu.store_and_free_reg( src1 );
+		dest = src1;
+	}
+
+	 if ( operation == "()s" ) {
+		dest = mmu.get_reg( tINV, result.addr, 2, true);
+		assert( dest != tINV );
+	 } else {
+		dest = mmu.get_reg( dest, result.addr, 0, false);
+	}
+
+
+	if ( operation == "=" ) {
+		if ( dest != src1 ) {
+			ss << "ASM: \t" << "mov" << " " << dest <<", " << src1 <<"\n";
+		}
+	} else if ( operation == "()" ) {
+		// TODO: Implement load sizes;
+		ss << "ASM: \t" << "lw" << " " << dest <<", 0(" << src1 << ")\n";
+	} else if ( operation == "()s" ) {
+		// TODO: Implement  store  sizes;
+		ss << "ASM: \t" << "sw" << " " << src1 <<", 0(" << dest << ")\n";
+	} else {
+		std::cerr << "PANIC: unknown operation " << operation << "\n";
+		assert(0);
+	}
+
+
+	std::cout << ss.str();
+
+	if ( result.alive && result.next_use == nullptr ) {
+		mmu.store_and_free_reg( dest );
+	}
+}
+
+void gen_asm_instr_imm(std::string operation, ADDRESS & result , ADDRESS & arg1){
+	std::stringstream ss;
+	if ( !result.alive ) {
+		ss << "ASM: xxxx\t";
+	}
+	ARCH_REG dest = mmu.get_reg( tINV, result.addr, 0, false);
+	int value = ( int ) std::stoi(arg1.addr->name);
+
+	if ( operation == "=" ) {
+		if ( value >= (int) -0x8000 && value < (int) 0x8000 ) {
+			ss << "ASM: \t" << "li "<< dest << ", " << (short) value << "\n";
+		} else {
+			ss << "ASM: \t" << "lui "<< dest << ", " << (short) ( value >> 16 ) << "\n";
+			ss << "ASM: \t" << "li "<< dest << ", " << (short) ( value & 0xffff )<< "\n";
+		}
+	} else {
+		std::cerr << "PANIC: unknown operation " << operation << "\n";
+		assert(0);
+	}
+
+	std::cout << ss.str();
+
+	if ( result.alive && result.next_use == nullptr ) {
+		mmu.store_and_free_reg( dest );
+	}
+}
 
 void process_return( Return * r ) {
 	std::stringstream ss;

@@ -67,6 +67,7 @@ class MemoryLocation {
 	friend MemoryLocation create_temp_mem_location(unsigned int id,  ARCH_REG reg );
 	friend void set_is_ea( unsigned int id );
 	friend void process_arg( Arg * a);
+	friend void issue_load_ea( ARCH_REG r, MemoryLocation & ml );
 	friend class MemManUnit;
 public:
 	MemoryLocation();
@@ -121,6 +122,7 @@ extern std::vector< AsmInstr > asm_code;
 
 void gen_asm_code( );
 void issue_load( ARCH_REG r, OFFSET_REGISTER base, long offset );
+void issue_load_ea( ARCH_REG r, MemoryLocation & ml );
 void issue_store( ARCH_REG r, OFFSET_REGISTER base, long offset );
 
 

@@ -32,10 +32,12 @@ class ThreeAC;
 class Address {
 public:
 	std::string name;
+//	long value;
 	ADD_TYPE type;
 	ThreeAC * ta_instr;
 	unsigned int table_id;
 	Address( std::string name, ADD_TYPE type);
+	Address( long value, ADD_TYPE type);
 	
 };
 
