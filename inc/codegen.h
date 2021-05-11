@@ -16,23 +16,26 @@ class Address;
 
 typedef enum ARCH_REG_ {
 	tINV = -1,
-	t0 = 0,
-	t1 = 1,
-	t2 = 2,
-	t3 = 3,
-	t4 = 4,
-	t5 = 5,
-	t6 = 6,
-	t7 = 7,
-	t8 = 8,
-	t9 = 9,
-	a0 = 10,
-	a1 = 11,
-	a2 = 12,
-	a3 = 13,
-	v0 = 14,
-	v1 = 15
+	at = 1,
+	v0 = 2,
+	v1 = 3,
+	a0 = 4,
+	a1 = 5,
+	a2 = 6,
+	a3 = 7,
+	t0 = 8,
+	t1 = 9,
+	t2 = 10,
+	t3 = 11,
+	t4 = 12,
+	t5 = 13,
+	t6 = 14,
+	t7 = 15,
+	t8 = 16, //??
+	t9 = 17,
 } ARCH_REG;
+
+std::ostream& operator<<( std::ostream &os, ARCH_REG & a);
 
 typedef enum _registers {
         rINV = 0,       //Invalid      
@@ -44,6 +47,7 @@ typedef enum _registers {
 
 
 class MemManUnit;
+class Arg;
 
 class MemoryLocation {
 	unsigned int id;
@@ -62,6 +66,7 @@ class MemoryLocation {
 	friend MemoryLocation create_memory_location( unsigned int id, long offset );
 	friend MemoryLocation create_temp_mem_location(unsigned int id,  ARCH_REG reg );
 	friend void set_is_ea( unsigned int id );
+	friend void process_arg( Arg * a);
 	friend class MemManUnit;
 public:
 	MemoryLocation();
@@ -73,7 +78,7 @@ void set_is_ea( unsigned int id );
 
 class MemManUnit {
 public:
-	ARCH_REG start_issue;
+	int start_issue;
 	std::vector<ARCH_REG> temp_stack;
 	std::vector<unsigned int> reg_alloc_info;
 	std::set<unsigned int> live_vals;
@@ -85,6 +90,7 @@ public:
 	void free_reg ( ARCH_REG reg );
 	void store_and_free_reg ( ARCH_REG reg );
 	void set_reg ( unsigned int table_id, ARCH_REG reg );
+	void reset();
 };
 
 extern MemManUnit mmu;
@@ -107,6 +113,8 @@ class AsmInstr {
 	uint16_t immm;
 	OP_CODE  opc;
 };
+
+typedef struct _addresses ADDRESS;
 
 extern std::vector< AsmInstr > asm_code;
 
@@ -132,6 +140,13 @@ void process_call( Call * c );
 void process_arg( Arg * a );
 void process_return( Return * r );
 void process_save_live( SaveLive * s );
+
+void gen_asm_instr(std::string operation, ADDRESS & result, ADDRESS & arg1, ADDRESS & arg2);
+void gen_asm_instr_imm(std::string operation, ADDRESS & result, ADDRESS & arg1, ADDRESS & arg2);
+void gen_asm_instr_limm(std::string operation, ADDRESS & result, ADDRESS & arg1, ADDRESS & arg2);
+void gen_asm_instr(std::string operation, ADDRESS & result, ADDRESS & arg1);
+void gen_asm_instr_imm(std::string operation, ADDRESS & result, ADDRESS & arg1);
+
 void gen_epilogue();
 void gen_prologue( );
 

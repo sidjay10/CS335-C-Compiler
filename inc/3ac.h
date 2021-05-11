@@ -233,7 +233,7 @@ Call * create_new_call( Address * addr , std::string f_name );
 class Return : public ThreeAC {
 	public : 
 		ADDRESS retval;
-		Return();
+		Return( Address * _retval );
 		std::string print();
 		~Return();
 	friend Return * create_new_return( Address * retval );
@@ -246,6 +246,7 @@ std::ostream& operator<<(std::ostream& os, const Return& r);
 
 class SaveLive : public ThreeAC {
 	public:
+		bool save_temps;
 		SaveLive();
 		std::string print();
 };

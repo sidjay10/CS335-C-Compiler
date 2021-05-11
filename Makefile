@@ -3,6 +3,7 @@ CC = gcc
 CXX = g++
 LEX = flex
 YACC = bison -y
+LD = ld
 
 #This target can keep changing based on final binary required
 #TARGET = scanner
@@ -50,38 +51,43 @@ all: $(TARGET)
 #	$(CXX) $(CXXFLAGS) $(LDFLAGS) $(INCFLAGS) $(BUILDDIR)/lex.yy.c $(BUILDDIR)/y.tab.c $(SRCDIR)/parser.cpp $(SRCDIR)/ast.cpp $(SRCDIR)/symtab.cpp $(SRCDIR)/expression.cpp -o $(TARGETDIR)/symtab 
 
 
-compiler: grammar patterns symtab expression 3ac codegen
+.PHONY: compiler
+compiler: $(BUILDDIR)/symtab.o $(BUILDDIR)/expression.o $(BUILDDIR)/3ac.o $(BUILDDIR)/codegen.o
 	@mkdir -p $(TARGETDIR)
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) $(INCFLAGS) $(BUILDDIR)/patterns.o $(BUILDDIR)/grammar.o $(BUILDDIR)/parser.o $(BUILDDIR)/ast.o $(BUILDDIR)/symtab.o $(BUILDDIR)/expression.o $(BUILDDIR)/3ac.o $(BUILDDIR)/statement.o $(BUILDDIR)/codegen.o -o $(TARGETDIR)/compiler 
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) $(INCFLAGS) $(BUILDDIR)/symtab.o $(BUILDDIR)/expression.o $(BUILDDIR)/3ac.o $(BUILDDIR)/codegen.o -o $(TARGETDIR)/compiler 
 
-codegen: 
+$(BUILDDIR)/codegen.o: $(INCDIR)/codegen.h $(SRCDIR)/codegen.cpp
 	@mkdir -p $(BUILDDIR)
 	$(CXX) -c $(CXXFLAGS) $(LDFLAGS) $(INCFLAGS)  $(SRCDIR)/codegen.cpp  -o $(BUILDDIR)/codegen.o
 
-3ac: 
+$(BUILDDIR)/3ac.o: $(INCDIR)/3ac.h $(INCDIR)/statement.h $(SRCDIR)/3ac.cpp $(SRCDIR)/statement.cpp
 	@mkdir -p $(BUILDDIR)
-	$(CXX) -c $(CXXFLAGS) $(LDFLAGS) $(INCFLAGS)  $(SRCDIR)/3ac.cpp  -o $(BUILDDIR)/3ac.o
 	$(CXX) -c $(CXXFLAGS) $(LDFLAGS) $(INCFLAGS)  $(SRCDIR)/statement.cpp -o $(BUILDDIR)/statement.o
+	$(CXX) -c $(CXXFLAGS) $(LDFLAGS) $(INCFLAGS)  $(SRCDIR)/3ac.cpp -o $(BUILDDIR)/3ac_.o
+	$(LD) -Ur $(BUILDDIR)/statement.o $(BUILDDIR)/3ac_.o -o $(BUILDDIR)/3ac.o
 
-expression:
+$(BUILDDIR)/expression.o: $(INCDIR)/expression.h $(SRCDIR)/expression.cpp
 	@mkdir -p $(BUILDDIR)
 	$(CXX) -c $(CXXFLAGS) $(LDFLAGS) $(INCFLAGS) $(SRCDIR)/expression.cpp  -o $(BUILDDIR)/expression.o 
 
-symtab:
+$(BUILDDIR)/symtab.o: patterns grammar $(INCDIR)/ast.h $(INCDIR)/symtab.h $(SRCDIR)/ast.cpp $(SRCDIR)/parser.cpp $(SRCDIR)/symtab.cpp
 	@mkdir -p $(BUILDDIR)
 	$(CXX) -c $(CXXFLAGS) $(LDFLAGS) $(INCFLAGS) $(BUILDDIR)/y.tab.c -o $(BUILDDIR)/grammar.o 
 	$(CXX) -c $(CXXFLAGS) $(LDFLAGS) $(INCFLAGS) $(BUILDDIR)/lex.yy.c -o $(BUILDDIR)/patterns.o 
 	$(CXX) -c $(CXXFLAGS) $(LDFLAGS) $(INCFLAGS) $(SRCDIR)/ast.cpp -o $(BUILDDIR)/ast.o 
 	$(CXX) -c $(CXXFLAGS) $(LDFLAGS) $(INCFLAGS) $(SRCDIR)/parser.cpp -o $(BUILDDIR)/parser.o 
-	$(CXX) -c $(CXXFLAGS) $(LDFLAGS) $(INCFLAGS) $(SRCDIR)/symtab.cpp -o $(BUILDDIR)/symtab.o 
+	$(CXX) -c $(CXXFLAGS) $(LDFLAGS) $(INCFLAGS) $(SRCDIR)/symtab.cpp -o $(BUILDDIR)/symtab_.o 
+	$(LD) -Ur $(BUILDDIR)/grammar.o $(BUILDDIR)/patterns.o $(BUILDDIR)/ast.o $(BUILDDIR)/parser.o $(BUILDDIR)/symtab_.o -o $(BUILDDIR)/symtab.o
 
-grammar:
+.PHONY: grammar
+grammar: $(GRAMMAR)
 	$(YACC) $(YFLAGS) $(GRAMMAR)
 	@mkdir -p $(BUILDDIR)
 	@mv y.tab.c $(BUILDDIR)/.
 	@mv y.tab.h $(INCDIR)/.
 
-patterns:
+.PHONY: patterns
+patterns: $(PATTERNS)
 	$(LEX) $(PATTERNS)
 	@mkdir -p $(BUILDDIR)
 	@mv lex.yy.c $(BUILDDIR)/.

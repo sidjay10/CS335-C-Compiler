@@ -373,7 +373,7 @@ std::ostream& operator<<(std::ostream& os, const Call& c){
 }
 
 
-Return::Return() : ThreeAC(), retval({nullptr, true, nullptr}) {
+Return::Return( Address * _retval ) : ThreeAC(), retval({_retval, true, nullptr}) {
 	dead = false;
 	if( retval.addr != nullptr && retval.addr->ta_instr!=nullptr) {
 		retval.addr->ta_instr->dead = false;
@@ -411,8 +411,7 @@ std::ostream& operator<<(std::ostream& os, const Return& r){
 }
 
 Return * create_new_return( Address * retval ){
-	Return * _return = new Return();
-	_return->retval.addr = retval;
+	Return * _return = new Return(retval);
 	ta_code.push_back(_return);
 	return _return;
 }
@@ -616,7 +615,7 @@ void repeat_var(Quad* q){
 }
 */
 
-SaveLive::SaveLive() : ThreeAC(false) { dead = false;};
+SaveLive::SaveLive() : ThreeAC(false) , save_temps(true) { dead = false;};
 
 
 SaveLive * create_new_save_live() {
@@ -762,7 +761,7 @@ void create_basic_blocks() {
 		GoTo * _goto = dynamic_cast<GoTo *> (*it);
 		Return * _return = dynamic_cast<Return *>(*it);
 		Call * call = dynamic_cast<Call *>(*it);
-		if(  call != nullptr || _goto != nullptr || _return != nullptr ) {
+		if(   _goto != nullptr || _return != nullptr ) {
 			basic_blks++;
 			incremented = true;
 		}
@@ -843,9 +842,13 @@ void create_next_use_info(){
 
 		if ( r != nullptr && r->retval.addr != nullptr && r->retval.addr->type != CON ) {
 			auto it = get_entry_from_table(r->retval.addr);
-			r->retval.alive = it->second.alive;
 			r->retval.next_use = it->second.next_use;
-			it->second.alive = true;
+			if ( it->second.next_use == nullptr ) {
+				r->retval.alive = false;
+			} else {
+				r->retval.alive = true;
+			}
+			it->second.alive = false;
 			it->second.next_use = &r->retval;
 			continue;
 		}

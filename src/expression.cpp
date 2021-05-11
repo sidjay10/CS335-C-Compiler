@@ -881,13 +881,11 @@ Expression *create_additive_expression( std::string op, Expression *ade,
             if ( !adeT.isUnsigned() && !meT.isUnsigned() ) {
                 ;
             } else if ( adeT.isUnsigned() && meT.isUnsigned() ) {
-                op += "u";
+		;
             } else if ( !adeT.isUnsigned() && meT.isUnsigned() ) {
                 adeT.make_unsigned();
-                op += "u";
             } else if ( adeT.isUnsigned() && !meT.isUnsigned() ) {
                 meT.make_unsigned();
-                op += "u";
             }
 
             Address *t1, *t2;
@@ -923,9 +921,8 @@ Expression *create_additive_expression( std::string op, Expression *ade,
 		P->res = new_mem();
         Type t = adeT;
         t.ptr_level--;
-        op += "u";
 		Address * t2 = new_temp();
-        emit( t2, "*u", t1, new_3const( t.get_size() , INT3 ));
+        emit( t2, "*", t1, new_3const( t.get_size() , INT3 ));
         emit( P->res, op, ade->res, t2 );
         P->name = "additive_expression";
         Node *n_op = create_non_term( ( op ).c_str() );
@@ -938,10 +935,9 @@ Expression *create_additive_expression( std::string op, Expression *ade,
 //      MEM_EMIT( me, t2 );
         Type t = meT;
         t.ptr_level--;
-        op += "u";
 		P->res = new_mem();
 		Address * t2 = new_temp();
-        emit( t2, "*u", t1, new_3const( t.get_size() , INT3 ));
+        emit( t2, "*", t1, new_3const( t.get_size() , INT3 ));
         emit( P->res, op, me->res, t2 );
         P->name = "additive_expression";
         Node *n_op = create_non_term( ( op ).c_str() );
@@ -1141,7 +1137,7 @@ Expression *create_and_expression( std::string op, Expression *an,
                 // type
                 P->type.make_signed();
             } else {
-                op += "u";
+		;
             }
         } else {
             // Error
@@ -1190,7 +1186,7 @@ Expression *create_exclusive_or_expression( std::string op, Expression *ex,
                 // type
                 P->type.make_signed();
             } else {
-                op += "u";
+		;
             }
         } else {
             // Error
@@ -1240,7 +1236,7 @@ Expression *create_inclusive_or_expression( std::string op, Expression *ie,
                 // type
                 P->type.make_signed();
             } else {
-                op += "u";
+		;
             }
         } else {
             // Error
