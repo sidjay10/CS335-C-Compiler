@@ -259,6 +259,18 @@ bool Type::isInt() {
     }
 }
 
+bool Type::isChar() {
+    if ( typeIndex == U_CHAR_T || typeIndex == CHAR_T ) {
+        if ( ptr_level == 0 ) {
+            return true;
+        } else {
+            return false;
+        }
+    } else {
+        return false;
+    }
+}
+
 bool Type::isFloat() {
     if ( typeIndex >= 8 && typeIndex <= 10 && ptr_level == 0 )
         return true;
@@ -464,6 +476,7 @@ StructDefinition *create_struct_definition( int un_or_st,
     StructDefinition *sd = new StructDefinition();
     sd->un_or_st = un_or_st;
     std::cout << "struct {\n";
+	size_t offset = 0;
     for ( auto it = sdl->struct_declaration_list.begin();
           it != sdl->struct_declaration_list.end(); it++ ) {
         int type_index = ( *it )->sq_list->type_index;
@@ -496,6 +509,10 @@ StructDefinition *create_struct_definition( int un_or_st,
                            ( *jt )->id->line_num, ( *jt )->id->column );
                 continue;
             }
+			sd->offsets.insert( {(*jt)->id->value, offset} );
+			size_t size = type.get_size();
+			size =  size % WORD_SIZE ? WORD_SIZE - ( size % WORD_SIZE ) : size;
+			offset += size;
             sd->members.insert( {( *jt )->id->value, type} );
             std::cout << "  " << ( *jt )->id->value << " " << type.get_name()
                       << "\n";
@@ -516,6 +533,16 @@ Type *StructDefinition::get_member( Identifier *id ) {
     return nullptr;
 }
 
+size_t StructDefinition::get_offset( Identifier * id ) {
+
+	if ( un_or_st == UNION ) {
+		return 0;
+	}
+	
+	auto it = offsets.find(id->value);
+	assert(it != offsets.end() );
+	return it->second;
+}
 //##############################################################################
 //################################ POINTER #####################################
 //##############################################################################

@@ -64,9 +64,11 @@ class StructDeclarationList;
 class StructDefinition {
   public:
     std::map<std::string, Type> members;
+    std::map<std::string, size_t> offsets; 
     int un_or_st;
     StructDefinition();
     size_t get_size();
+    size_t get_offset( Identifier * id );
     Type *get_member( Identifier *id );
 	private:
 		int recursive;
@@ -115,6 +117,7 @@ class Type {
     bool isUnsigned();
     bool isPointer();
     bool isVoid();
+    bool isChar();
     bool is_invalid();
     void make_signed();
     void make_unsigned();

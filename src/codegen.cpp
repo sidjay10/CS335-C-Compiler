@@ -571,7 +571,7 @@ void gen_asm_instr(std::string operation, ADDRESS & result, ADDRESS & arg1){
 
 void gen_asm_instr_imm(std::string operation, ADDRESS & result , ADDRESS & arg1){
 	std::stringstream ss;
-	if ( !result.alive ) {
+	if ( operation != "()s" && !result.alive ) {
 		ss << "ASM: xxxx\t";
 	}
 	ARCH_REG dest;

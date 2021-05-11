@@ -146,8 +146,8 @@ std::string Quad::print() {
 
 unsigned long long temporaries = 1;
 
-Address::Address(std::string _name, ADD_TYPE _type ) : name (_name) , type(_type), ta_instr(nullptr)  {};
-Address::Address(long _value, ADD_TYPE _type ) : name (std::to_string(_value)) , type(_type), ta_instr(nullptr) {};
+Address::Address(std::string _name, ADD_TYPE _type ) : name (_name) , size(0), type(_type), ta_instr(nullptr)  {};
+Address::Address(long _value, ADD_TYPE _type ) : name (std::to_string(_value)) , size(0), type(_type), ta_instr(nullptr) {};
 
 Address * new_temp() {
 	Address * t = new Address("t" + std::to_string(temporaries), TEMP );
@@ -157,9 +157,10 @@ Address * new_temp() {
 	return t;
 }
 
-Address * new_mem() {
+Address * new_mem( ) {
 	Address * t = new Address("t" + std::to_string(temporaries), MEM );
 	t->table_id = TEMP_ID_MASK | temporaries;
+//	t->size = size;
 	temporaries++;
 	tac_info_table.insert({t->table_id,TacInfo(false)});
 	return t;
@@ -168,6 +169,7 @@ Address * new_mem() {
 Address * new_3id(SymTabEntry * symbol) {
 	Address * a = new Address(symbol->name, ID3);
 	a->table_id = symbol->id;
+	a->size = symbol->type.isChar() ? 1 : WORD_SIZE;
 	tac_info_table.insert({a->table_id,TacInfo(symbol)});
 	mmu.memory_locations.insert({a->table_id,create_memory_location( symbol->id, symbol->offset )});
 	if ( symbol->type.is_ea() ) {

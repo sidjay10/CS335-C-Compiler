@@ -32,6 +32,7 @@ class ThreeAC;
 class Address {
 public:
 	std::string name;
+	int size;
 //	long value;
 	ADD_TYPE type;
 	ThreeAC * ta_instr;

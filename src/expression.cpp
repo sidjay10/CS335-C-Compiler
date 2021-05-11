@@ -68,7 +68,7 @@ Expression *create_primary_constant( Constant *a ) {
 
     P->name = "primary_expression";
     P->add_child( a );
-	int value = ( int ) a->val.i;
+    int value = ( int ) a->val.i;
     P->res = new Address( value, CON );
 
     return P;
@@ -142,22 +142,23 @@ Expression *create_postfix_expr_arr( Expression *pe, Expression *e ) {
 	
 		Address * t1;
 		if ( e->res->type == CON ) {
-			unsigned long long off = std::stol(e->res->name)*P->type.get_size();
+			long off = std::stol(e->res->name)*P->type.get_size();
 			t1 = new_3const( off, INT3 );
 		} else {
 			t1 = new_temp();
 			emit( t1, "*", e->res, new_3const( P->type.get_size() , INT3 ));
 		}
-		
-		P->res = new_mem();
-		emit( P->res, "+", pe->res, t1 );
-		
+
 		if ( P->type.ptr_level == 0 ) {
 			P->type.is_pointer = false;
 		}
 		if ( P->type.array_dim == 0 ) {
 			P->type.is_array = 0;
 		}
+		
+		P->res = new_mem();
+		emit( P->res, "+", pe->res, t1 );
+		
 	} else if ( pe->type.is_pointer ) {
 		P->type = pe->type;
 		P->type.ptr_level--;
@@ -387,6 +388,15 @@ Expression *create_postfix_expr_struct( std::string access_op, Expression *pe,
             P->type = INVALID_TYPE;
             return P;
         }
+	size_t offset = peT.struct_definition->get_offset(i);
+	if ( offset == 0 ) {
+		P->res = new_mem();
+		emit(P->res,"=",pe->res,nullptr);
+	}
+	else {
+		P->res = new_mem();
+		emit( P->res, "+", pe->res, new_3const( peT.struct_definition->get_offset(i) , INT3 )); 
+	}
 
     } else if ( access_op == "->" ) {
         if ( ( peT.is_struct || peT.is_union ) && pe->type.ptr_level == 1 ) {
@@ -413,6 +423,17 @@ Expression *create_postfix_expr_struct( std::string access_op, Expression *pe,
             P->type = INVALID_TYPE;
             return P;
         }
+	size_t offset = peT.struct_definition->get_offset(i);
+	if ( offset == 0 ) {
+		P->res = new_mem();
+		emit(P->res, "()", pe->res, nullptr);
+	}
+	else {
+		Address * t1 = new_mem();
+		emit(t1, "()", pe->res, nullptr);
+		P->res = new_mem();
+		emit( P->res, "+", t1, new_3const( peT.struct_definition->get_offset(i) , INT3 )); 
+	}
     }
 
 
@@ -420,9 +441,6 @@ Expression *create_postfix_expr_struct( std::string access_op, Expression *pe,
 
     P->name = access_op;
     P->add_children( pe, i );
-    P->res = pe->res;
-    assert( pe->res->type != CON );
-    pe->res->name += ( access_op + i->value );
     return P;
 }
 
