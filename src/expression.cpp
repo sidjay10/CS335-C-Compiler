@@ -589,7 +589,7 @@ Expression *create_unary_expression( Terminal *op, Expression *ue ) {
 
 
         if ( ue->res->type == MEM ) {
-			Address * t1 = new_temp();
+		Address * t1 = new_temp();
             emit( t1, "()", ue->res, nullptr );
             emit( U->res, u_op, t1, inc_value );
             emit( ue->res, "()s", U->res, nullptr );
@@ -652,11 +652,12 @@ Expression *create_unary_expression_cast( Node *n_op, Expression *ce ) {
 		U->type.ptr_level++;
 		U->type.is_pointer = true;
 		if ( ce->res->type == MEM ) {
-			U->res = ce->res;
-			U->res->type = TEMP;
+			U->res = new_temp();
+			emit(U->res,"=",ce->res,nullptr);
+			//U->res->type = TEMP;
 		} else if ( ce->res->type == ID3 ) {
 			U->res = new_temp();
-			emit ( U->res, "=", ce->res, nullptr);
+			emit ( U->res, "la", ce->res, nullptr);
 		} else {
 		   error_msg( "lvalue required as unary & operand", n_op->line_num,
 				   n_op->column );
@@ -676,14 +677,18 @@ Expression *create_unary_expression_cast( Node *n_op, Expression *ce ) {
 		U->type = ce->type;
 		U->type.ptr_level--;
 		if ( U->type.ptr_level == 0 ) {
-			U->res = new_temp();
 			U->type.is_pointer = false;
 		} else {
-			U->res = new_mem();
 			U->type.is_pointer = true;
 		}
-		if ( ce->res->type == MEM || ce->res->type == ID3 ) {
+//		U->res = new_mem();
+		create_new_save_live(false);
+		if ( ce->res->type == MEM  ) {
+			U->res = new_mem();
 			emit( U->res, "()", ce->res, nullptr );
+		} else if ( ce->res->type == ID3 ) {
+			U->res = new_mem();
+			emit(U->res, "=", ce->res, nullptr );
 		} else {
 			error_msg( "lvalue required as unary * operand", n_op->line_num,
 					   n_op->column );

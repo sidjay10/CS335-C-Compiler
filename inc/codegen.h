@@ -12,6 +12,7 @@
 
 
 class Address;
+typedef struct _addresses ADDRESS;
 
 
 typedef enum ARCH_REG_ {
@@ -69,6 +70,7 @@ class MemoryLocation {
 	friend void set_is_ea( unsigned int id );
 	friend void process_arg( Arg * a);
 	friend void issue_load_ea( ARCH_REG r, MemoryLocation & ml );
+	friend void issue_load_ea( ARCH_REG r, ADDRESS & src );
 	friend class MemManUnit;
 public:
 	MemoryLocation();
@@ -116,7 +118,6 @@ class AsmInstr {
 	OP_CODE  opc;
 };
 
-typedef struct _addresses ADDRESS;
 
 extern std::vector< AsmInstr > asm_code;
 

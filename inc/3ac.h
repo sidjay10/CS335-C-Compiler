@@ -255,6 +255,7 @@ class SaveLive : public ThreeAC {
 };
 
 SaveLive * create_new_save_live();
+SaveLive * create_new_save_live(bool save_temps);
 std::ostream& operator<<(std::ostream& os, const SaveLive& s);
 
 extern std::unordered_set<std::string> var_rep;

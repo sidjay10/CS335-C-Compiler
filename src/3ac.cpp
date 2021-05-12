@@ -112,6 +112,8 @@ std::ostream& operator<<(std::ostream& os, const Quad& q){
 		os << q.instr << ": " << "(" << q.result << ")" << " = " << q.arg1;
 	} else if ( q.operation == "=" ) {
 		os << q.instr << ": " <<  q.result  << " = " << q.arg1;
+	} else if ( q.operation == "la" ) {
+		os << q.instr << ": " <<  q.result  << " la " << q.arg1;
 	} else if ( q.operation == "=s" ) {
 		os << q.instr << ": " <<  q.result  << " = " << q.arg1;
 	} else if ( q.operation == "push" ) {
@@ -632,6 +634,12 @@ SaveLive::SaveLive() : ThreeAC(false) , save_temps(true) { dead = false;};
 
 SaveLive * create_new_save_live() {
 	SaveLive * s = new SaveLive();
+	ta_code.push_back(s);
+	return s;
+}
+SaveLive * create_new_save_live(bool save_temps) {
+	SaveLive * s = new SaveLive();
+	s->save_temps = false;
 	ta_code.push_back(s);
 	return s;
 }

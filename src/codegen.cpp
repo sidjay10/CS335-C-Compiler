@@ -231,6 +231,23 @@ void issue_load_ea( ARCH_REG r, MemoryLocation & ml ) {
 	std::cout << ss.str();
 }
 
+void issue_load_ea( ARCH_REG r, ADDRESS & src ) {
+	//TODO: Implement different sizes
+	//TODO: Implement different offset sizes
+	auto it = mmu.memory_locations.find(src.addr->table_id);
+	assert( it != mmu.memory_locations.end() );
+	MemoryLocation & ml = it->second;
+	std::stringstream ss;
+	ss << "ASM: \t" << "addiu " << r << ", ";
+	if ( ml.base_reg == FP ) {
+		ss << "$fp"; 
+	} else if ( ml.base_reg == GP ) {
+		ss << "$gp"; 
+	}
+	ss << ", " << ml.offset << "\n";
+	std::cout << ss.str();
+}
+
 void issue_store( ARCH_REG r, OFFSET_REGISTER base, long offset ){
 	//TODO: Implement different sizes
 	//TODO: Implement different offset sizes
@@ -641,6 +658,9 @@ void gen_asm_instr(std::string operation, ADDRESS & result, ADDRESS & arg1){
 	} else if ( operation == "()" ) {
 		// TODO: Implement load sizes;
 		ss << "ASM: \t" << "lw" << " " << dest <<", 0(" << src1 << ")\n";
+	} else if ( operation == "la" ) {
+		issue_load_ea(dest,arg1);
+//		ss << "ASM: \t" << "lw" << " " << dest <<", 0(" << src1 << ")\n";
 	} else if ( operation == "()s" ) {
 		// TODO: Implement  store  sizes;
 		ss << "ASM: \t" << "sw" << " " << src1 <<", 0(" << dest << ")\n";
