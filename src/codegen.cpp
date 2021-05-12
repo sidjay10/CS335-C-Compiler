@@ -719,12 +719,21 @@ void process_return( Return * r ) {
 		if ( r->retval.addr->type == CON ) {
 			int value = ( int ) std::stoi(r->retval.addr->name);
 				ss << "ASM: \t" << "li $v0, " << value << "\n";
+				std::cout << ss.str();
 		} else {
 			ARCH_REG reg = mmu.get_reg( tINV, r->retval.addr, 2, true );
 			ss << "ASM: \t" << "move $v0, " << reg <<"\n";
+			std::cout << ss.str();
+			if ( !r->retval.alive  ) {
+				mmu.free_reg( reg );
+			}
+			else if ( r->retval.alive && r->retval.next_use == nullptr ) {
+				mmu.store_and_free_reg( reg );
+			}
 		}
 	}
-	std::cout << ss.str();
+
+
 
 	
 }
