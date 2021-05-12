@@ -136,9 +136,8 @@ ARCH_REG MemManUnit::get_empty_reg() {
 			return empty;
 		}
 	}
+	//Try to store variables first;
 	for ( int r = 0; r < NUM_TEMP_REGS; r++ ) {
-		// There shouldn't be a case where all locations are occupied by temporaries
-		// so looking for a program variable is enough
 		if ( ( reg_alloc_info[ (start_issue + r) % NUM_TEMP_REGS ] & TEMP_ID_MASK )  == 0 ) {
 			unsigned int table_id = reg_alloc_info[ (start_issue + r) % NUM_TEMP_REGS ]; 
 			auto it = memory_locations.find( table_id );
@@ -148,6 +147,28 @@ ARCH_REG MemManUnit::get_empty_reg() {
 			it->second.reg = tINV;
 			it->second.in_mem = true;
 			ARCH_REG empty =  static_cast<ARCH_REG> ( t0 +( (start_issue + r ) % NUM_TEMP_REGS) );
+			start_issue =  (start_issue + r + 1 ) % NUM_TEMP_REGS;
+			return empty;
+		}
+	}
+	//If no varaible can be freed, spill a temporary to the stack
+	for ( int r = 0; r < NUM_TEMP_REGS; r++ ) {
+		if ( ( reg_alloc_info[ (start_issue + r) % NUM_TEMP_REGS ] & TEMP_ID_MASK )  != 0 ) {
+			unsigned int table_id = reg_alloc_info[ (start_issue + r) % NUM_TEMP_REGS ]; 
+			auto it = memory_locations.find( table_id );
+			assert( it != memory_locations.end() );
+			//Register spill
+			ARCH_REG empty =  static_cast<ARCH_REG> ( t0 +( (start_issue + r ) % NUM_TEMP_REGS) );
+			stack_size += 4;
+			std::stringstream ss;
+			ss << "ASM: \t" << "addiu $sp, $sp, -4\n"; 
+			std::cout << ss.str();
+			it->second.base_reg = FP;
+			it->second.offset = stack_size;
+			it->second.size = WORD_SIZE;
+			issue_store( empty, it->second );
+			it->second.reg = tINV;
+			it->second.in_mem = true;
 			start_issue =  (start_issue + r + 1 ) % NUM_TEMP_REGS;
 			return empty;
 		}
@@ -194,6 +215,9 @@ void MemManUnit::reset() {
 	std::fill(reg_alloc_info.begin(), reg_alloc_info.end(), 0);
 	live_vals.clear();
 	memory_locations.clear();
+	globals.clear();
+	strings.clear();
+	stack_size = 0;
 }
 
 
@@ -210,17 +234,18 @@ void issue_load( ARCH_REG r, MemoryLocation & ml ) {
 	//TODO: Implement different sizes
 	//TODO: Implement different offset sizes
 	std::stringstream ss;
+	std::string load;
 	if ( ml.size == 1 ) {
-		ss << "ASM: \t" << "lb " << r << ", ";
+		load = "lb";
 	} else if (ml.size == WORD_SIZE ) {
-		ss << "ASM: \t" << "lw " << r << ", ";
+		load = "lw";
 	} else {
 		assert(0);
 	}
 	if ( ml.base_reg == FP ) {
-		ss << ml.offset << "($fp)\n"; 
+		ss << "ASM: \t" << load << " " << r << ", " <<  ml.offset << "($fp)\n"; 
 	} else if ( ml.base_reg == GP ) {
-		ss << ml.name <<"\n";
+		ss << "ASM: \t" << load << " " << r << ", " << ml.name << "\n";
 	} else {
 		 assert(0);
 	}
@@ -257,17 +282,20 @@ void issue_store( ARCH_REG r, MemoryLocation & ml ) {
 	//TODO: Implement different sizes
 	//TODO: Implement different offset sizes
 	std::stringstream ss;
+	std::string store;
 	if ( ml.size == 1 ) {
-		ss << "ASM: \t" << "sb " << r << ", ";
+		store = "sb";
 	} else if (ml.size == WORD_SIZE ) {
-		ss << "ASM: \t" << "sw " << r << ", ";
+		store = "sw";
 	} else {
 		assert(0);
 	}
 	if ( ml.base_reg == FP ) {
-		ss << ml.offset << "($fp)\n"; 
+		ss << "ASM: \t" << store << " " << r << ", " <<  ml.offset << "($fp)\n"; 
 	} else if ( ml.base_reg == GP ) {
-		ss << ml.offset << "($gp)\n"; 
+		ss << "ASM: \t" << store << " " << r << ", " << ml.name << "\n";
+	} else {
+		 assert(0);
 	}
 	std::cout << ss.str();
 }
@@ -915,13 +943,27 @@ void gen_epilogue() {
 			ss << "ASM: " << i.first << ":\t.asciiz\t" << i.second << "\n"  ;
 		}
 	}
+	mmu.strings.clear();
+	ss << "ASM: \t" << "\n\n#####################\n\n";
 	std::cout << ss.str();
 
 }
 
 void gen_prologue( ) {
-	//TODO: Save callee saved registers??
+
 	std::stringstream ss;
+	ss << "ASM: \t" << "\n\n#####################\n\n";
+		if ( !mmu.globals.empty() ) {
+		ss << "ASM: \t" << ".data\n";
+		for ( auto i : mmu.globals ) {
+			ss << "ASM: "<< "\t.globl " << i.first << "\n";
+			ss << "ASM: "<< "\t.align 2\n";
+			ss << "ASM: " << i.first << ": " << "\t.space " << i.second << "\n"; 
+		}
+	}
+	mmu.globals.clear();
+	ss << "ASM: \t" << "\n\n#####################\n\n";
+	//TODO: Save callee saved registers??
 	ss << "ASM: \t.text\n"; 
 	ss << "ASM: \t.globl " << local_symbol_table.function_name << "\n"; 
 	ss << "ASM: \t" << "\n\n###########################\n\n";
@@ -930,7 +972,8 @@ void gen_prologue( ) {
 	ss << "ASM: \t" << "sw $ra, 4($sp)\n";
 	ss << "ASM: \t" << "sw $fp, 0($sp)\n";
 	ss << "ASM: \t" << "move $fp, $sp\n";
-	size_t reqd_size = local_symbol_table.reqd_size < 32 ? 32 : local_symbol_table.reqd_size;
+	mmu.stack_size = local_symbol_table.reqd_size < 32 ? 32 : local_symbol_table.reqd_size;
+	size_t reqd_size = mmu.stack_size;
 	if ( reqd_size <= 0x8000 ) {
 		reqd_size = ( ~reqd_size + 1 ) & 0xffff;
 		ss << "ASM: \t" << "addiu $sp, $sp, " << (short) reqd_size << "\n";

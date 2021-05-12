@@ -781,7 +781,7 @@ void Declaration::add_to_symbol_table( GlobalSymbolTable &sym_tab ) {
             e->type.array_dims = dd->array_dims;
         } else if ( dd->type == FUNCTION ) {
 
-            e->type = Type( type_index, 0, true );
+            e->type = Type( type_index, pointer_level, true );
             e->type.is_function = true;
             e->type.is_pointer =
                 false; /* We don't implement function pointers */
@@ -824,7 +824,12 @@ void Declaration::add_to_symbol_table( GlobalSymbolTable &sym_tab ) {
         sym_tab.ss << "global,"
                    << "-," << ( *i )->id->value << "," << e->type.get_name()
                    << ",0\n";
+
+			if ( dd->type != FUNCTION ) {
+				mmu.globals.insert({e->name, e->type.get_size()});
+			}
     }
+
 
     write_to_symtab_file( sym_tab.ss.str() );
     sym_tab.ss.clear();
