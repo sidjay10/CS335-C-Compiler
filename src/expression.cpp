@@ -424,7 +424,14 @@ Expression *create_postfix_expr_struct( std::string access_op, Expression *pe,
             return P;
         }
 	size_t offset = peT.struct_definition->get_offset(i);
-	if ( offset == 0 ) {
+	if ( pe->res->type != MEM && offset == 0 ) {
+		P->res = new_mem();
+		emit(P->res,"=",pe->res,nullptr);
+	} else if ( pe->res->type != MEM && offset != 0 ){
+		P->res = new_mem();
+		emit( P->res, "+", pe->res, new_3const( peT.struct_definition->get_offset(i) , INT3 )); 
+	}
+	else if ( offset == 0 ) {
 		P->res = new_mem();
 		emit(P->res, "()", pe->res, nullptr);
 	}
