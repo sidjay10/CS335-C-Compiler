@@ -529,15 +529,18 @@ void arithmetic_optimise(Quad* q){
 		if((q->arg2.addr->name=="0" || q->arg2.addr->name=="0.0") && (q->operation=="+" || q->operation=="-")){
 			q->operation="";			
 			q->arg2.addr=nullptr;
+			int size = q->result.addr->size;
 			*q->result.addr = *q->arg1.addr;
+			q->result.addr->size = size;
 			q->dead=true;
 		}
 		else if((q->arg1.addr->name=="0" || q->arg1.addr->name=="0.0") && q->operation=="+" ){
 			q->operation="";
 			q->arg1=q->arg2;
 			q->arg2.addr=nullptr;
-
+			int size = q->result.addr->size;
 			*q->result.addr = *q->arg1.addr;
+			q->result.addr->size = size;
 			q->dead=true;
 		}
 		else if((q->arg1.addr->name=="0" || q->arg1.addr->name=="0.0") && q->operation=="-"){

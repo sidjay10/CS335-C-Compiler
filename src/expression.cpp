@@ -788,7 +788,10 @@ Expression *create_cast_expression_typename( TypeName *tn, Expression *ce ) {
     }
     P->name = "cast_expression";
     P->add_children( tn, ce );
-    P->res = ce->res;
+	Address * t1;
+	MEM_EMIT( ce, t1 );
+	P->res = t1;
+//    P->res = ce->res;
     return P;
 }
 

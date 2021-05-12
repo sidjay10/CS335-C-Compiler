@@ -511,7 +511,7 @@ StructDefinition *create_struct_definition( int un_or_st,
             }
 			sd->offsets.insert( {(*jt)->id->value, offset} );
 			size_t size = type.get_size();
-			size =  size % WORD_SIZE ? WORD_SIZE - ( size % WORD_SIZE ) : size;
+			size =  (size % WORD_SIZE) == 0 ? size + (WORD_SIZE - ( size % WORD_SIZE )) : size;
 			offset += size;
             sd->members.insert( {( *jt )->id->value, type} );
             std::cout << "  " << ( *jt )->id->value << " " << type.get_name()
@@ -717,7 +717,7 @@ void Declaration::add_to_symbol_table( LocalSymbolTable &sym_tab ) {
         }
         size_t size = e->type.get_size();
         e->offset = sym_tab.offset;
-        sym_tab.offset = sym_tab.offset + size + ( size % WORD_SIZE );
+        sym_tab.offset = sym_tab.offset + size + ( WORD_SIZE - ( size % WORD_SIZE ));
         sym_tab.reqd_size = sym_tab.offset > sym_tab.reqd_size ? sym_tab.offset : sym_tab.reqd_size;
         sym_tab.add_to_table( e, ( *i )->id , false );
     }
@@ -819,7 +819,7 @@ void Declaration::add_to_symbol_table( GlobalSymbolTable &sym_tab ) {
 
         size_t size = e->type.get_size();
         e->offset = sym_tab.offset;
-        sym_tab.offset = sym_tab.offset + size + ( size % WORD_SIZE );
+        sym_tab.offset = sym_tab.offset + size + ( WORD_SIZE - ( size % WORD_SIZE ));
         sym_tab.add_to_table( e, true, ( *i )->id );
         sym_tab.ss << "global,"
                    << "-," << ( *i )->id->value << "," << e->type.get_name()

@@ -618,7 +618,7 @@ void gen_asm_instr_limm(std::string operation, ADDRESS & result, ADDRESS & arg1,
 	if ( operation == "+" ) {
 		ss << "ASM: \t" << "addu" << " " << dest <<", " << src1 << ", " << src2 <<"\n";
 	} else if ( operation == "-" ) {
-		ss << "ASM: \t" << "addu" << " " << dest <<", " << src1 << ", " << src2 <<"\n";
+		ss << "ASM: \t" << "subu" << " " << dest <<", " << src1 << ", " << src2 <<"\n";
 	} else if ( operation == "==" ) {
 		ss << "ASM: \t" << "seq" << " " << dest <<", " << src1 << ", " << src2 <<"\n";
 	}  else if ( operation == "!=" ) {
@@ -705,6 +705,8 @@ void gen_asm_instr(std::string operation, ADDRESS & result, ADDRESS & arg1){
 		} else {
 			assert(0);
 		}
+	} else if ( operation == "!" ) {
+		ss << "ASM: \t" << "not" << " " << dest <<", " << src1 <<"\n";
 	} else {
 		std::cerr << "PANIC: unknown operation " << operation << "\n";
 		assert(0);
