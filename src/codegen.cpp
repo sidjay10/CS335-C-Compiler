@@ -35,7 +35,8 @@ MemoryLocation create_memory_location(unsigned int id,  long offset){
 		} else {
 			ml.base_reg = FP;
 			//FIXME : Verify offset value
-			ml.offset = -offset;
+			//ml.offset = -offset;
+			ml.offset = 8 + 4*(arg_no - 4);
 		}
 	} else if ( id & LOCAL_SYM_MASK ){
 		ml.base_reg = FP;
@@ -485,11 +486,11 @@ void gen_asm_instr_imm(std::string operation, ADDRESS & result, ADDRESS & arg1, 
 		}  else if ( operation == "<<" ) {
 			ss << "ASM: \t" << "sll" << " " << dest <<", " << src1 << ", " << (short) value <<"\n";
 		}  else if ( operation == "^" ) {
-			ss << "ASM: \t" << "xor" << " " << dest <<", " << src1 << ", " << (short) value <<"\n";
+			ss << "ASM: \t" << "xori" << " " << dest <<", " << src1 << ", " << (short) value <<"\n";
 		}  else if ( operation == "|" ) {
-			ss << "ASM: \t" << "or" << " " << dest <<", " << src1 << ", " << (short) value <<"\n";
+			ss << "ASM: \t" << "ori" << " " << dest <<", " << src1 << ", " << (short) value <<"\n";
 		}  else if ( operation == "&" ) {
-			ss << "ASM: \t" << "and" << " " << dest <<", " << src1 << ", " << (short) value <<"\n";
+			ss << "ASM: \t" << "andi" << " " << dest <<", " << src1 << ", " << (short) value <<"\n";
 		} else {
 			std::cerr << "PANIC: unknown operation " << operation << "\n";
 			assert(0);
@@ -540,7 +541,72 @@ void gen_asm_instr_imm(std::string operation, ADDRESS & result, ADDRESS & arg1, 
 
 }
 
-void gen_asm_instr_limm(std::string operation, ADDRESS & result, ADDRESS & arg1, ADDRESS & arg2);
+void gen_asm_instr_limm(std::string operation, ADDRESS & result, ADDRESS & arg1, ADDRESS & arg2){
+	std::stringstream ss;
+
+	ARCH_REG src2 = mmu.get_reg(tINV, arg2.addr , 2, true);
+	if ( !result.alive ) {
+		ss << "ASM: xxxx\t";
+	}
+	
+	
+	ARCH_REG dest = tINV;
+
+	if ( !arg2.alive ) {
+		mmu.free_reg( src2 );
+		dest = src2;
+	} 
+	else if ( arg2.alive && arg2.next_use == nullptr ) {
+		mmu.store_and_free_reg( src2 );
+		dest = src2;
+	}
+
+	dest = mmu.get_reg( dest, result.addr, 0, false);
+
+	int value = ( int ) std::stoi(arg2.addr->name);
+	ARCH_REG src1 = tINV;
+	if ( value == 0 ) {
+		src1 = zz;
+	} else {
+		src1 = v1;
+		ss << "ASM: \t" << "li $v1, "  << value << "\n";
+	}
+
+	
+	if ( operation == "+" ) {
+		ss << "ASM: \t" << "addiu" << " " << dest <<", " << src1 << ", " << src2 <<"\n";
+	} else if ( operation == "-" ) {
+		ss << "ASM: \t" << "addiu" << " " << dest <<", " << src1 << ", " << src2 <<"\n";
+	} else if ( operation == "==" ) {
+		ss << "ASM: \t" << "seq" << " " << dest <<", " << src1 << ", " << src2 <<"\n";
+	}  else if ( operation == "!=" ) {
+		ss << "ASM: \t" << "sne" << " " << dest <<", " << src1 << ", " << src2 <<"\n";
+	}  else if ( operation == ">=" ) {
+		ss << "ASM: \t" << "sge" << " " << dest <<", " << src1 << ", " << src2 <<"\n";
+	}  else if ( operation == "<=" ) {
+		ss << "ASM: \t" << "sle" << " " << dest <<", " << src1 << ", " << src2 <<"\n";
+	}  else if ( operation == ">" ) {
+		ss << "ASM: \t" << "sgt" << " " << dest <<", " << src1 << ", " << src2 <<"\n";
+	}  else if ( operation == "<" ) {
+		ss << "ASM: \t" << "slt" << " " << dest <<", " << src1 << ", " << src2 <<"\n";
+	}  else if ( operation == "*" ) {
+		ss << "ASM: \t" << "mul" << " " << dest <<", " << src1 << ", " << src2 <<"\n";
+	}  else if ( operation == "/" ) {
+		ss << "ASM: \t" << "div" << " " << dest <<", " << src1 << ", " << src2 <<"\n";
+	}	else if ( operation == "^" ) {
+		ss << "ASM: \t" << "xor" << " " << dest <<", " << src1 << ", " << src2 <<"\n";
+	}  else if ( operation == "|" ) {
+		ss << "ASM: \t" << "or" << " " << dest <<", " << src1 << ", " << src2 <<"\n";
+	}  else if ( operation == "&" ) {
+		ss << "ASM: \t" << "and" << " " << dest <<", " << src1 << ", " << src2 <<"\n";
+	} else {
+		std::cerr << "PANIC: unknown operation " << operation << "\n";
+		assert(0);
+	}
+
+
+
+}
 
 void gen_asm_instr(std::string operation, ADDRESS & result, ADDRESS & arg1){
 
@@ -707,8 +773,8 @@ void process_call( Call * c) {
 		ARCH_REG r = mmu.temp_stack.back();
 		if ( r != at ) {
 			ss << "ASM: \t" << "lw " << r << ", " << 0 << "($sp)\n";
-			ss << "ASM: \t" << "addiu $sp, $sp, 4\n"; 
 		}
+		ss << "ASM: \t" << "addiu $sp, $sp, 4\n"; 
 		mmu.temp_stack.pop_back();
 	}
 	std::cout << ss.str();
@@ -809,6 +875,9 @@ void gen_prologue( ) {
 
 std::ostream& operator<<( std::ostream &os, ARCH_REG & a){
 	switch ( a ) {
+		case zz:
+			os << "$0";
+			break;
 		case t0:
 			os << "$t0";
 			break;

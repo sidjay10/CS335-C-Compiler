@@ -16,6 +16,7 @@ class Address;
 
 typedef enum ARCH_REG_ {
 	tINV = -1,
+	zz = 0,
 	at = 1,
 	v0 = 2,
 	v1 = 3,
