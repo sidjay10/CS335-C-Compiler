@@ -16,6 +16,7 @@ unsigned long long get_next_instr();
 
 
 extern unsigned long long temporaries;
+extern unsigned long long strings;
 
 typedef enum ADD_TYPE_ {
 	ID3 = 1,
@@ -28,6 +29,7 @@ typedef enum ADD_TYPE_ {
 class ThreeAC;
 
 #define TEMP_ID_MASK 0x80000000
+#define STRING_MASK  0x08000000
 
 class Address {
 public:
@@ -72,7 +74,7 @@ std::ostream& operator<<(std::ostream& os, const Address& a);
 
 extern unsigned long long instructions;
 Address * new_temp();
-Address * new_mem();
+Address * new_mem( Type & t );
 
 
 typedef enum _const_type {
@@ -87,6 +89,7 @@ Address * new_3const(T val, CONST_TYPE con ) {
 
 
 Address * new_3id(SymTabEntry * symbol);
+Address * new_3string( StringLiteral * sl );
 
 class ThreeAC {
 public:

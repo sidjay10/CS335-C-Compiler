@@ -87,7 +87,7 @@ L?'(\\.|[^\\'])+'	{  count(); yylval.constant = create_constant("CONSTANT CHAR",
 {D}*"."{D}+({E})?{FS}?	{  yylval.constant = create_constant("CONSTANT FLOAT", yytext, line_num, column); count(); return(CONSTANT); }
 {D}+"."{D}*({E})?{FS}?	{  yylval.constant = create_constant("CONSTANT FLOAT", yytext, line_num, column); count(); return(CONSTANT); }
 
-L?\"(\\.|[^\\"])*\"	{ count(); return(STRING_LITERAL); }
+L?\"(\\.|[^\\"])*\"	{ yylval.terminal = create_terminal("STRING LITERAL", yytext, line_num, column); count(); return(STRING_LITERAL); }
 
 "..."			{ count(); return(ELLIPSIS); }
 ">>="			{ yylval.terminal= create_terminal(">>=",NULL, line_num, column ); count(); return(RIGHT_ASSIGN); }

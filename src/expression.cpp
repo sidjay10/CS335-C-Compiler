@@ -78,15 +78,14 @@ Expression *create_primary_stringliteral( StringLiteral *a ) {
     PrimaryExpression *P = new PrimaryExpression();
     P->isTerminal = 3;
     P->Sval = a;
-    P->type.typeIndex = PrimitiveTypes::U_CHAR_T;
-    P->type.ptr_level = 1;
+	P->type = Type(CHAR_T, 1, true);
     P->line_num = a->line_num;
     P->column = a->column;
 
     P->name = "primary_expression";
     P->add_child( a );
 //XXX: This needs to be changed
-    P->res = new Address( a->value, CON );
+    P->res = new_3string(a); 
     return P;
 }
 
@@ -156,7 +155,7 @@ Expression *create_postfix_expr_arr( Expression *pe, Expression *e ) {
 			P->type.is_array = 0;
 		}
 		
-		P->res = new_mem();
+		P->res = new_mem(P->type);
 		emit( P->res, "+", pe->res, t1 );
 		
 	} else if ( pe->type.is_pointer ) {
@@ -176,12 +175,12 @@ Expression *create_postfix_expr_arr( Expression *pe, Expression *e ) {
 			emit( t1, "*", e->res, new_3const( P->type.get_size() , INT3));
 		}
 		
-		P->res = new_mem();
+		P->res = new_mem(P->type);
 
 
 		if (pe->res->type == MEM ) {
 			// Dereference the pointer
-			Address * t2 = new_mem();
+			Address * t2 = new_mem(pe->type);
 			emit(t2, "()", pe->res, nullptr);
 			emit( P->res, "+", t2, t1 );
 
@@ -390,11 +389,11 @@ Expression *create_postfix_expr_struct( std::string access_op, Expression *pe,
         }
 	size_t offset = peT.struct_definition->get_offset(i);
 	if ( offset == 0 ) {
-		P->res = new_mem();
+		P->res = new_mem(P->type);
 		emit(P->res,"=",pe->res,nullptr);
 	}
 	else {
-		P->res = new_mem();
+		P->res = new_mem(P->type);
 		emit( P->res, "+", pe->res, new_3const( peT.struct_definition->get_offset(i) , INT3 )); 
 	}
 
@@ -425,26 +424,24 @@ Expression *create_postfix_expr_struct( std::string access_op, Expression *pe,
         }
 	size_t offset = peT.struct_definition->get_offset(i);
 	if ( pe->res->type != MEM && offset == 0 ) {
-		P->res = new_mem();
+		P->res = new_mem(P->type);
 		emit(P->res,"=",pe->res,nullptr);
 	} else if ( pe->res->type != MEM && offset != 0 ){
-		P->res = new_mem();
+		P->res = new_mem(P->type);
 		emit( P->res, "+", pe->res, new_3const( peT.struct_definition->get_offset(i) , INT3 )); 
 	}
 	else if ( offset == 0 ) {
-		P->res = new_mem();
+		P->res = new_mem(P->type);
 		emit(P->res, "()", pe->res, nullptr);
 	}
 	else {
-		Address * t1 = new_mem();
+		Address * t1 = new_temp();
 		emit(t1, "()", pe->res, nullptr);
-		P->res = new_mem();
+		P->res = new_mem(P->type);
 		emit( P->res, "+", t1, new_3const( peT.struct_definition->get_offset(i) , INT3 )); 
 	}
     }
 
-
-// TODO: Implement 3AC for struct access
 
     P->name = access_op;
     P->add_children( pe, i );
@@ -489,8 +486,8 @@ Expression *create_postfix_expr_ido( Terminal *op, Expression *pe ) {
 	}
 
 	if ( pe->type.isPointer() ) {
-		P->res = new_mem();
 		P->type = pe->type;
+		P->res = new_mem(P->type);
 		Type t = pe->type;
 		t.ptr_level--;
 		inc_value = new_3const( t.get_size() , INT3);
@@ -561,8 +558,8 @@ Expression *create_unary_expression( Terminal *op, Expression *ue ) {
         
 		u_op = u_op.substr( 0, 1 );
 		if ( ue->type.isPointer() ) {
-            U->res = new_mem();
 			U->type = ue->type;
+			    U->res = new_mem(U->type);
 			Type t = ue->type;
 			t.ptr_level--;
 			inc_value = new_3const( t.get_size() , INT3 );
@@ -684,10 +681,10 @@ Expression *create_unary_expression_cast( Node *n_op, Expression *ce ) {
 //		U->res = new_mem();
 		create_new_save_live(false);
 		if ( ce->res->type == MEM  ) {
-			U->res = new_mem();
+			U->res = new_mem(U->type);
 			emit( U->res, "()", ce->res, nullptr );
 		} else if ( ce->res->type == ID3 ) {
-			U->res = new_mem();
+			U->res = new_mem(U->type);
 			emit(U->res, "=", ce->res, nullptr );
 		} else {
 			error_msg( "lvalue required as unary * operand", n_op->line_num,
@@ -962,7 +959,7 @@ Expression *create_additive_expression( std::string op, Expression *ade,
         Address *t1;
         //MEM_EMIT( ade, t1 );
         MEM_EMIT( me, t1 );
-		P->res = new_mem();
+		P->res = new_mem(P->type);
         Type t = adeT;
         t.ptr_level--;
 		Address * t2 = new_temp();
@@ -979,7 +976,7 @@ Expression *create_additive_expression( std::string op, Expression *ade,
 //      MEM_EMIT( me, t2 );
         Type t = meT;
         t.ptr_level--;
-		P->res = new_mem();
+		P->res = new_mem(P->type);
 		Address * t2 = new_temp();
         emit( t2, "*", t1, new_3const( t.get_size() , INT3 ));
         emit( P->res, op, me->res, t2 );

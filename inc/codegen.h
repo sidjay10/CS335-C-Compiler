@@ -53,8 +53,10 @@ class Arg;
 
 class MemoryLocation {
 	unsigned int id;
+	std::string name;
 	ARCH_REG reg;
 	bool in_mem;
+	int size;
 	OFFSET_REGISTER base_reg;
 	long offset;
 	bool is_ea;     // Should this be treated as an effective address?
@@ -65,10 +67,12 @@ class MemoryLocation {
 			// set to true for arrays, structs etc.
 			// set to false otherwise
 
-	friend MemoryLocation create_memory_location( unsigned int id, long offset );
-	friend MemoryLocation create_temp_mem_location(unsigned int id,  ARCH_REG reg );
+	friend MemoryLocation create_memory_location( std::string name, unsigned int id, long offset , int size );
+	friend MemoryLocation create_temp_mem_location( std::string name, unsigned int id,  ARCH_REG reg , int size );
 	friend void set_is_ea( unsigned int id );
 	friend void process_arg( Arg * a);
+	friend void issue_store( ARCH_REG r, MemoryLocation & ml );
+	friend void issue_load( ARCH_REG r, MemoryLocation & ml );
 	friend void issue_load_ea( ARCH_REG r, MemoryLocation & ml );
 	friend void issue_load_ea( ARCH_REG r, ADDRESS & src );
 	friend class MemManUnit;
@@ -76,8 +80,8 @@ public:
 	MemoryLocation();
 };
 	
-MemoryLocation create_memory_location( unsigned int id, long offset );
-MemoryLocation create_temp_mem_location(unsigned int id,  ARCH_REG reg );
+MemoryLocation create_memory_location( std::string name, unsigned int id, long offset , int size );
+MemoryLocation create_temp_mem_location( std::string name, unsigned int id,  ARCH_REG reg , int size );
 void set_is_ea( unsigned int id );
 
 class MemManUnit {
@@ -87,6 +91,7 @@ public:
 	std::vector<unsigned int> reg_alloc_info;
 	std::set<unsigned int> live_vals;
 	std::map<unsigned int, MemoryLocation > memory_locations;
+	std::map<std::string, std::string > strings;
 
 	MemManUnit();
 	ARCH_REG get_reg(ARCH_REG dest, Address* a, int mem_valid /* 0 -> false, 1->true, 2->dont't change */ , bool load );
@@ -123,9 +128,10 @@ extern std::vector< AsmInstr > asm_code;
 
 
 void gen_asm_code( );
-void issue_load( ARCH_REG r, OFFSET_REGISTER base, long offset );
+void issue_load( ARCH_REG r, MemoryLocation & ml );
+void issue_store( ARCH_REG r, MemoryLocation & ml );
 void issue_load_ea( ARCH_REG r, MemoryLocation & ml );
-void issue_store( ARCH_REG r, OFFSET_REGISTER base, long offset );
+void issue_load_ea( ARCH_REG r, ADDRESS & src );
 
 
 

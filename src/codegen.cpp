@@ -5,17 +5,19 @@ std::vector<AsmInstr> asm_code;
 
 MemManUnit mmu;
 
-MemoryLocation::MemoryLocation() : id(0), reg(tINV), in_mem(true), base_reg(rINV), offset(0), is_ea(false) {}  
+MemoryLocation::MemoryLocation() : id(0), name(""), reg(tINV), in_mem(true), size(0), base_reg(rINV), offset(0), is_ea(false) {}  
 
-MemoryLocation create_memory_location(unsigned int id,  long offset){
+MemoryLocation create_memory_location(std::string name, unsigned int id,  long offset, int size ){
 	MemoryLocation ml;
 	ml.id = id;
+	ml.size = size;
+	ml.name = name;
 
 //XXX : Check this logic
 	if ( id & TEMP_ID_MASK  ) {
 		// Should never reach here;
 		assert(0);
-	} else if ( id & GLOBAL_SYM_MASK ) {
+	} else if ( id & GLOBAL_SYM_MASK || id & STRING_MASK ) {
 		ml.base_reg = GP;
 		ml.offset = offset;
 	} else if ( id & FUN_ARG_MASK ) {
@@ -47,9 +49,11 @@ MemoryLocation create_memory_location(unsigned int id,  long offset){
 	return ml;
 }
 
-MemoryLocation create_temp_mem_location(unsigned int id,  ARCH_REG reg ){
+MemoryLocation create_temp_mem_location(std::string name, unsigned int id,  ARCH_REG reg , int size ){
 	MemoryLocation ml;
 	ml.id = id;
+	ml.size = size;
+	ml.name = name;
 
 //XXX : Check this logic
 	if ( id & TEMP_ID_MASK  ) {
@@ -92,7 +96,7 @@ ARCH_REG MemManUnit::get_reg( ARCH_REG dest, Address * a , int mem_valid , bool 
 		reg_alloc_info[r - t0 ] = a->table_id;
 		it->second.reg = r;
 		if ( load && it->second.in_mem && !it->second.is_ea ) {
-			issue_load(r, it->second.base_reg, it->second.offset );
+			issue_load(r, it->second );
 		} else if ( load && it->second.is_ea ) {
 			issue_load_ea(r, it->second );
 		} else if ( load ) {
@@ -115,7 +119,7 @@ ARCH_REG MemManUnit::get_reg( ARCH_REG dest, Address * a , int mem_valid , bool 
 		}
 		assert( r != tINV && r <= t9 && r >= t0 );
 		reg_alloc_info[r - t0] = a->table_id;
-		memory_locations.insert({a->table_id,create_temp_mem_location(a->table_id, r)});
+		memory_locations.insert({a->table_id,create_temp_mem_location(a->name, a->table_id, r, a->size )});
 		return r;
 	} else {
 		std::cerr << "PANIC: Memory Location " << a->name << " not found\n";
@@ -140,7 +144,7 @@ ARCH_REG MemManUnit::get_empty_reg() {
 			auto it = memory_locations.find( table_id );
 			assert( it != memory_locations.end() );
 			//Register spill
-			issue_store( it->second.reg, it->second.base_reg, it->second.offset  );
+			issue_store( it->second.reg, it->second );
 			it->second.reg = tINV;
 			it->second.in_mem = true;
 			ARCH_REG empty =  static_cast<ARCH_REG> ( t0 +( (start_issue + r ) % NUM_TEMP_REGS) );
@@ -178,7 +182,7 @@ void MemManUnit::store_and_free_reg( ARCH_REG r ) {
 	assert ( it != memory_locations.end() );
 	it->second.reg = tINV;
 	if ( it->second.in_mem != true ) {
-		issue_store( r, it->second.base_reg, it->second.offset );
+		issue_store( r, it->second );
 	}
 	it->second.in_mem = true;
 	reg_alloc_info[r - t0] = 0;
@@ -202,32 +206,35 @@ void MemManUnit::set_reg ( unsigned int table_id, ARCH_REG r ) {
 #endif
 
 
-void issue_load( ARCH_REG r, OFFSET_REGISTER base, long offset ) {
+void issue_load( ARCH_REG r, MemoryLocation & ml ) {
 	//TODO: Implement different sizes
 	//TODO: Implement different offset sizes
 	std::stringstream ss;
-	ss << "ASM: \t" << "lw " << r << ", ";
-	if ( base == FP ) {
-		ss << offset << "($fp)\n"; 
-	} else if ( base == GP ) {
-		ss << offset << "($gp)\n"; 
+	if ( ml.size == 1 ) {
+		ss << "ASM: \t" << "lb " << r << ", ";
+	} else if (ml.size == WORD_SIZE ) {
+		ss << "ASM: \t" << "lw " << r << ", ";
+	} else {
+		assert(0);
+	}
+	if ( ml.base_reg == FP ) {
+		ss << ml.offset << "($fp)\n"; 
+	} else if ( ml.base_reg == GP ) {
+		ss << ml.name <<"\n";
 	} else {
 		 assert(0);
 	}
 	std::cout << ss.str();
 }
-
 void issue_load_ea( ARCH_REG r, MemoryLocation & ml ) {
 	//TODO: Implement different sizes
 	//TODO: Implement different offset sizes
 	std::stringstream ss;
-	ss << "ASM: \t" << "addiu " << r << ", ";
 	if ( ml.base_reg == FP ) {
-		ss << "$fp"; 
+		ss << "ASM: \t" << "addiu " << r << ", " << ml.offset << "\n"; 
 	} else if ( ml.base_reg == GP ) {
-		ss << "$gp"; 
+		ss << "ASM: \t" << "la " << r << ", " << ml.name << "\n";
 	}
-	ss << ", " << ml.offset << "\n";
 	std::cout << ss.str();
 }
 
@@ -238,25 +245,29 @@ void issue_load_ea( ARCH_REG r, ADDRESS & src ) {
 	assert( it != mmu.memory_locations.end() );
 	MemoryLocation & ml = it->second;
 	std::stringstream ss;
-	ss << "ASM: \t" << "addiu " << r << ", ";
 	if ( ml.base_reg == FP ) {
-		ss << "$fp"; 
+		ss << "ASM: \t" << "addiu " << r << ", " << ml.offset << "\n"; 
 	} else if ( ml.base_reg == GP ) {
-		ss << "$gp"; 
+		ss << "ASM: \t" << "la " << r << ", " << ml.name << "\n";
 	}
-	ss << ", " << ml.offset << "\n";
 	std::cout << ss.str();
 }
 
-void issue_store( ARCH_REG r, OFFSET_REGISTER base, long offset ){
+void issue_store( ARCH_REG r, MemoryLocation & ml ) {
 	//TODO: Implement different sizes
 	//TODO: Implement different offset sizes
 	std::stringstream ss;
-	ss << "ASM: \t" << "sw " << r << ", ";
-	if ( base == FP ) {
-		ss << offset << "($fp)\n"; 
-	} else if ( base == GP ) {
-		ss << offset << "($gp)\n"; 
+	if ( ml.size == 1 ) {
+		ss << "ASM: \t" << "sb " << r << ", ";
+	} else if (ml.size == WORD_SIZE ) {
+		ss << "ASM: \t" << "sw " << r << ", ";
+	} else {
+		assert(0);
+	}
+	if ( ml.base_reg == FP ) {
+		ss << ml.offset << "($fp)\n"; 
+	} else if ( ml.base_reg == GP ) {
+		ss << ml.offset << "($gp)\n"; 
 	}
 	std::cout << ss.str();
 }
@@ -339,21 +350,7 @@ void process_quad ( Quad * q ) {
 			gen_asm_instr_imm( q->operation, q->result, q->arg1, q->arg2);
 		}
 		else if ( q->arg1.addr->type == CON && q->arg2.addr->type != CON ) {
-			ARCH_REG src1 = mmu.get_reg(tINV, q->arg2.addr , 2, true);
-			ARCH_REG dest = tINV;
-			if ( !q->arg2.alive ) {
-				mmu.free_reg( src1 );
-				dest = src1;
-			} else if ( q->arg2.alive && q->arg2.next_use == nullptr ) {
-				mmu.store_and_free_reg( src1 );
-				dest = src1;
-			}
-			dest = mmu.get_reg( dest, q->result.addr, 0, false);
-			
-			std::cout << "ASM: " << q->operation << " t" << dest << ", " << q->arg2.addr->name << ", t" << src1  <<"\n";
-			if ( q->result.alive && q->result.next_use == nullptr ) {
-				mmu.store_and_free_reg( dest );
-			}
+			gen_asm_instr_limm( q->operation, q->result, q->arg1, q->arg2);
 
 		} else {
 			ARCH_REG dest = mmu.get_reg(tINV, q->result.addr, 0, false);
@@ -515,31 +512,31 @@ void gen_asm_instr_imm(std::string operation, ADDRESS & result, ADDRESS & arg1, 
 	} else {
 		ss << "ASM: \t" << "li $v1, "  << value << "\n";
 		if ( operation == "+" ) {
-			ss << "ASM: \t" << "addiu" << " " << dest <<", " << src1 << ", " << v1 <<"\n";
+			ss << "ASM: \t" << "addu" << " " << dest <<", " << src1 << ", " << static_cast<ARCH_REG>(v1) <<"\n";
 		} else if ( operation == "-" ) {
-			ss << "ASM: \t" << "addiu" << " " << dest <<", " << src1 << ", " << v1 <<"\n";
+			ss << "ASM: \t" << "subu" << " " << dest <<", " << src1 << ", " << static_cast<ARCH_REG>(v1) <<"\n";
 		} else if ( operation == "==" ) {
-			ss << "ASM: \t" << "seq" << " " << dest <<", " << src1 << ", " << v1 <<"\n";
+			ss << "ASM: \t" << "seq" << " " << dest <<", " << src1 << ", " << static_cast<ARCH_REG>(v1) <<"\n";
 		}  else if ( operation == "!=" ) {
-			ss << "ASM: \t" << "sne" << " " << dest <<", " << src1 << ", " << v1 <<"\n";
+			ss << "ASM: \t" << "sne" << " " << dest <<", " << src1 << ", " << static_cast<ARCH_REG>(v1) <<"\n";
 		}  else if ( operation == ">=" ) {
-			ss << "ASM: \t" << "sge" << " " << dest <<", " << src1 << ", " << v1 <<"\n";
+			ss << "ASM: \t" << "sge" << " " << dest <<", " << src1 << ", " << static_cast<ARCH_REG>(v1) <<"\n";
 		}  else if ( operation == "<=" ) {
-			ss << "ASM: \t" << "sle" << " " << dest <<", " << src1 << ", " << v1 <<"\n";
+			ss << "ASM: \t" << "sle" << " " << dest <<", " << src1 << ", " << static_cast<ARCH_REG>(v1) <<"\n";
 		}  else if ( operation == ">" ) {
-			ss << "ASM: \t" << "sgt" << " " << dest <<", " << src1 << ", " << v1 <<"\n";
+			ss << "ASM: \t" << "sgt" << " " << dest <<", " << src1 << ", " << static_cast<ARCH_REG>(v1) <<"\n";
 		}  else if ( operation == "<" ) {
-			ss << "ASM: \t" << "slt" << " " << dest <<", " << src1 << ", " << v1 <<"\n";
+			ss << "ASM: \t" << "slt" << " " << dest <<", " << src1 << ", " << static_cast<ARCH_REG>(v1) <<"\n";
 		}  else if ( operation == "*" ) {
-			ss << "ASM: \t" << "mul" << " " << dest <<", " << src1 << ", " << v1 <<"\n";
+			ss << "ASM: \t" << "mul" << " " << dest <<", " << src1 << ", " << static_cast<ARCH_REG>(v1) <<"\n";
 		}  else if ( operation == "/" ) {
-			ss << "ASM: \t" << "div" << " " << dest <<", " << src1 << ", " << v1 <<"\n";
+			ss << "ASM: \t" << "div" << " " << dest <<", " << src1 << ", " << static_cast<ARCH_REG>(v1) <<"\n";
 		}	else if ( operation == "^" ) {
-			ss << "ASM: \t" << "xor" << " " << dest <<", " << src1 << ", " << v1 <<"\n";
+			ss << "ASM: \t" << "xor" << " " << dest <<", " << src1 << ", " << static_cast<ARCH_REG>(v1) <<"\n";
 		}  else if ( operation == "|" ) {
-			ss << "ASM: \t" << "or" << " " << dest <<", " << src1 << ", " << v1 <<"\n";
+			ss << "ASM: \t" << "or" << " " << dest <<", " << src1 << ", " << static_cast<ARCH_REG>(v1) <<"\n";
 		}  else if ( operation == "&" ) {
-			ss << "ASM: \t" << "and" << " " << dest <<", " << src1 << ", " << v1 <<"\n";
+			ss << "ASM: \t" << "and" << " " << dest <<", " << src1 << ", " << static_cast<ARCH_REG>(v1) <<"\n";
 		} else {
 			std::cerr << "PANIC: unknown operation " << operation << "\n";
 			assert(0);
@@ -580,7 +577,7 @@ void gen_asm_instr_limm(std::string operation, ADDRESS & result, ADDRESS & arg1,
 
 	dest = mmu.get_reg( dest, result.addr, 0, false);
 
-	int value = ( int ) std::stoi(arg2.addr->name);
+	int value = ( int ) std::stoi(arg1.addr->name);
 	ARCH_REG src1 = tINV;
 	if ( value == 0 ) {
 		src1 = zz;
@@ -591,9 +588,9 @@ void gen_asm_instr_limm(std::string operation, ADDRESS & result, ADDRESS & arg1,
 
 	
 	if ( operation == "+" ) {
-		ss << "ASM: \t" << "addiu" << " " << dest <<", " << src1 << ", " << src2 <<"\n";
+		ss << "ASM: \t" << "addu" << " " << dest <<", " << src1 << ", " << src2 <<"\n";
 	} else if ( operation == "-" ) {
-		ss << "ASM: \t" << "addiu" << " " << dest <<", " << src1 << ", " << src2 <<"\n";
+		ss << "ASM: \t" << "addu" << " " << dest <<", " << src1 << ", " << src2 <<"\n";
 	} else if ( operation == "==" ) {
 		ss << "ASM: \t" << "seq" << " " << dest <<", " << src1 << ", " << src2 <<"\n";
 	}  else if ( operation == "!=" ) {
@@ -621,6 +618,10 @@ void gen_asm_instr_limm(std::string operation, ADDRESS & result, ADDRESS & arg1,
 		assert(0);
 	}
 
+	std::cout << ss.str();
+	if ( result.alive && result.next_use == nullptr ) {
+		mmu.store_and_free_reg( dest );
+	}
 
 
 }
@@ -657,13 +658,25 @@ void gen_asm_instr(std::string operation, ADDRESS & result, ADDRESS & arg1){
 		}
 	} else if ( operation == "()" ) {
 		// TODO: Implement load sizes;
-		ss << "ASM: \t" << "lw" << " " << dest <<", 0(" << src1 << ")\n";
+		if ( arg1.addr->size == 1 ) {
+			ss << "ASM: \t" << "lb" << " " << dest <<", 0(" << src1 << ")\n";
+		} else if ( arg1.addr->size == WORD_SIZE ) {
+			ss << "ASM: \t" << "lw" << " " << dest <<", 0(" << src1 << ")\n";
+		} else {
+			assert(0);
+		}
 	} else if ( operation == "la" ) {
 		issue_load_ea(dest,arg1);
 //		ss << "ASM: \t" << "lw" << " " << dest <<", 0(" << src1 << ")\n";
 	} else if ( operation == "()s" ) {
 		// TODO: Implement  store  sizes;
-		ss << "ASM: \t" << "sw" << " " << src1 <<", 0(" << dest << ")\n";
+		if ( result.addr->size == 1 ) {
+			ss << "ASM: \t" << "sb" << " " << src1 <<", 0(" << dest << ")\n";
+		} else if ( result.addr->size == WORD_SIZE ) {
+			ss << "ASM: \t" << "sw" << " " << src1 <<", 0(" << dest << ")\n";
+		} else {
+			assert(0);
+		}
 	} else {
 		std::cerr << "PANIC: unknown operation " << operation << "\n";
 		assert(0);
@@ -694,9 +707,15 @@ void gen_asm_instr_imm(std::string operation, ADDRESS & result , ADDRESS & arg1)
 	if ( operation == "=" ) {
 			ss << "ASM: \t" << "li "<< dest << ", " << value << "\n";
 	} else if ( operation == "()s" ) {
-			ss << "ASM: \t" << "li $v1, " << value << "\n";
+		ss << "ASM: \t" << "li $v1, " << value << "\n";
 		// TODO: Implement  store  sizes;
-		ss << "ASM: \t" << "sw" << " $v1, 0(" << dest << ")\n";
+		if ( result.addr->size == 1 ) {
+			ss << "ASM: \t" << "sb" << " $v1, 0(" << dest << ")\n";
+		} else if ( result.addr->size == WORD_SIZE ) {
+			ss << "ASM: \t" << "sw" << " $v1, 0(" << dest << ")\n";
+		} else {
+			assert(0);
+		}
 
 	} else {
 		std::cerr << "PANIC: unknown operation " << operation << "\n";
@@ -769,16 +788,28 @@ void process_arg( Arg * a) {
 	} else {
 		if ( a->arg.addr->type == CON ) {
 			int value = std::stoi(a->arg.addr->name);
-			ss << "ASM: \t" << "li $v1, " << value << "\n";
 			mmu.temp_stack.push_back( at );
+			ss << "ASM: \t" << "li $v1, " << value << "\n";
 			ss << "ASM: \t" << "addiu $sp, $sp, -4\n"; 
-			ss << "ASM: \t" << "sw $v1, " << 0 << "($sp)\n";
+			if ( a->arg.addr->size == 1 ) {
+				ss << "ASM: \t" << "sb $v1, " << 0 << "($sp)\n";
+			} else if ( a->arg.addr->size == WORD_SIZE ) {
+				ss << "ASM: \t" << "sw $v1, " << 0 << "($sp)\n";
+			} else {
+				assert(0);
+			}
 			std::cout << ss.str(); 
 		} else {
 			ARCH_REG reg = mmu.get_reg( tINV, a->arg.addr, 2, true );
 			mmu.temp_stack.push_back( at );
 			ss << "ASM: \t" << "addiu $sp, $sp, -4\n"; 
-			ss << "ASM: \t" << "sw " << reg << ", " << 0 << "($sp)\n";
+			if ( a->arg.addr->size == 1 ) {
+				ss << "ASM: \t" << "sb " << reg << ", " << 0 << "($sp)\n";
+			} else if ( a->arg.addr->size == WORD_SIZE ) {
+				ss << "ASM: \t" << "sw " << reg << ", " << 0 << "($sp)\n";
+			} else {
+				assert(0);
+			}
 			std::cout << ss.str();
 			if ( !a->arg.alive ) {
 				mmu.free_reg( reg );
@@ -876,7 +907,16 @@ void gen_epilogue() {
 	ss << "ASM: \t" << "lw $ra, 4($sp)\n";
 	ss << "ASM: \t" << "addiu $sp, $sp, " << 8 <<"\n";
 	ss << "ASM: \t" << "jr $ra\n";
+	
+	ss << "ASM: \t" << "\n\n#####################\n\n";
+		if ( !mmu.strings.empty() ) {
+		ss << "ASM: \t" << ".data\n";
+		for ( auto i : mmu.strings ) {
+			ss << "ASM: " << i.first << ":\t.asciiz\t" << i.second << "\n"  ;
+		}
+	}
 	std::cout << ss.str();
+
 }
 
 void gen_prologue( ) {

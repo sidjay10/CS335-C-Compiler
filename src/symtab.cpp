@@ -1562,7 +1562,7 @@ void ParameterDeclaration::create_type() {
         DirectAbstractDeclarator *dd =
             abstract_declarator->direct_abstract_declarator;
 
-        if ( dd->array_dims.size() != 0 ) {
+        if ( dd!= nullptr && dd->array_dims.size() != 0 ) {
             type = Type( type_index, dd->array_dims.size(), true );
             type.is_array = true;
             type.is_pointer = true;
@@ -2394,7 +2394,6 @@ SymTabEntry::SymTabEntry( std::string _name, unsigned int _line_num,
 
 void error_msg( std::string str, unsigned int line_num, unsigned int column ) {
 
-    error_flag=1;
     std::cout << "\nLine: " << line_num << ":" << column << " ERROR: " << str << "\n";
     if ( line_num == ( code.size() + 1 ) ) {
 
@@ -2408,7 +2407,6 @@ void error_msg( std::string str, unsigned int line_num, unsigned int column ) {
 
 void error_msg( std::string str, unsigned int line_num ) {
 
-    error_flag=1;
     std::cout << "\nLine: " << line_num << " ERROR: " << str << "\n";
     if ( line_num == ( code.size() + 1 ) ) {
 
