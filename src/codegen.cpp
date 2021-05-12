@@ -574,12 +574,12 @@ void gen_asm_instr_imm(std::string operation, ADDRESS & result , ADDRESS & arg1)
 	if ( operation != "()s" && !result.alive ) {
 		ss << "ASM: xxxx\t";
 	}
-	ARCH_REG dest;
+	ARCH_REG dest = tINV;
 	 if ( operation == "()s" ) {
 		dest = mmu.get_reg( tINV, result.addr, 2, true);
 		assert( dest != tINV );
 	 } else {
-		dest = mmu.get_reg( dest, result.addr, 0, false);
+		dest = mmu.get_reg( tINV, result.addr, 0, false);
 	}
 	int value = ( int ) std::stoi(arg1.addr->name);
 
@@ -597,7 +597,10 @@ void gen_asm_instr_imm(std::string operation, ADDRESS & result , ADDRESS & arg1)
 
 	std::cout << ss.str();
 
-	if ( result.alive && result.next_use == nullptr ) {
+	if ( !result.alive  ) {
+		mmu.free_reg( dest );
+	}
+	else if ( result.alive && result.next_use == nullptr ) {
 		mmu.store_and_free_reg( dest );
 	}
 }
@@ -742,15 +745,15 @@ void process_save_live( SaveLive * s ){
 void gen_epilogue() {
 	//TODO: Save callee saved registers??
 	std::stringstream ss;
-	size_t reqd_size = local_symbol_table.reqd_size < 32 ? 32 : local_symbol_table.reqd_size;
-	reqd_size = reqd_size + mmu.temp_stack.size() * 4;
-	if ( reqd_size < 0x8000 ) {
-		reqd_size = reqd_size & 0xffff;
-		ss << "ASM: \t" << "addiu $sp, $sp, " << (short) reqd_size << "\n";
-	} else {
-		ss << "ASM: \t" << "li $v1, " << reqd_size  << "\n";
-		ss << "ASM: \t" << "addu $sp, $sp, $v1\n";
-	}
+	//size_t reqd_size = local_symbol_table.reqd_size < 32 ? 32 : local_symbol_table.reqd_size;
+	//reqd_size = reqd_size + mmu.temp_stack.size() * 4;
+	//if ( reqd_size < 0x8000 ) {
+	//	reqd_size = reqd_size & 0xffff;
+	//	ss << "ASM: \t" << "addiu $sp, $sp, " << (short) reqd_size << "\n";
+	//} else {
+	//	ss << "ASM: \t" << "li $v1, " << reqd_size  << "\n";
+	//	ss << "ASM: \t" << "addu $sp, $sp, $v1\n";
+	//}
 	ss << "ASM: \t" << "move $sp, $fp\n";
 	ss << "ASM: \t" << "lw $fp, 0($sp)\n";
 	ss << "ASM: \t" << "lw $ra, 4($sp)\n";
@@ -763,6 +766,8 @@ void gen_prologue( ) {
 	//TODO: Save callee saved registers??
 	std::stringstream ss;
 	ss << "ASM: \t.text\n"; 
+	ss << "ASM: \t.globl " << local_symbol_table.function_name << "\n"; 
+	ss << "ASM: \t" << "\n\n###########################\n\n";
 	ss << "ASM: " <<  local_symbol_table.function_name << ":\n";
 	ss << "ASM: \t" << "addiu $sp, $sp, " << -8 <<"\n";
 	ss << "ASM: \t" << "sw $ra, 4($sp)\n";
@@ -776,6 +781,7 @@ void gen_prologue( ) {
 		ss << "ASM: \t" << "li $v1, " << reqd_size << "\n";
 		ss << "ASM: \t" << "subu $sp, $sp, $v1\n";
 	}
+	ss << "ASM: \t" << "\n";
 	std::cout << ss.str();
 }
 
