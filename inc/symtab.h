@@ -8,6 +8,7 @@
 #include <sstream>
 
 void yyerror( const char *s );
+extern int error_flag;
 
 class Expression;
 class Identifier;

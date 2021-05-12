@@ -413,8 +413,18 @@ void gen_asm_instr(std::string operation, ADDRESS & result, ADDRESS & arg1, ADDR
 	}  else if ( operation == "*" ) {
 		ss << "ASM: \t" << "mul" << " " << dest <<", " << src1 << ", " << src2<<"\n";
 	}  else if ( operation == "/" ) {
-		ss << "ASM: \t" << "divu" << " " << dest <<", " << src1 << ", " << src2<<"\n";
-	} else {
+		ss << "ASM: \t" << "div" << " " << dest <<", " << src1 << ", " << src2<<"\n";
+	}	else if ( operation == "|" ) {
+		ss << "ASM: \t" << "or" << " " << dest <<", " << src1 << ", " << src2<<"\n";
+	}	else if ( operation == "&" ) {
+		ss << "ASM: \t" << "and" << " " << dest <<", " << src1 << ", " << src2<<"\n";
+	}	else if ( operation == "^" ) {
+		ss << "ASM: \t" << "xor" << " " << dest <<", " << src1 << ", " << src2<<"\n";
+	} 	else if ( operation == ">>" ) {
+		ss << "ASM: \t" << "srav" << " " << dest <<", " << src1 << ", " << src2 <<"\n";
+	}  else if ( operation == "<<" ) {
+		ss << "ASM: \t" << "sllv" << " " << dest <<", " << src1 << ", " << src2<<"\n";
+	}else {
 		std::cerr << "PANIC: unknown operation " << operation << "\n";
 		assert(0);
 	}
@@ -469,11 +479,17 @@ void gen_asm_instr_imm(std::string operation, ADDRESS & result, ADDRESS & arg1, 
 		}  else if ( operation == "*" ) {
 			ss << "ASM: \t" << "mul" << " " << dest <<", " << src1 << ", " << (short) value <<"\n";
 		}  else if ( operation == "/" ) {
-			ss << "ASM: \t" << "divu" << " " << dest <<", " << src1 << ", " << (short) value <<"\n";
+			ss << "ASM: \t" << "div" << " " << dest <<", " << src1 << ", " << (short) value <<"\n";
 		}  else if ( operation == ">>" ) {
 			ss << "ASM: \t" << "sra" << " " << dest <<", " << src1 << ", " << (short) value <<"\n";
 		}  else if ( operation == "<<" ) {
 			ss << "ASM: \t" << "sll" << " " << dest <<", " << src1 << ", " << (short) value <<"\n";
+		}  else if ( operation == "^" ) {
+			ss << "ASM: \t" << "xor" << " " << dest <<", " << src1 << ", " << (short) value <<"\n";
+		}  else if ( operation == "|" ) {
+			ss << "ASM: \t" << "or" << " " << dest <<", " << src1 << ", " << (short) value <<"\n";
+		}  else if ( operation == "&" ) {
+			ss << "ASM: \t" << "and" << " " << dest <<", " << src1 << ", " << (short) value <<"\n";
 		} else {
 			std::cerr << "PANIC: unknown operation " << operation << "\n";
 			assert(0);
@@ -499,7 +515,13 @@ void gen_asm_instr_imm(std::string operation, ADDRESS & result, ADDRESS & arg1, 
 		}  else if ( operation == "*" ) {
 			ss << "ASM: \t" << "mul" << " " << dest <<", " << src1 << ", " << v1 <<"\n";
 		}  else if ( operation == "/" ) {
-			ss << "ASM: \t" << "divu" << " " << dest <<", " << src1 << ", " << v1 <<"\n";
+			ss << "ASM: \t" << "div" << " " << dest <<", " << src1 << ", " << v1 <<"\n";
+		}	else if ( operation == "^" ) {
+			ss << "ASM: \t" << "xor" << " " << dest <<", " << src1 << ", " << v1 <<"\n";
+		}  else if ( operation == "|" ) {
+			ss << "ASM: \t" << "or" << " " << dest <<", " << src1 << ", " << v1 <<"\n";
+		}  else if ( operation == "&" ) {
+			ss << "ASM: \t" << "and" << " " << dest <<", " << src1 << ", " << v1 <<"\n";
 		} else {
 			std::cerr << "PANIC: unknown operation " << operation << "\n";
 			assert(0);

@@ -9,6 +9,9 @@
 #include <statement.h>
 #include <y.tab.h>
 
+///////GLOBAL FLAGS////////
+int error_flag;
+///////////////////////////
 
 extern FILE *yyin;
 extern FILE *yyout;
@@ -53,6 +56,10 @@ int main(int argc, char *argv[]) {
 	root->dotify();
 	
 	assert(abc == 0);
+	
+	if(error_flag == 1){
+		std::cout << "The program compiled with errors\n";
+	}
 	
 	ss.str("");
 	ss << "}\n";

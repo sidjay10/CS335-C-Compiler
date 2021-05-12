@@ -2394,6 +2394,7 @@ SymTabEntry::SymTabEntry( std::string _name, unsigned int _line_num,
 
 void error_msg( std::string str, unsigned int line_num, unsigned int column ) {
 
+    error_flag=1;
     std::cout << "\nLine: " << line_num << ":" << column << " ERROR: " << str << "\n";
     if ( line_num == ( code.size() + 1 ) ) {
 
@@ -2407,6 +2408,7 @@ void error_msg( std::string str, unsigned int line_num, unsigned int column ) {
 
 void error_msg( std::string str, unsigned int line_num ) {
 
+    error_flag=1;
     std::cout << "\nLine: " << line_num << " ERROR: " << str << "\n";
     if ( line_num == ( code.size() + 1 ) ) {
 

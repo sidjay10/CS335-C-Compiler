@@ -233,8 +233,8 @@ additive_expression
 
 shift_expression
 	: additive_expression				{ $$ = $1; }
-	| shift_expression LEFT_OP additive_expression	{ $$ = create_shift_expression(">>", $1, $3); }
-	| shift_expression RIGHT_OP additive_expression	{ $$ = create_shift_expression("<<", $1, $3); }
+	| shift_expression LEFT_OP additive_expression	{ $$ = create_shift_expression("<<", $1, $3); }
+	| shift_expression RIGHT_OP additive_expression	{ $$ = create_shift_expression(">>", $1, $3); }
 	;
 
 relational_expression
