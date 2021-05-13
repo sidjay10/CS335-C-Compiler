@@ -1,12 +1,17 @@
 void print_int( int x);
 void print_char( char x);
 int scan_int();
+int absolute( int x );
+int odd(int number);
+int even(int number);
+
 int absolute(int x){
     if(x < 0){
         return -1*x;
     }
     return x;
 }
+
 int odd(int number);
 int even(int number);
 

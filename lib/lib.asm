@@ -36,19 +36,31 @@ print_string:
 .text
 .globl scan_string
 scan_string:
+	bltz $a1 scan_err
 	li $v0, 8
 	syscall
 	jr $ra
-
-
-# Function : malloc
-# Signature : void* malloc(int n)
-# Returns : pointer to allocated memory
-
-.text
-.globl malloc
-malloc:
-	# Takes one arguement $a0 to indicate number of bytes
-	li $v0, 9
+scan_err:
+	la $a0 scan_err_str	
+	li $v0, 4
 	syscall
 	jr $ra
+	
+	.data 
+scan_err_str: .asciiz "Input size cannot be negative!\n"
+ 	
+ 	.text
+ 	.globl sbrk
+sbrk:
+	li $v0 , 9
+	syscall
+	jr $ra
+
+
+ 	.text
+ 	.globl exit
+exit:
+	li $v0 , 10
+	syscall
+	jr $ra
+

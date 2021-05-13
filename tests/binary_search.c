@@ -37,6 +37,7 @@ void print_array(int * arr){
     print_char('\n');
     return;
 }
+
 int main(){
     int i,x,y,z;
     int arr[100];
@@ -51,3 +52,4 @@ int main(){
     print_int(y);
     return 0;
 }
+

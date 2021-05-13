@@ -22,7 +22,7 @@ int x;
 int main()
 {
     int y=5;
-    x = max ( x, y);
+    x = max ( x, y );
     x++;
     return 0;
 }

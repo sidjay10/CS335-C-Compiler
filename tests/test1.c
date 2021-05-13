@@ -1,12 +1,12 @@
 //#include <stdio.h>
 //
-void quick_sort (long * data, long n) 
+void quick_sort (int * data, int n) 
     {
-        long i, j, p, t;
+        int i, j, p, t;
         if (n < 2)
             return;
         p = data[n / 2];
-        for (i = 0l, j = n - 1;; i++, j--) {
+        for (i = 0, j = n - 1;; i++, j--) {
             while (data[i] < p)
                 i++;
             while (p < data[j])
@@ -22,17 +22,18 @@ void quick_sort (long * data, long n)
         return;
     }
     
-int main(void) {
-        long t; scanf("%ld",&t);
-        while(t--)
-        {
-            long c[3],k; 
-            scanf("%lld%lld%lld",&c[0],&c[1],&c[2]);
-            quick_sort(c,3l);
-            scanf("%lld",&k);
-            if(k<=c[0]) printf("%lld\n",(k-1)*3+1);
-            else if(k>c[0]&&k<=c[1]) printf("%lld\n",c[0]*3+(k-1-c[0])*2+1);
-            else if(k>c[1]&&k<=c[2]) printf("%lld\n",c[0]+k+c[1]);
-        }
-    	return 0;
-    }
+
+//int main(void) {
+//        int t; scanf("%ld",&t);
+//        while(t--)
+//        {
+//            int c[3],k; 
+//            scanf("%lld%lld%lld");
+//            quick_sort(c+1,3);
+//            scanf("%lld");
+//            if(k<=c[0]) printf("%lld\n");
+//            else if(k>c[0]&&k<=c[1]) printf("%lld\n");
+//            else if(k>c[1]&&k<=c[2]) printf("%lld\n");
+//        }
+//    	return 0;
+//    }
