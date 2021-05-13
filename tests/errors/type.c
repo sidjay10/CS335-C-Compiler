@@ -30,6 +30,7 @@ int main(){
     *arr=2;
     // unary + and - 
     j=i+(-ptr);
+
     // multiplicative
     k = (ptr * a)+(ptr/a);
     //relation
@@ -40,14 +41,12 @@ int main(){
     j=a&ptr;
 
     //assignment =
-    ptr2=ptr;
+    ptr2=ptr;(//Warning)
     p=ptr;
 
     //*=
     ptr*=7;
 
-    // 
-    d='\k';
-
+    return 0;
 }
 
