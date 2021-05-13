@@ -115,7 +115,7 @@ int main(int argc, char *argv[]) {
 		ssr1 << "sed -i 's/^ASM:\ //' " << asm_fname;
 		system(ssr1.str().c_str());
 		std::stringstream ssr2;
-		ssr1 << "sed -i '/^xxxx/d' " << asm_fname;
+		ssr2 << "sed -i '/^xxxx/d' " << asm_fname;
 		system(ssr2.str().c_str());
 	}
 

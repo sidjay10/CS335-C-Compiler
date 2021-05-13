@@ -2450,7 +2450,6 @@ void warning_msg( std::string str, unsigned int line_num,
     }
 
     printf( "\n\t%*s\n", column, "^" );
-	error_flag = 1;
 }
 
 void warning_msg( std::string str, unsigned int line_num ) {
