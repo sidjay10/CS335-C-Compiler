@@ -382,7 +382,7 @@ Expression *create_postfix_expr_struct( std::string access_op, Expression *pe,
                 P->type = *iType;
             }
         } else {
-            error_msg( "Invalid operand . with type " + peT.name, i->line_num,
+            error_msg( "Invalid operand . with type " + pe->type.get_name(), i->line_num,
                        i->column );
             P->type = INVALID_TYPE;
             return P;
