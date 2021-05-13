@@ -36,8 +36,8 @@ int main(int argc, char *argv[]) {
 	cli.add("all", 'v', "Verbose generation of all intermediate files/information");
 
 	//Variable Flags
-	cli.add<std::string>("output", 'o', "Basename for the generated files.", false, "file");
-	cli.add<std::string>("input", 's', "Specify the input source file", true, "");
+	cli.add<std::string>("output", 'o', "Output filename for the generated assembly.", false, "file.s");
+	cli.add<std::string>("input", 'i', "Specify the input source file", true, "");
 
 	//Run CLI parser
 	cli.parse_check(argc, argv);
@@ -80,9 +80,11 @@ int main(int argc, char *argv[]) {
 	else{
 		//Setup Output files as ofs
 		//Dot file
+		std::string file_name = cli.get<std::string>("output");
+		std::string file_basename = file_name.substr(0, file_name.find_last_of("."));
 		if(cli.exist("dot-cfg") || cli.exist("all")){
 			std::ofstream dot_ofs;
-			const std::string dot_fname = cli.get<std::string>("output") + ".dot";
+			const std::string dot_fname = file_basename + ".dot";
 			dot_ofs.open(dot_fname);
 			dot_ofs << dot_ss.rdbuf();
 			dot_ofs.close();
@@ -90,7 +92,7 @@ int main(int argc, char *argv[]) {
 		//Symbol Table file
 		if(cli.exist("symtab") || cli.exist("all")){
 			std::ofstream sym_ofs;
-			const std::string sym_fname = cli.get<std::string>("output") + "_symtab.csv";
+			const std::string sym_fname = file_basename + "_symtab.csv";
 			sym_ofs.open(sym_fname);
 			sym_ofs << sym_ss.rdbuf();
 			sym_ofs.close();
@@ -98,7 +100,7 @@ int main(int argc, char *argv[]) {
 		//Three Address Code file
 		if(cli.exist("tac") || cli.exist("all")){
 			std::ofstream tac_ofs;
-			const std::string tac_fname = cli.get<std::string>("output") + ".tac";
+			const std::string tac_fname = file_basename + ".tac";
 			tac_ofs.open(tac_fname);
 			tac_ofs << tac_ss.rdbuf();
 			tac_ofs.close();
@@ -106,7 +108,7 @@ int main(int argc, char *argv[]) {
 		
 		//Generating ASM is mandatory
 		std::ofstream asm_ofs;
-		const std::string asm_fname = cli.get<std::string>("output") + ".s";
+		const std::string asm_fname = cli.get<std::string>("output");
 		asm_ofs.open(asm_fname);
 		asm_ofs << asm_ss.rdbuf();
 		asm_ofs.close();

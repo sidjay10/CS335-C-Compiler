@@ -96,3 +96,6 @@ patterns: $(PATTERNS)
 
 clean:
 	rm -rf $(BUILDDIR) $(TARGETDIR) $(INCDIR)/y.tab.h
+
+scrub:
+	rm -rf *.s *.dot *.tac *.csv
