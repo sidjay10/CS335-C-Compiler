@@ -537,10 +537,10 @@ neg_constant
 	;
 
 compound_statement
-	:  '{' '}'	 				                { $$ = NULL; }
-	|  '{' statement_list '}'	 		        { $$ = $2; }
-	|  '{' declaration_list '}'	 		        { local_symbol_table.clear_current_level(); $$ = NULL; }
-	|  '{' declaration_list statement_list '}'	{ local_symbol_table.clear_current_level(); $$ = $3; }
+	: M_INC '{' '}'	 			                { local_symbol_table.clear_current_level(); $$ = NULL; }
+	| M_INC '{' statement_list '}'	 		        { local_symbol_table.clear_current_level(); $$ = $3; }
+	| M_INC '{' declaration_list '}'	 	        { local_symbol_table.clear_current_level(); $$ = NULL; }
+	| M_INC '{' declaration_list statement_list '}'		{ local_symbol_table.clear_current_level(); $$ = $4; }
 	;
 
 declaration_list
@@ -614,6 +614,7 @@ function_definition
 M_LABEL : %empty { $$ = create_new_label(); } ;
 M_GOTO  : %empty { $$ = create_new_goto(); } ;
 M_FALSE : %empty { $$ = create_new_goto_cond(nullptr, false); };
+M_INC	: %empty { local_symbol_table.increase_level(); }
 
 
 %%

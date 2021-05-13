@@ -94,6 +94,7 @@ public:
 	std::map<std::string, std::string > strings;
 	std::map<std::string, size_t > globals;
 	size_t stack_size;
+	long symtab_size;
 
 	MemManUnit();
 	ARCH_REG get_reg(ARCH_REG dest, Address* a, int mem_valid /* 0 -> false, 1->true, 2->dont't change */ , bool load );

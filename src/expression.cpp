@@ -322,22 +322,22 @@ Expression *create_postfix_expr_fun( Identifier *fi, ArgumentExprList *ae ) {
 	unsigned int arg_count = ste->type.num_args < NUM_REG_ARGS ? ste->type.num_args : NUM_REG_ARGS; 
 	for ( unsigned int i = 0; i <  arg_count ; i++ ) {
 	Address * t1;
-	if ( ste->type.arg_types[i].isPointer() ) {
-		t1 = ae->args[i]->res;
-	} else {
+//	if ( ste->type.arg_types[i].isPointer() ) {
+//		t1 = ae->args[i]->res;
+//	} else {
 		MEM_EMIT(ae->args[i], t1);
-	}
+//	}
         create_new_arg(t1, i );
 		//emit(nullptr, "arg" + std::to_string(i),  ae->args[i]->res, nullptr );
 	}
     create_new_save_live();
 	for ( unsigned int i = ste->type.num_args - 1; i >= NUM_REG_ARGS; i-- ) {
 	Address * t1;
-	if ( ste->type.arg_types[i].isPointer() ) {
-		t1 = ae->args[i]->res;
-	} else {
+//	if ( ste->type.arg_types[i].isPointer() ) {
+//		t1 = ae->args[i]->res;
+//	} else {
 		MEM_EMIT(ae->args[i], t1);
-	}
+//	}
         create_new_arg(t1, i );
 		//emit(nullptr, "push" + std::to_string(i),  ae->args[i]->res, nullptr );
 	}
@@ -757,7 +757,7 @@ Expression *create_unary_expression( Terminal *op, TypeName *t_name ) {
     std::string u_op = op->name;
     U->name = u_op;
     U->add_children( op, t_name );
-    U->type = Type( PrimitiveTypes::U_LONG_T, 0, true );
+    U->type = Type( PrimitiveTypes::INT_T, 0, true );
     U->res = new_3const( t_name->type.get_size() , INT3);
 
     return U;
@@ -1521,15 +1521,16 @@ Expression *create_assignment_expression( Expression *ue, Node *n_op,
             Address *t1 = ase->res;
             emit( ue->res, "()s", t1, nullptr );
             P->res->type = TEMP;
-        } else if ( ue->res->type == ID3  && !ueT.isPointer() ) {
-            P->res = ue->res;
-            Address *t1;
-            MEM_EMIT( ase, t1 );
-            emit( ue->res, "=", t1, nullptr );
-            P->res->type = TEMP;
+//        } else if ( ue->res->type == ID3  && !ueT.isPointer() ) {
+//            P->res = ue->res;
+//            Address *t1;
+//            MEM_EMIT( ase, t1 );
+//            emit( ue->res, "=", t1, nullptr );
+//            P->res->type = TEMP;
         } else if ( ue->res->type == ID3  ) {
             P->res = ue->res;
             Address *t1 = ase->res;
+            MEM_EMIT( ase, t1 );
             emit( ue->res, "=", t1, nullptr );
             P->res->type = TEMP;
         } else {

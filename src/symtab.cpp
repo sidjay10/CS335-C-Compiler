@@ -683,8 +683,8 @@ void Declaration::add_to_symbol_table( LocalSymbolTable &sym_tab ) {
 
             e->type = Type( type_index, 0, true );
             e->type.is_function = true;
-            e->type.is_pointer =
-                false; /* We don't implement function pointers */
+//            e->type.is_pointer =
+//                false; /* We don't implement function pointers */
             if ( dd->params != nullptr ) {
                 e->type.num_args = dd->params->param_list.size();
 
@@ -790,8 +790,8 @@ void Declaration::add_to_symbol_table( GlobalSymbolTable &sym_tab ) {
 
             e->type = Type( type_index, pointer_level, true );
             e->type.is_function = true;
-            e->type.is_pointer =
-                false; /* We don't implement function pointers */
+            //e->type.is_pointer =
+//                false; /* We don't implement function pointers */
             if ( dd->params != nullptr ) {
                 e->type.num_args = dd->params->param_list.size();
                 bool fun_args_valid = true;
@@ -1038,7 +1038,7 @@ DeclarationList *create_declaration_list( Declaration *declaration ) {
     DeclarationList *dl = new DeclarationList();
     dl->declarations.push_back( declaration );
     dl->add_child( declaration );
-    local_symbol_table.increase_level();
+//    local_symbol_table.increase_level();
     declaration->add_to_symbol_table( local_symbol_table );
     return dl;
 }
@@ -2136,9 +2136,6 @@ void LocalSymbolTable::clear_current_level() {
         }
     }
     current_level--;
-    for ( int i = 0; i < current_level; i++ ) {
-        ; // std::cout << "  ";
-    }
     // std::cout << "}\n";
     write_to_symtab_file( ss.str() );
     ss.clear();
@@ -2198,8 +2195,9 @@ void LocalSymbolTable::add_function(
     int *error ) {
 
     sym_table.clear();
-	symbol_id = 0;
-	offset = 0;
+symbol_id = 0;
+offset = 0;
+reqd_size = 0;
     ss.clear();
     ss.str( std::string() );
     if ( *error == -1 ) {
@@ -2316,7 +2314,7 @@ void GlobalSymbolTable::add_symbol(
 
     e->type = Type( type_index, pointer_level, true );
     e->type.is_function = true;
-    e->type.is_pointer = false; /* We don't implement function pointers */
+//    e->type.is_pointer = false; /* We don't implement function pointers */
     DirectDeclarator *dd = declarator->direct_declarator;
     if ( dd->params != nullptr ) {
         e->type.num_args = dd->params->param_list.size();

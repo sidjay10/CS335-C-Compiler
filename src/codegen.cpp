@@ -42,7 +42,8 @@ MemoryLocation create_memory_location(std::string name, unsigned int id,  long o
 		}
 	} else if ( id & LOCAL_SYM_MASK ){
 		ml.base_reg = FP;
-		ml.offset = -local_symbol_table.reqd_size + offset;
+		//ml.offset = -local_symbol_table.reqd_size + offset;
+		ml.offset = offset;
 	} else {
 		assert(0);
 	}
@@ -72,7 +73,7 @@ void set_is_ea( unsigned int id ){
 }
 
 
-MemManUnit::MemManUnit() : start_issue(0), reg_alloc_info(std::vector<unsigned int>(NUM_ARCH_REGS, 0)) {} 
+MemManUnit::MemManUnit() : start_issue(0), reg_alloc_info(std::vector<unsigned int>(NUM_ARCH_REGS, 0)) , stack_size(0), symtab_size(0) {} 
 
 ARCH_REG MemManUnit::get_reg( ARCH_REG dest, Address * a , int mem_valid , bool load ) {
 	auto it = memory_locations.find( a->table_id );
@@ -218,6 +219,7 @@ void MemManUnit::reset() {
 	globals.clear();
 	strings.clear();
 	stack_size = 0;
+	symtab_size = 0;
 }
 
 
@@ -243,7 +245,7 @@ void issue_load( ARCH_REG r, MemoryLocation & ml ) {
 		assert(0);
 	}
 	if ( ml.base_reg == FP ) {
-		ss << "ASM: \t" << load << " " << r << ", " <<  ml.offset << "($fp)\n"; 
+		ss << "ASM: \t" << load << " " << r << ", " <<  -mmu.symtab_size + ml.offset << "($fp)\n"; 
 	} else if ( ml.base_reg == GP ) {
 		ss << "ASM: \t" << load << " " << r << ", " << ml.name << "\n";
 	} else {
@@ -256,7 +258,7 @@ void issue_load_ea( ARCH_REG r, MemoryLocation & ml ) {
 	//TODO: Implement different offset sizes
 	std::stringstream ss;
 	if ( ml.base_reg == FP ) {
-		ss << "ASM: \t" << "addiu " << r << ", $fp, " << ml.offset << "\n"; 
+		ss << "ASM: \t" << "addiu " << r << ", $fp, " << -mmu.symtab_size + ml.offset << "\n"; 
 	} else if ( ml.base_reg == GP ) {
 		ss << "ASM: \t" << "la " << r << ", " << ml.name << "\n";
 	}
@@ -271,7 +273,7 @@ void issue_load_ea( ARCH_REG r, ADDRESS & src ) {
 	MemoryLocation & ml = it->second;
 	std::stringstream ss;
 	if ( ml.base_reg == FP ) {
-		ss << "ASM: \t" << "addiu " << r << ", $fp " << ml.offset << "\n"; 
+		ss << "ASM: \t" << "addiu " << r << ", $fp " << -mmu.symtab_size + ml.offset << "\n"; 
 	} else if ( ml.base_reg == GP ) {
 		ss << "ASM: \t" << "la " << r << ", " << ml.name << "\n";
 	}
@@ -291,7 +293,7 @@ void issue_store( ARCH_REG r, MemoryLocation & ml ) {
 		assert(0);
 	}
 	if ( ml.base_reg == FP ) {
-		ss << "ASM: \t" << store << " " << r << ", " <<  ml.offset << "($fp)\n"; 
+		ss << "ASM: \t" << store << " " << r << ", " <<  -mmu.symtab_size + ml.offset << "($fp)\n"; 
 	} else if ( ml.base_reg == GP ) {
 		ss << "ASM: \t" << store << " " << r << ", " << ml.name << "\n";
 	} else {
@@ -663,11 +665,10 @@ void gen_asm_instr(std::string operation, ADDRESS & result, ADDRESS & arg1){
 	ARCH_REG src1 = mmu.get_reg(tINV, arg1.addr , 2, true);
 	ARCH_REG dest = tINV;
 
-	if ( operation != "()s" && !arg1.alive ) {
+	if ( !arg1.alive ) {
 		mmu.free_reg( src1 );
 		dest = src1;
-	} 
-	else if ( operation != "()s" &&  arg1.alive && arg1.next_use == nullptr  ) {
+	} else if ( arg1.alive && arg1.next_use == nullptr  ) {
 		mmu.store_and_free_reg( src1 );
 		dest = src1;
 	}
@@ -974,6 +975,7 @@ void gen_prologue( ) {
 	ss << "ASM: \t" << "sw $ra, 4($sp)\n";
 	ss << "ASM: \t" << "sw $fp, 0($sp)\n";
 	ss << "ASM: \t" << "move $fp, $sp\n";
+	mmu.symtab_size = local_symbol_table.reqd_size;
 	mmu.stack_size = local_symbol_table.reqd_size < 32 ? 32 : local_symbol_table.reqd_size;
 	size_t reqd_size = mmu.stack_size;
 	if ( reqd_size <= 0x8000 ) {

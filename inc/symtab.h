@@ -196,9 +196,9 @@ class LocalSymbolTable : public SymbolTable {
   public:
     std::map<std::string, std::deque<SymTabEntry *> &> sym_table;
     std::string function_name;
+    size_t reqd_size;
     int current_level;
     size_t offset;
-    size_t reqd_size;
 	Type return_type;
     void increase_level();
     void clear_current_level();
