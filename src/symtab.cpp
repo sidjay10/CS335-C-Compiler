@@ -2408,7 +2408,7 @@ SymTabEntry::SymTabEntry( std::string _name, unsigned int _line_num,
 
 void error_msg( std::string str, unsigned int line_num, unsigned int column ) {
 
-    std::cout << "\nLine: " << line_num << ":" << column << " ERROR: " << str << "\n";
+    std::cout << "\nLine: " << line_num << ":" << column << " \033[1;31mERROR:\033[0m " << str << "\n";
     if ( line_num == ( code.size() + 1 ) ) {
 
         std::cout << "\t" << text.str();
@@ -2417,12 +2417,12 @@ void error_msg( std::string str, unsigned int line_num, unsigned int column ) {
     }
     error_flag = 1;
 
-    printf( "\n\t%*s\n", column, "^" );
+    printf( "\033[1;31m\n\t%*s\n\033[0m", column, "^" );
 }
 
 void error_msg( std::string str, unsigned int line_num ) {
 
-    std::cout << "\nLine: " << line_num << " ERROR: " << str << "\n";
+    std::cout << "\nLine: " << line_num << " \033[1;31mERROR:\033[0m " << str << "\n";
     if ( line_num == ( code.size() + 1 ) ) {
 
         std::cout << "\t" << text.str();
@@ -2439,7 +2439,7 @@ void warning_msg( std::string str, unsigned int line_num,
                   unsigned int column ) {
 
     std::cout << "\nLine: "
-              << line_num << ":" << column << " WARNING: " << str << "\n";
+              << line_num << ":" << column << " \033[1;35mWARNING:\033[0m " << str << "\n";
     if ( line_num == ( code.size() + 1 ) ) {
 
         std::cout << "\t" << text.str();
@@ -2447,12 +2447,12 @@ void warning_msg( std::string str, unsigned int line_num,
         std::cout << "\t" << code[line_num - 1];
     }
 
-    printf( "\n\t%*s\n", column, "^" );
+    printf( "\033[1;35m\n\t%*s\n\033[0m", column, "^" );
 }
 
 void warning_msg( std::string str, unsigned int line_num ) {
 
-    std::cout << "\nLine: " << line_num << " WARNING: " << str << "\n";
+    std::cout << "\nLine: " << line_num << " \033[1;35mWARNING:\033[0m " << str << "\n";
     if ( line_num == ( code.size() + 1 ) ) {
 
         std::cout << "\t" << text.str();
