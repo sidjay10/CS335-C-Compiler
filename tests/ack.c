@@ -22,6 +22,5 @@ int main(){
     c=scan_int();
     A = ack(b,c);
     print_int(A);
-    exit();
     return 0;
 }
