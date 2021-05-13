@@ -558,13 +558,14 @@ void arithmetic_optimise(Quad* q){
 		else if((q->arg2.addr->name=="0" || q->arg2.addr->name=="0.0") && q->operation=="*"){
 			q->operation="";
 			q->arg2.addr=nullptr;
+			q->arg1.addr->name="0";
 			*q->result.addr = *q->arg1.addr;
 			q->dead=true;
 		}
 		else if((q->arg1.addr->name=="0" || q->arg1.addr->name=="0.0") && q->operation=="*"){
 			q->operation="";
-			q->arg1=q->arg2;
 			q->arg2.addr=nullptr;
+			q->arg1.addr->name="0";
 			*q->result.addr = *q->arg1.addr;
 			q->dead=true;
 		}
