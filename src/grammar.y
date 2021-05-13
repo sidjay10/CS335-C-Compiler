@@ -628,8 +628,8 @@ void yyerror(const char *s)
 //char *s;
 {
 	fflush(stdout);
-	printf("Line %d:%d ERROR : %s\n",line_num,column,s);
+	printf("Line %d:%d \033[1;31mERROR :\033[0m %s\n",line_num,column,s);
 	std::cout << text.str(); 
-	printf("\n%*s\n", column, "^");
+	printf("\n\033[1;31m%*s\033[0m\n", column, "^");
 	error_flag = 1;
 }
