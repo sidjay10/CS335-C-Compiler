@@ -2406,28 +2406,35 @@ SymTabEntry::SymTabEntry( std::string _name, unsigned int _line_num,
 //############################## ERROR MESSAGE #################################
 //##############################################################################
 
-void error_msg( std::string str, unsigned int line_num, unsigned int column ) {
+void error_msg( std::string str, unsigned int ln, unsigned int column ) {
+
+	if ( column <= 0 ) {
+		error_msg(str,ln);
+		return;
+	}
+
+    if ( ln == ( code.size() + 1 ) || ln == 0) {
 
     std::cout << "\nLine: " << line_num << ":" << column << " \033[1;31mERROR:\033[0m " << str << "\n";
-    if ( line_num == ( code.size() + 1 ) ) {
-
         std::cout << "\t" << text.str();
     } else {
-        std::cout << "\t" << code[line_num - 1];
+    std::cout << "\nLine: " << ln << ":" << column << " \033[1;31mERROR:\033[0m " << str << "\n";
+        std::cout << "\t" << code[ln - 1];
     }
     error_flag = 1;
 
     printf( "\033[1;31m\n\t%*s\n\033[0m", column, "^" );
 }
 
-void error_msg( std::string str, unsigned int line_num ) {
+void error_msg( std::string str, unsigned int ln ) {
+
+    if ( ln == ( code.size() + 1 ) || ln == 0) {
 
     std::cout << "\nLine: " << line_num << " \033[1;31mERROR:\033[0m " << str << "\n";
-    if ( line_num == ( code.size() + 1 ) ) {
-
         std::cout << "\t" << text.str();
     } else {
-        std::cout << "\t" << code[line_num - 1];
+    std::cout << "\nLine: " << ln << " \033[1;31mERROR:\033[0m " << str << "\n";
+        std::cout << "\t" << code[ln - 1];
     }
     std::cout << "\n";
 	error_flag = 1;
@@ -2435,29 +2442,36 @@ void error_msg( std::string str, unsigned int line_num ) {
     // printf( "\n\t%*s\n", column, "^" );
 }
 
-void warning_msg( std::string str, unsigned int line_num,
+void warning_msg( std::string str, unsigned int ln,
                   unsigned int column ) {
+	if ( column <= 0 ) {
+		warning_msg(str,ln);
+		return;
+	}
 
+    if ( ln == ( code.size() + 1 ) || ln == 0) {
     std::cout << "\nLine: "
               << line_num << ":" << column << " \033[1;35mWARNING:\033[0m " << str << "\n";
-    if ( line_num == ( code.size() + 1 ) ) {
 
         std::cout << "\t" << text.str();
     } else {
-        std::cout << "\t" << code[line_num - 1];
+    std::cout << "\nLine: "
+              << ln << ":" << column << " \033[1;35mWARNING:\033[0m " << str << "\n";
+        std::cout << "\t" << code[ln - 1];
     }
 
     printf( "\033[1;35m\n\t%*s\n\033[0m", column, "^" );
 }
 
-void warning_msg( std::string str, unsigned int line_num ) {
+void warning_msg( std::string str, unsigned int ln ) {
 
-    std::cout << "\nLine: " << line_num << " \033[1;35mWARNING:\033[0m " << str << "\n";
-    if ( line_num == ( code.size() + 1 ) ) {
+    if ( ln == ( code.size() + 1 ) || ln == 0) {
 
+	    std::cout << "\nLine: " << line_num << " \033[1;35mWARNING:\033[0m " << str << "\n";
         std::cout << "\t" << text.str();
     } else {
-        std::cout << "\t" << code[line_num - 1];
+	    std::cout << "\nLine: " << ln << " \033[1;35mWARNING:\033[0m " << str << "\n";
+        std::cout << "\t" << code[ln - 1];
     }
     std::cout << "\n";
 

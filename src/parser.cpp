@@ -73,7 +73,7 @@ int main(int argc, char *argv[]) {
 
 	//By this point, all output stringstreams are populated
 	if(error_flag == 1){
-		std::cout << "\033[1;31mCompilation Failed\033[0m\n";
+		std::cout << "\033[1;31mCOMPILATION FAILED\033[0m\n";
 		//Purge any files generated till now : No files have been output
 		exit(0);
 	}
