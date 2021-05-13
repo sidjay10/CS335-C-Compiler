@@ -494,7 +494,6 @@ void arithmetic_optimise(Quad* q){
 		else if(oper=="/"){
 			
 			if(y==0){
-				error_msg("Division by zero not possible",line_num);
 				return;
 			}
 			else{
