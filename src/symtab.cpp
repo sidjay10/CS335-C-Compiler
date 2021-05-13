@@ -466,7 +466,7 @@ size_t StructDefinition::get_size() {
         }
     }
     assert( size != 0 );
-    std::cout << size << "\n";
+    // std::cout << size << "\n";
     recursive = 0;
     return size;
 }
@@ -475,7 +475,7 @@ StructDefinition *create_struct_definition( int un_or_st,
                                             StructDeclarationList *sdl ) {
     StructDefinition *sd = new StructDefinition();
     sd->un_or_st = un_or_st;
-    std::cout << "struct {\n";
+    // std::cout << "struct {\n";
 	size_t offset = 0;
     for ( auto it = sdl->struct_declaration_list.begin();
           it != sdl->struct_declaration_list.end(); it++ ) {
@@ -517,11 +517,11 @@ StructDefinition *create_struct_definition( int un_or_st,
 			}
 			offset += size;
             sd->members.insert( {( *jt )->id->value, type} );
-            std::cout << "  " << ( *jt )->id->value << " " << type.get_name()
-                      << "\n";
+            // std::cout << "  " << ( *jt )->id->value << " " << type.get_name()
+                    //   << "\n";
         }
     }
-    std::cout << "}\n";
+    // std::cout << "}\n";
     return sd;
 }
 
