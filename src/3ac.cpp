@@ -898,7 +898,7 @@ void create_next_use_info(){
 		if ( r != nullptr && r->retval.addr != nullptr && r->retval.addr->type != CON ) {
 			auto it = get_entry_from_table(r->retval.addr);
 			r->retval.next_use = it->second.next_use;
-			if ( it->second.next_use == nullptr ) {
+			if ( it->second.next_use == nullptr && !(r->retval.addr->table_id && GLOBAL_SYM_MASK ) ) {
 				r->retval.alive = false;
 			} else {
 				r->retval.alive = true;
