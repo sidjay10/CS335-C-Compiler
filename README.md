@@ -115,3 +115,5 @@ make
 ```
 
 ## Final Project
+
+The final stage of this project is a functional compiler to translate C source to MIPS and run it. Tip-of-Tree of the `master` branch has code for the final outcome of the project. Usage information is provided above.
