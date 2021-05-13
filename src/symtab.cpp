@@ -2431,6 +2431,7 @@ void error_msg( std::string str, unsigned int line_num ) {
         std::cout << "\t" << code[line_num - 1];
     }
     std::cout << "\n";
+	error_flag = 1;
 
     // printf( "\n\t%*s\n", column, "^" );
 }
@@ -2448,6 +2449,7 @@ void warning_msg( std::string str, unsigned int line_num,
     }
 
     printf( "\n\t%*s\n", column, "^" );
+	error_flag = 1;
 }
 
 void warning_msg( std::string str, unsigned int line_num ) {

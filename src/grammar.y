@@ -630,4 +630,5 @@ void yyerror(const char *s)
 	printf("Line %d:%d ERROR : %s\n",line_num,column,s);
 	std::cout << text.str(); 
 	printf("\n%*s\n", column, "^");
+	error_flag = 1;
 }
