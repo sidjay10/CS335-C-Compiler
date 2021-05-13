@@ -778,11 +778,11 @@ void dump_and_reset_3ac( ) {
 	create_next_use_info();
 	
 	for ( auto it = ta_code.begin(); it != ta_code.end(); it++ ){
-		std::cout << "3AC: " << (*it)->bb_no << ":  " << (*it)->print();
+		tac_ss << "3AC: " << (*it)->bb_no << ":  " << (*it)->print();
 		if( (*it)->dead == true ) {
-			std::cout << " xxxx";
+			tac_ss << " xxxx";
 		}
-		std::cout << "\n";
+		tac_ss << "\n";
 	}
 	gen_asm_code( );
 	//print_rep();
