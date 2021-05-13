@@ -235,7 +235,7 @@ Expression *create_postfix_expr_voidfun( Identifier *fi ) {
     P->type.arg_types.clear();
 
 
-//    create_new_save_live();
+    create_new_save_live();
 	if ( P->type.isVoid() ) {
         create_new_call( nullptr, fi->value );
 	} else {
