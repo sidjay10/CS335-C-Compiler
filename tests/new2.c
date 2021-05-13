@@ -3,11 +3,13 @@ int main(){
     int d=a+b;
     int c=a+b*2+a/b^a;
     if(a>b){
-        int e = 5;
+        int e;
+        e=5;
         e++;
     }
     else{
-        int f = 4;
+        int f;
+        f = 4;
         f++;
     }
     d=5;

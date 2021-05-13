@@ -3,6 +3,7 @@
 
 #include <ast.h>
 #include <iostream>
+#include <sstream>
 #include <deque>
 #include <map>
 #include <string>
@@ -12,7 +13,7 @@
 
 extern unsigned long long instructions;
 unsigned long long get_next_instr();
-
+extern std::stringstream tac_ss;
 
 
 extern unsigned long long temporaries;

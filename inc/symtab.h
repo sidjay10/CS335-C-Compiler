@@ -137,7 +137,7 @@ int add_to_defined_types( Types *typ );
 
 class ParameterTypeList;
 
-extern std::ofstream sym_file;
+extern std::stringstream sym_ss;
 void write_to_symtab_file( std::string s );
 
 class SymTabEntry {

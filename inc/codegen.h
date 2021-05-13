@@ -2,6 +2,8 @@
 #define __CODEGEN_H__
 
 #include<3ac.h>
+#include <sstream>
+#include <iostream>
 #include<vector>
 #include<set>
 
@@ -9,7 +11,7 @@
 #define NUM_TEMP_REGS 10
 #define NUM_REG_ARGS 4
 
-
+extern std::stringstream asm_ss;
 
 class Address;
 typedef struct _addresses ADDRESS;

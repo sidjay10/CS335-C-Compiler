@@ -2394,7 +2394,7 @@ Node *add_to_global_symbol_table( Declaration *declaration ) {
     return declaration;
 }
 
-void write_to_symtab_file( std::string s ) { sym_file << s; }
+void write_to_symtab_file( std::string s ) { sym_ss << s; }
 
 //##############################################################################
 //########################### SYMBOL TABLE ENTRY ##############################
@@ -2417,6 +2417,7 @@ void error_msg( std::string str, unsigned int line_num, unsigned int column ) {
     } else {
         std::cout << "\t" << code[line_num - 1];
     }
+    error_flag = 1;
 
     printf( "\n\t%*s\n", column, "^" );
 }

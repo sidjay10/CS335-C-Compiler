@@ -8,10 +8,16 @@
 #include <scanner.h>
 #include <statement.h>
 #include <y.tab.h>
+#include <cmdline.h>
 
-///////GLOBAL FLAGS////////
+///////EXTERN GLOBALS//////
 int error_flag;
+std::stringstream tac_ss;
+std::stringstream asm_ss;
+std::stringstream dot_ss;
+std::stringstream sym_ss;
 ///////////////////////////
+
 
 extern FILE *yyin;
 extern FILE *yyout;
@@ -19,34 +25,40 @@ extern FILE *yyout;
 Node * root = NULL;
 TOKEN_DATA token_data;
 
-static std::ofstream dot_file;
-std::ofstream sym_file;
-
 int main(int argc, char *argv[]) {
-  FILE *fh;
+	
+	// Command Line Parsing and Options
+	cmdline::parser cli;
+	//Boolean Flags
+	cli.add("dot-cfg", '\0', "Generate AST in dot format");
+	cli.add("symtab", '\0', "Generate the Symbol Table in csv format");
+	cli.add("tac", '\0', "Generate three address code intermediate");
+	cli.add("all", 'v', "Verbose generation of all intermediate files/information");
 
-  if (argc != 4){
-	  std::cout << "Incorrect usage. Usage : ./bin/parser <file>.c -o <file>.dot";
-  }
-  if ((fh = fopen(argv[1], "r"))){
-  	yyin = fh;
-  }
-  else{
-	  std::cout << "Input file does not exist!";
-	  exit(0);
-  }
+	//Variable Flags
+	cli.add<std::string>("output", 'o', "Basename for the generated files.", false, "file");
+	cli.add<std::string>("input", 's', "Specify the input source file", true, "");
 
+	//Run CLI parser
+	cli.parse_check(argc, argv);
+	
+	//Initialize
+	error_flag = 0;
 
-  	// std::ofstream outfile(argv[3]);
-  	dot_file.open(argv[3]); // = outfile;
-	sym_file.open("symtab.csv");
+	//Check if input file exists
+	FILE *fh;
+	if ((fh = fopen(cli.get<std::string>("input").c_str(), "r"))){
+		yyin = fh;
+	}
+	else{
+	 	std::cout << "Input file does not exist!";
+	 	exit(0);
+	}
 
-
-	sym_file << "Scope,Function Name, Symbol Name, Symbol Type, Symbol Level\n";
+	sym_ss << "Scope,Function Name, Symbol Name, Symbol Type, Symbol Level\n";
 	std::stringstream ss;
-	ss << "digraph G {\n";
-	ss << "\tordering=out\n";
-	dot_file << ss.str();
+	dot_ss << "digraph G {\n";
+	dot_ss << "\tordering=out\n";
 
 	root = create_non_term("translation_unit");
 
@@ -56,20 +68,60 @@ int main(int argc, char *argv[]) {
 	root->dotify();
 	
 	assert(abc == 0);
-	
+
+	dot_ss << "}\n";
+
+	//By this point, all output stringstreams are populated
 	if(error_flag == 1){
 		std::cout << "The program compiled with errors\n";
+		//Purge any files generated till now : No files have been output
+		exit(0);
 	}
-	
-	ss.str("");
-	ss << "}\n";
-	dot_file << ss.str();
-
-	dot_file.close();
+	else{
+		//Setup Output files as ofs
+		//Dot file
+		if(cli.exist("dot-cfg") || cli.exist("all")){
+			std::ofstream dot_ofs;
+			const std::string dot_fname = cli.get<std::string>("output") + ".dot";
+			dot_ofs.open(dot_fname);
+			dot_ofs << dot_ss.rdbuf();
+			dot_ofs.close();
+		}
+		//Symbol Table file
+		if(cli.exist("symtab") || cli.exist("all")){
+			std::ofstream sym_ofs;
+			const std::string sym_fname = cli.get<std::string>("output") + "_symtab.csv";
+			sym_ofs.open(sym_fname);
+			sym_ofs << sym_ss.rdbuf();
+			sym_ofs.close();
+		}
+		//Three Address Code file
+		if(cli.exist("tac") || cli.exist("all")){
+			std::ofstream tac_ofs;
+			const std::string tac_fname = cli.get<std::string>("output") + ".tac";
+			tac_ofs.open(tac_fname);
+			tac_ofs << tac_ss.rdbuf();
+			tac_ofs.close();
+		}
+		
+		//Generating ASM is mandatory
+		std::ofstream asm_ofs;
+		const std::string asm_fname = cli.get<std::string>("output") + ".s";
+		asm_ofs.open(asm_fname);
+		asm_ofs << asm_ss.rdbuf();
+		asm_ofs.close();
+		//Additionally process the asm outfile for dead code pruning
+		std::stringstream ssr1;
+		ssr1 << "sed -i 's/^ASM:\ //' " << asm_fname;
+		system(ssr1.str().c_str());
+		std::stringstream ssr2;
+		ssr1 << "sed -i '/^xxxx/d' " << asm_fname;
+		system(ssr2.str().c_str());
+	}
 
   return 0;
 }
 
 void file_writer(std::string s){
-	dot_file << s;
+	dot_ss << s;
 }
