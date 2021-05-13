@@ -24,6 +24,10 @@ print_char:
 scan_char:
 	li $v0, 12
 	syscall
+	move $s0, $v0
+	li $v0, 12
+	syscall
+	move $v0, $s0
 	jr $ra
 	
 .text

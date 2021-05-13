@@ -103,7 +103,7 @@
 %token <node> XOR_ASSIGN OR_ASSIGN
 
 %token <value> TYPEDEF EXTERN STATIC AUTO REGISTER
-%token <type_specifier> SIGNED UNSIGNED CHAR SHORT LONG INT FLOAT DOUBLE VOID TYPE_NAME
+%token <type_specifier> SIGNED UNSIGNED CHAR SHORT LONG INT FLOAT DOUBLE VOID TYPE_NAME 
 %token <value> CONST VOLATILE
 %token <value> STRUCT UNION ENUM ELLIPSIS
 
@@ -594,6 +594,8 @@ jump_statement
 translation_unit
 	:  external_declaration	 { root->add_child(create_non_term("external_declaration", $1)); }
 	|  translation_unit external_declaration	 { root->add_child(create_non_term("external_declaration", $2)); }
+	|  error external_declaration	 { root->add_child(create_non_term("external_declaration", $2)); }
+	|  translation_unit error external_declaration	 { root->add_child(create_non_term("external_declaration", $3)); }
 	;
 
 external_declaration
@@ -628,8 +630,9 @@ void yyerror(const char *s)
 //char *s;
 {
 	fflush(stdout);
-	printf("Line %d:%d \033[1;31mERROR :\033[0m %s\n",line_num,column,s);
-	std::cout << text.str(); 
-	printf("\n\033[1;31m%*s\033[0m\n", column, "^");
-	error_flag = 1;
+	error_msg(std::string(s),prev_line_num,prev_column);
+//	printf("Line %d:%d ERROR : %s\n",prev_line_num,prev_column,s);
+//	std::cout << text.str(); 
+//	printf("\n%*s\n", column, "^");
+//	error_flag = 1;
 }

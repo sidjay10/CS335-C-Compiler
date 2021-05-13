@@ -32,7 +32,7 @@ void main()
    
 	for(i=0;i<n;i++)
        for(j=0;j<n;j++)
-			G[i][j]=scan_int();
+		G[i][j]=scan_int();
  
     //visited is initialized to zero
    for(i=0;i<n;i++)

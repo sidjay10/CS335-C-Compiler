@@ -51,7 +51,7 @@ int main(){
 	ptr = head;
 	ptr->key = 0;
 	ptr->next = (struct node * ) NULL;
-	for(i = 0; i < n; i++ ) {
+	for(i = 1; i < n; i++ ) {
 		struct node * new;
 		new = (struct node * )sbrk(sizeof(struct node));
 		if (new == (struct node *) NULL ){

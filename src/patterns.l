@@ -73,6 +73,7 @@ std::vector < std::string > code;
 "union"			{ count(); return(UNION); }
 "unsigned"		{ yylval.type_specifier = create_type_specifier(UNSIGNED, line_num, column); count(); return(UNSIGNED); }
 "void"			{ yylval.terminal = create_type_specifier(VOID, line_num, column); count(); return(VOID); }
+"bool"			{ yylval.terminal = create_type_specifier(CHAR, line_num, column); count(); return(CHAR); }
 "volatile"		{ count(); return(VOLATILE); }
 "while"			{ count(); return(WHILE); }
 
@@ -242,6 +243,15 @@ int check_type()
 		yylval.constant = create_constant("CONSTANT HEX", "0x0", line_num, column);
 		yylval.constant->ConstantType = Type(VOID_T, 1, true);
 		yylval.constant->ConstantType.is_pointer = true;
+		return(CONSTANT);
+	}
+	if( std::string(yytext) == "true") {
+		yylval.constant = create_constant("CONSTANT INT", "1", line_num, column);
+		yylval.constant->ConstantType = Type(CHAR_T, 0, true);
+		return(CONSTANT);
+	} else if( std::string(yytext) == "false") {
+		yylval.constant = create_constant("CONSTANT INT", "0", line_num, column);
+		yylval.constant->ConstantType = Type(CHAR_T, 0, true);
 		return(CONSTANT);
 	}
 
