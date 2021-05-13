@@ -17,7 +17,7 @@ int main(){
     print_char('\n');
     c = (-a) ;
     print_int(c);
-    // print_char('\n');
+    print_char('\n');
 
 
     // bitwise operators : &, |, ^, <<, >>
