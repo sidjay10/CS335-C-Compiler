@@ -13,8 +13,8 @@ int main(){
     
     // uunary operators
 
-    // print_int(c); 
-    // print_char('\n');
+    print_int(c); 
+    print_char('\n');
     c = (-a) ;
     print_int(c);
     // print_char('\n');
@@ -82,8 +82,7 @@ int main(){
     print_int(c);
     print_char('\n');
     
-    exit();
-//    return 0;
+   return 0;
 } 
     
 
