@@ -1,7 +1,7 @@
 void print_int(int c);
 void print_char(char c);
 int scan_int();
-
+void print_string(char *);
 // return index at which the no. is present else -1
 int binary_search(int * arr,int low, int high,int to_find){
     int mid,i;
@@ -28,7 +28,7 @@ int binary_search(int * arr,int low, int high,int to_find){
     }
     return -1;
 }
-void print_array(int * arr){
+void print_array(int arr[100]){
     int x;
     for(x=0;x<50;x++){
         print_int(arr[x]);
@@ -47,6 +47,7 @@ int main(){
         x+=i;
     }
     print_array(arr);
+    print_string("Enter the number you want to search: ");
     z=scan_int();
     y=binary_search(arr,0,49,z);
     print_int(y);
