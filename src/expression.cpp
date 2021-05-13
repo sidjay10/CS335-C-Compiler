@@ -605,7 +605,7 @@ Expression *create_unary_expression( Terminal *op, Expression *ue ) {
     } else if ( u_op == "sizeof" ) {
         U->name = "sizeof";
         U->type = Type();
-        U->type.typeIndex = PrimitiveTypes::U_LONG_T;
+        U->type.typeIndex = PrimitiveTypes::INT_T;
         U->type.ptr_level = 0;
         U->type.is_const = true;
         U->res = new_3const( ue->type.get_size() , INT3);
@@ -737,6 +737,7 @@ Expression *create_unary_expression_cast( Node *n_op, Expression *ce ) {
 			U->truelist = ce->falselist;
 			U->falselist = ce->truelist;
             BACKPATCH ( U );
+//		U->res = t1;
 			U->res = new_temp();
             emit( U->res, u_op, t1, nullptr );
     } else {
@@ -1509,16 +1510,26 @@ Expression *create_assignment_expression( Expression *ue, Node *n_op,
             return P;
         }
 
-        if ( ue->res->type == MEM ) {
+        if ( ue->res->type == MEM && !ueT.isPointer() ) {
             P->res = ue->res;
             Address *t1;
             MEM_EMIT( ase, t1 );
             emit( ue->res, "()s", t1, nullptr );
             P->res->type = TEMP;
-        } else if ( ue->res->type == ID3 ) {
+        } else if ( ue->res->type == MEM ) {
+            P->res = ue->res;
+            Address *t1 = ase->res;
+            emit( ue->res, "()s", t1, nullptr );
+            P->res->type = TEMP;
+        } else if ( ue->res->type == ID3  && !ueT.isPointer() ) {
             P->res = ue->res;
             Address *t1;
             MEM_EMIT( ase, t1 );
+            emit( ue->res, "=", t1, nullptr );
+            P->res->type = TEMP;
+        } else if ( ue->res->type == ID3  ) {
+            P->res = ue->res;
+            Address *t1 = ase->res;
             emit( ue->res, "=", t1, nullptr );
             P->res->type = TEMP;
         } else {

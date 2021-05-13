@@ -125,4 +125,5 @@ Statement* create_compound_statement_1(std::string st,StatementList* sl1);
 Statement* create_compound_statement_2(std::string st,DeclarationList* dl1);
 Statement* create_compound_statement_3(std::string st,DeclarationList* dl1,StatementList* sl1);
 
+void backpatch_fn( Statement * s ) ;
 #endif

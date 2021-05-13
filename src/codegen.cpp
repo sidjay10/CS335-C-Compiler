@@ -271,7 +271,7 @@ void issue_load_ea( ARCH_REG r, ADDRESS & src ) {
 	MemoryLocation & ml = it->second;
 	std::stringstream ss;
 	if ( ml.base_reg == FP ) {
-		ss << "ASM: \t" << "addiu " << r << ", $fp" << ml.offset << "\n"; 
+		ss << "ASM: \t" << "addiu " << r << ", $fp " << ml.offset << "\n"; 
 	} else if ( ml.base_reg == GP ) {
 		ss << "ASM: \t" << "la " << r << ", " << ml.name << "\n";
 	}

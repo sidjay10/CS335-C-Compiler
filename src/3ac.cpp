@@ -266,8 +266,9 @@ GoTo * create_new_goto_cond( Address * res, bool condition ) {
 	GoTo * _goto = new GoTo();
 	_goto->res.addr = res;
 	_goto->condition = condition;
+	
 	//std::cout << "3AC: " << *_goto << "\n";
-	if ( res != nullptr ) {
+	if ( res != nullptr && res->ta_instr != nullptr ) {
 		res->ta_instr->dead = false;
 	}
 	ta_code.push_back(_goto);
@@ -695,6 +696,18 @@ void optimise_pass1() {
 			continue;
 		}
 		_goto1 = dynamic_cast<GoTo *>(*it); 
+	
+		if ( _goto1 != nullptr && _goto1->res.addr != nullptr && _goto1->res.addr->ta_instr != nullptr ) {
+			Quad * q = dynamic_cast<Quad *>(_goto1->res.addr->ta_instr);
+			if ( q != nullptr && q->operation == "!" ) {
+				_goto1->condition = !_goto1->condition;
+				*_goto1->res.addr = *q->arg1.addr; 
+				q->dead = true;
+			}
+		}
+
+
+
 		if ( _goto1 != nullptr && _goto1->res.addr != nullptr && _goto1->res.addr->type == CON) {
 			int value = std::stoi(_goto1->res.addr->name);
 			if (( value == 0 && _goto1->condition == false) || (value != 0 && _goto1->condition == true )){
@@ -725,7 +738,7 @@ void optimise_pass1() {
 		}
 		if ( _goto2 != nullptr && _goto2->res.addr == nullptr && ( label1 == nullptr || label1->reference_count == 0)  ) {
 			(*it)->dead = true;
-			if ( _goto1 != nullptr ) {
+			if ( _goto1 != nullptr && _goto1->label != nullptr ) {
 				_goto1->label->reference_count--;
 			}
 			continue;

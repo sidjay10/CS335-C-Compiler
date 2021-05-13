@@ -413,3 +413,9 @@ Statement* add_to_statement_list( Statement * stl, Statement * st1 ) {
 
 
 //--------------Compound Statement----------------------///
+
+void backpatch_fn( Statement * s ) {
+	Label * l = create_new_label();
+	backpatch(s->returnlist,l);
+	backpatch(s->nextlist,l);
+}
