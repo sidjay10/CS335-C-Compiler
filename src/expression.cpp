@@ -249,16 +249,17 @@ Expression *create_postfix_expr_voidfun( Identifier *fi ) {
 Expression *create_postfix_expr_fun( Identifier *fi, ArgumentExprList *ae ) {
     PostfixExpression *P = new PostfixExpression();
 
-    if ( fi->value == "printf" || fi->value == "scanf" ) {
-	// XXX:
-        /* Hack : To support printf for now */
-        P->type = Type( INT_T, 0, true );
-        P->add_children( fi, ae );
-        P->res = new_temp();
-        create_new_call( P->res, fi->value );
-//        emit( P->res, "call", new_3id( fi->value ), new_3const( 0, INT3 ) );
-        return P;
-    }
+//     if ( fi->value == "printf" || fi->value == "scanf" ) {
+//         error_msg("Use functions in lib/lib.asm",line_num)
+//     // XXX:
+//         /* Hack : To support printf for now */
+//         // P->type = Type( INT_T, 0, true );
+//         // P->add_children( fi, ae );
+//         // P->res = new_temp();
+//         // create_new_call( P->res, fi->value );
+// //        emit( P->res, "call", new_3id( fi->value ), new_3const( 0, INT3 ) );
+//         return P;
+//     }
 
     SymTabEntry *ste = global_symbol_table.get_symbol_from_table( fi->value );
     if ( ste == nullptr ) {

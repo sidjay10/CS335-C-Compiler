@@ -13,8 +13,12 @@ int main(){
 	int *p;
 	int fd;
 	char str[10];
-	if ( false ) {
+	if ( false || true) {
 		print_int(1);
+	}
+
+	if ( false && true) {
+		print_int(2);
 	}
 	return 0;
 }

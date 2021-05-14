@@ -3,7 +3,7 @@ void print_char(char c);
 int scan_int();
 void print_string(char *);
 // return index at which the no. is present else -1
-int binary_search(int * arr,int low, int high,int to_find){
+int binary_search(int  arr[100],int low, int high,int to_find){
     int mid,i;
     if(low>high){
         return -1;
