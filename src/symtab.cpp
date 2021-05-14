@@ -562,7 +562,7 @@ void is_Valid( TypeQualifierList *ts ) {
     }
 }
 
-Pointer::Pointer() : Non_Terminal( "pointer" ){};
+Pointer::Pointer() : Non_Terminal( "pointer" ), pointer(nullptr) {};
 
 Pointer::Pointer( TypeQualifierList *type_list, Pointer *pointer_ )
     : Non_Terminal( "pointer" ), type_qualifier_list( type_list ),
