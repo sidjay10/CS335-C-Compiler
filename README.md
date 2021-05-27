@@ -1,10 +1,15 @@
-# Compiler Design
+# CS335 Compiler Design, IIT Kanpur
 
-This repository contains our project for CS335, the course on Compiler Design at IIT Kanpur for the Spring semester 2021.
+This repository contains our project for the course CS335 Compiler Design at IIT Kanpur in the Spring semester 2021.
 
-We build the compiler in stages. Currently, we have a functional compiler that can translate C source code to MIPS target and can be run on `spim` simulator or android devices/routers that have MIPS CPUs.
+We build the compiler in stages. Currently, we have a functional compiler that can translate C source code to MIPS32 target. The generated assembly code can be run on the [`spim` simulator](http://pages.cs.wisc.edu/~larus/spim.html).
 
 This project supports translation for a subset of the entire C [grammar](src/grammar.y)
+
+## Basic Details
+Source Language : C  
+Implementation Language : C/C++  
+Target : MIPS32 Assembly  
 
 ### Basic features supported:
 
@@ -30,7 +35,9 @@ This project supports translation for a subset of the entire C [grammar](src/gra
 3. File I/O
 4. Dynamic Memory Allocation
 5. Code Optimizations: 
-    - Dead Code Elimination , Constant folding, Short Circuit Evaluation
+    - Dead Code Elimination
+    - Constant folding
+    - Short Circuit Evaluation
 
 
 ## Building the Project 
@@ -56,6 +63,8 @@ tl;dr :
 ./bin/compiler -i <src>.c -o <dest>.s
 ```
 
+Note: Load the required libraries in the [lib](lib/) folder as needed to run the code.
+
 If you want intermediate files generated like Three Address Code or additional information like symbol table, there are flags in the CLI that can help you get then. Refer to `--help` for the same.
 
 ```
@@ -69,6 +78,7 @@ options:
   -i, --input      Specify the input source file (string)
   -?, --help       print this message
 ```
+
 
 ### Stage Information
 
