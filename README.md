@@ -120,5 +120,5 @@ The final stage of this project is a functional compiler to translate C source t
 
 ## Enjoy!
 
-![Compiler Meme](https://github.com/sidjay10/CS335-C-Compiler/blob/master/images/enjoy.jpg?raw=true)
+![Compiler Meme](images/enjoy.jpg)
 
