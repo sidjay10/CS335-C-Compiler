@@ -117,3 +117,8 @@ make
 ## Final Project
 
 The final stage of this project is a functional compiler to translate C source to MIPS and run it. Tip-of-Tree of the `master` branch has code for the final outcome of the project. Usage information is provided above.
+
+## Enjoy!
+
+![Compiler Meme](https://github.com/sidjay10/CS335-C-Compiler/tree/master/images/enjoy.jpg)
+
