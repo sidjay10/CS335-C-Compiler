@@ -63,7 +63,7 @@ tl;dr :
 ./bin/compiler -i <src>.c -o <dest>.s
 ```
 
-Note: Load the required libraries in the [lib](lib/) folder as needed to run the code.
+Note: Load the required libraries from the [lib](lib/) folder to run the code.
 
 If you want intermediate files generated like Three Address Code or additional information like symbol table, there are flags in the CLI that can help you get then. Refer to `--help` for the same.
 
